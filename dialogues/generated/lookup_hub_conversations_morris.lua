@@ -1,0 +1,42 @@
+﻿-- chunkname: @dialogues/generated/lookup_hub_conversations_morris.lua
+
+assert(DialogueLookup[DialogueLookup_n + 1] == nil)
+assert(DialogueLookup[DialogueLookup_n + 2] == nil)
+assert(DialogueLookup[DialogueLookup_n + 3] == nil)
+assert(DialogueLookup[DialogueLookup_n + 4] == nil)
+assert(DialogueLookup[DialogueLookup_n + 5] == nil)
+assert(DialogueLookup[DialogueLookup_n + 6] == nil)
+assert(DialogueLookup[DialogueLookup_n + 7] == nil)
+assert(DialogueLookup[DialogueLookup_n + 8] == nil)
+assert(DialogueLookup[DialogueLookup_n + 9] == nil)
+assert(DialogueLookup[DialogueLookup_n + 10] == nil)
+assert(DialogueLookup[DialogueLookup_n + 11] == nil)
+assert(DialogueLookup[DialogueLookup_n + 12] == nil)
+assert(DialogueLookup[DialogueLookup_n + 13] == nil)
+assert(DialogueLookup[DialogueLookup_n + 14] == nil)
+assert(DialogueLookup[DialogueLookup_n + 15] == nil)
+assert(DialogueLookup[DialogueLookup_n + 16] == nil)
+assert(DialogueLookup[DialogueLookup_n + 17] == nil)
+assert(DialogueLookup[DialogueLookup_n + 18] == nil)
+assert(DialogueLookup[DialogueLookup_n + 19] == nil)
+
+DialogueLookup[DialogueLookup_n + 1] = "nik_morris_hub_okri_grudge"
+DialogueLookup[DialogueLookup_n + 2] = "nik_morris_idle_01"
+DialogueLookup[DialogueLookup_n + 3] = "nik_morris_idle_02"
+DialogueLookup[DialogueLookup_n + 4] = "pbw_morris_hub_conversation_one_a"
+DialogueLookup[DialogueLookup_n + 5] = "pbw_morris_hub_conversation_one_b"
+DialogueLookup[DialogueLookup_n + 6] = "pbw_morris_hub_conversation_one_c"
+DialogueLookup[DialogueLookup_n + 7] = "pdr_morris_hub_conversation_one_a"
+DialogueLookup[DialogueLookup_n + 8] = "pdr_morris_hub_conversation_one_b"
+DialogueLookup[DialogueLookup_n + 9] = "pdr_morris_hub_conversation_one_c"
+DialogueLookup[DialogueLookup_n + 10] = "pes_morris_hub_conversation_one_a"
+DialogueLookup[DialogueLookup_n + 11] = "pes_morris_hub_conversation_one_b"
+DialogueLookup[DialogueLookup_n + 12] = "pes_morris_hub_conversation_one_c"
+DialogueLookup[DialogueLookup_n + 13] = "pwe_morris_hub_conversation_one_a"
+DialogueLookup[DialogueLookup_n + 14] = "pwe_morris_hub_conversation_one_b"
+DialogueLookup[DialogueLookup_n + 15] = "pwe_morris_hub_conversation_one_c"
+DialogueLookup[DialogueLookup_n + 16] = "pwh_morris_hub_conversation_one_a"
+DialogueLookup[DialogueLookup_n + 17] = "pwh_morris_hub_conversation_one_b"
+DialogueLookup[DialogueLookup_n + 18] = "pwh_morris_hub_conversation_one_c"
+DialogueLookup[DialogueLookup_n + 19] = "pwh_morris_saltzpyre_monologue"
+DialogueLookup_n = DialogueLookup_n + 19
