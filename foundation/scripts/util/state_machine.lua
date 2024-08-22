@@ -26,11 +26,7 @@ end
 StateMachine = class(StateMachine)
 
 local function debug_print(format, ...)
-	printf("[StateMachine] " .. format, ...)
-
-	if DEDICATED_SERVER then
-		cprintf("[StateMachine] " .. format, ...)
-	end
+	cprintf("[StateMachine] " .. format, ...)
 end
 
 StateMachine.init = function (self, parent, start_state, params, profiling_debugging_enabled)
@@ -52,10 +48,6 @@ StateMachine._change_state = function (self, new_state, params)
 		end
 	end
 
-	if false then
-		-- Nothing
-	end
-
 	if self._profiling_debugging_enabled then
 		local scope_name = profiler_scope(new_state.NAME, "create")
 
@@ -72,10 +64,6 @@ StateMachine._change_state = function (self, new_state, params)
 		self._state:on_enter(params)
 	elseif self._state.on_enter then
 		self._state:on_enter(params)
-	end
-
-	if false then
-		-- Nothing
 	end
 end
 

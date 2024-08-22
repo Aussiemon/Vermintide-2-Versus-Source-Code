@@ -37,6 +37,7 @@ BuffExtension.init = function (self, extension_init_context, unit, extension_ini
 	self._continuous_screen_effects = {}
 	self._deactivation_screen_effects = {}
 	self._vfx = {}
+	self._vfx_update = {}
 
 	for stat_buff_name, _ in pairs(StatBuffApplicationMethods) do
 		self._stat_buffs[stat_buff_name] = {}
@@ -49,7 +50,10 @@ BuffExtension.init = function (self, extension_init_context, unit, extension_ini
 	end
 
 	self.is_server = Managers.player.is_server
-	self.is_local = not Managers.player.remote
+
+	local is_player = extension_init_data.breed and extension_init_data.breed.is_player
+
+	self.is_local = not is_player and self.is_server or is_player and not extension_init_data.is_husk
 	self.is_husk = extension_init_data.is_husk
 	self.id = 1
 	self.individual_stat_buff_index = 1
@@ -91,6 +95,8 @@ BuffExtension.extensions_ready = function (self, world, unit)
 	if self._num_buffs > 0 then
 		Managers.state.entity:system("buff_system"):set_buff_ext_active(self._unit, true)
 	end
+
+	self.debug_buff_names = {}
 end
 
 BuffExtension.destroy = function (self)
@@ -143,6 +149,16 @@ BuffExtension.clear = function (self)
 	self._server_sync_to_id = nil
 	self._remove_buff_queue = nil
 
+	if self._shared_buff_units then
+		for _, buff_unit in pairs(self._shared_buff_units) do
+			if ALIVE[buff_unit] then
+				Managers.state.unit_spawner:mark_for_deletion(buff_unit)
+			end
+		end
+
+		self._shared_buff_units = nil
+	end
+
 	Managers.state.entity:system("buff_system"):set_buff_ext_active(self._unit, false)
 end
 
@@ -154,7 +170,7 @@ BuffExtension.add_buff = function (self, template_name, params)
 	end
 
 	local buffs = self._buffs
-	local buff_template = BuffTemplates[template_name]
+	local buff_template = BuffUtils.get_buff_template(template_name)
 	local sub_buffs = buff_template.buffs
 	local time_offset = params and params._hot_join_sync_buff_age or 0
 	local start_time = Managers.time:time("game") - time_offset
@@ -162,10 +178,15 @@ BuffExtension.add_buff = function (self, template_name, params)
 	local world = self.world
 	local is_server = self.is_server
 
+	if self.debug_buff_names then
+		self.debug_buff_names[id] = buff_template.buffs and buff_template.buffs[1] and buff_template.buffs[1].name
+	end
+
 	if self._num_buffs == 0 then
 		Managers.state.entity:system("buff_system"):set_buff_ext_active(unit, true)
 	end
 
+	local first_buff
 	local parent_buff_shared_table = buff_template.create_parent_buff_shared_table and {}
 	local sub_buffs_added = 0
 
@@ -181,7 +202,6 @@ BuffExtension.add_buff = function (self, template_name, params)
 			local update_frequency = sub_buff_template.update_frequency
 			local max_stacks = sub_buff_template.max_stacks
 			local is_stacking_buff = max_stacks
-			local parent_id
 			local bonus = sub_buff_template.bonus
 			local value = sub_buff_template.value
 			local multiplier = sub_buff_template.multiplier
@@ -224,7 +244,6 @@ BuffExtension.add_buff = function (self, template_name, params)
 					end
 				end
 
-				parent_id = params.parent_id or parent_id
 				bonus = params.external_optional_bonus or bonus
 				multiplier = params.external_optional_multiplier or multiplier
 				value = params.external_optional_value or value
@@ -262,13 +281,35 @@ BuffExtension.add_buff = function (self, template_name, params)
 			if is_stacking_buff and not self:_add_stacking_buff(sub_buff_template, max_stacks, start_time, duration, end_time, params) then
 				-- Nothing
 			else
+				local refresh_duration_of_buffs = sub_buff_template.refresh_duration_of_buffs_on_apply
+
+				if refresh_duration_of_buffs then
+					for refresh_i = 1, #refresh_duration_of_buffs do
+						local buff_to_refresh_name = refresh_duration_of_buffs[refresh_i]
+						local stacks = self:get_stacking_buff(buff_to_refresh_name)
+
+						if stacks then
+							for refresh_buff_i = 1, #stacks do
+								local refresh_buff = stacks[refresh_buff_i]
+
+								self:_refresh_duration(refresh_buff, start_time, refresh_buff.duration, start_time + refresh_buff.duration, params, refresh_buff.template)
+							end
+						else
+							local refresh_buff = self:get_buff_type(buff_to_refresh_name)
+
+							if refresh_buff then
+								self:_refresh_duration(refresh_buff, start_time, refresh_buff.duration, start_time + refresh_buff.duration, params, refresh_buff.template)
+							end
+						end
+					end
+				end
+
 				local buff = {
 					id = id,
 					start_time = start_time,
 					template = sub_buff_template,
 					buff_type = sub_buff_template.name,
 					buff_template_name = template_name,
-					parent_id = parent_id,
 					bonus = bonus,
 					multiplier = multiplier,
 					value = value,
@@ -286,6 +327,7 @@ BuffExtension.add_buff = function (self, template_name, params)
 					parent_buff_shared_table = parent_buff_shared_table,
 				}
 
+				first_buff = first_buff or buff
 				self._num_buffs = self._num_buffs + 1
 				buffs[self._num_buffs] = buff
 				sub_buffs_added = sub_buffs_added + 1
@@ -328,11 +370,10 @@ BuffExtension.add_buff = function (self, template_name, params)
 					local unit_spawner = Managers.state.unit_spawner
 					local extension_init_data = {
 						buff_area_system = {
-							removal_proc_function_name = sub_buff_template.exit_area_func,
-							add_proc_function_name = sub_buff_template.enter_area_func,
 							duration = duration,
 							radius = sub_buff_template.area_radius,
 							sub_buff_template = sub_buff_template,
+							sub_buff_id = i,
 							owner_unit = unit,
 							source_unit = source_attacker_unit,
 						},
@@ -418,7 +459,13 @@ BuffExtension.add_buff = function (self, template_name, params)
 						end
 					end
 
-					self._vfx[id] = BuffUtils.create_attached_particles(world, particles, target_unit, is_first_person)
+					local vfx_state = BuffUtils.create_attached_particles(world, particles, target_unit, is_first_person, unit, end_time)
+
+					self._vfx[id] = vfx_state
+
+					if vfx_state.update_fx then
+						self._vfx_update[id] = vfx_state
+					end
 				end
 
 				local sfx = sub_buff_template.sfx
@@ -430,11 +477,6 @@ BuffExtension.add_buff = function (self, template_name, params)
 						self:_play_buff_sound(activation_sound, sfx.activation_sound_3p)
 					end
 				end
-
-				local current_buff_stacks = self._stacking_buffs[sub_buff_template.name]
-				local num_stacks = current_buff_stacks and #current_buff_stacks or 0
-
-				Managers.state.event:trigger("combat_log_buff", unit, buff, true, num_stacks + 1, max_stacks)
 			end
 		end
 	end
@@ -471,7 +513,7 @@ BuffExtension.add_buff = function (self, template_name, params)
 		end
 	end
 
-	return id, sub_buffs_added
+	return id, sub_buffs_added, first_buff
 end
 
 BuffExtension._add_stacking_buff = function (self, sub_buff_template, max_stacks, start_time, duration, end_time, params)
@@ -548,6 +590,17 @@ BuffExtension._add_stacking_buff = function (self, sub_buff_template, max_stacks
 		end
 	end
 
+	local on_add_stack_override_func = StackingBuffFunctions[sub_buff_template.on_add_stack_override_func]
+
+	if on_add_stack_override_func then
+		local current_num_stacks = num_stacks
+		local should_add_buff_override = on_add_stack_override_func(self._unit, sub_buff_template, current_num_stacks, self, params)
+
+		if should_add_buff_override ~= nil then
+			should_add_buff = should_add_buff_override
+		end
+	end
+
 	return should_add_buff
 end
 
@@ -615,7 +668,6 @@ BuffExtension._add_stat_buff = function (self, sub_buff_template, buff)
 			bonus = bonus,
 			multiplier = multiplier,
 			proc_chance = proc_chance,
-			parent_id = buff.parent_id,
 		}
 		self.individual_stat_buff_index = index + 1
 	else
@@ -756,6 +808,10 @@ BuffExtension.update = function (self, unit, input, dt, context, t)
 		end
 	end
 
+	for _, fx_state in pairs(self._vfx_update) do
+		BuffUtils.update_attached_particles(world, fx_state, t)
+	end
+
 	local i = 1
 	local removed = 0
 
@@ -850,7 +906,7 @@ BuffExtension.remove_buff = function (self, id, skip_net_sync)
 	for i = 1, self._num_buffs do
 		local buff = buffs[i]
 
-		if buff.id == id or buff.parent_id and buff.parent_id == id then
+		if buff.id == id then
 			buff_extension_function_params.bonus = buff.bonus
 			buff_extension_function_params.multiplier = buff.multiplier
 			buff_extension_function_params.value = buff.value
@@ -1014,7 +1070,7 @@ BuffExtension._remove_sub_buff = function (self, buff, index, buff_extension_fun
 	end
 
 	if free_sync_ids and self._id_to_local_sync then
-		if self._buff_to_sync_type and self._buff_to_sync_type[id] == BuffSyncType.Client then
+		if self._buff_to_sync_type and self._buff_to_sync_type[id] == BuffSyncType.Client or not template.duration and not template.ticks then
 			self:_remove_buff_synced(id)
 		end
 
@@ -1053,13 +1109,9 @@ BuffExtension._remove_sub_buff = function (self, buff, index, buff_extension_fun
 			BuffUtils.destroy_attached_particles(world, particles)
 
 			self._vfx[id] = nil
+			self._vfx_update[id] = nil
 		end
 	end
-
-	local stacks = self:num_buff_type(buff.buff_type)
-	local max_stacks = buff.template.max_stacks
-
-	Managers.state.event:trigger("combat_log_buff", self._unit, buff, false, stacks, max_stacks)
 end
 
 BuffExtension._remove_stat_buff = function (self, buff)
@@ -1276,10 +1328,6 @@ BuffExtension.trigger_procs = function (self, event, ...)
 		local proc_chance = buff.proc_chance or 1
 
 		if has_authority(buff, is_server, is_local) and current_time > (buff._next_proc_t or 0) and self:has_procced(proc_chance, buff) then
-			local player = Managers.player:owner(self._unit)
-
-			Managers.state.event:trigger("combat_log_proc", player, event, buff, params)
-
 			buff._next_proc_t = buff.template.proc_cooldown and buff.template.proc_cooldown + current_time
 
 			local proc_weight = buff.template.proc_weight or 0
@@ -1484,7 +1532,18 @@ BuffExtension.generate_sync_id = function (self)
 	if free_sync_ids then
 		sync_id = free_sync_ids[1]
 
-		fassert(sync_id, "[BuffExtension] Too many synced buffs, no free sync ids left!")
+		if not sync_id then
+			if self.debug_buff_names then
+				table.dump(table.select_map(self._local_sync_to_id, function (local_sync_id, buff_id)
+					return string.format("(id: %s) %s", local_sync_id, self.debug_buff_names[buff_id])
+				end), "Synced Buffs")
+			else
+				print("[BuffExtension] Not a player")
+			end
+
+			error("[BuffExtension] Too many synced buffs, no free sync ids left!")
+		end
+
 		table.swap_delete(free_sync_ids, 1)
 	else
 		sync_id = self._next_sync_id or 1
@@ -1579,6 +1638,13 @@ BuffExtension._initalize_sync_tables = function (self)
 	end
 end
 
+BuffExtension.create_shared_lifetime_buff_unit = function (self, position)
+	self._shared_buff_units = self._shared_buff_units or {}
+	self._shared_buff_units[#self._shared_buff_units + 1] = Managers.state.unit_spawner:spawn_network_unit("units/hub_elements/empty", "buff_unit", self._buff_unit_params, position, Quaternion.identity(), nil)
+
+	return self._shared_buff_units[#self._shared_buff_units]
+end
+
 local Managers = Managers
 
 BuffExtension._remove_buff_synced = function (self, id)
@@ -1598,6 +1664,12 @@ BuffExtension._remove_buff_synced = function (self, id)
 	local unit_id = network_manager:unit_game_object_id(self._unit)
 
 	if not unit_id then
+		return
+	end
+
+	local game = network_manager:game()
+
+	if not game then
 		return
 	end
 

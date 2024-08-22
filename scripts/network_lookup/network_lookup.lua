@@ -22,6 +22,7 @@ require("scripts/settings/survival_settings")
 require("scripts/settings/spawn_unit_templates")
 require("scripts/unit_extensions/weaves/weave_item_templates")
 require("scripts/settings/unlock_settings")
+require("scripts/entity_system/systems/projectile/drone_templates")
 DLCUtils.require_list("statistics_database")
 require("scripts/settings/twitch_settings")
 require("scripts/unit_extensions/weapons/area_damage/liquid/damage_blob_templates")
@@ -169,7 +170,7 @@ for _, dlc in pairs(DLCSettings) do
 
 				NetworkLookup[name] = create_lookup(base_table, rawget(_G, table_name))
 			else
-				local table_names = string.split(table_data, ".")
+				local table_names = string.split_deprecated(table_data, ".")
 				local table_values = rawget(_G, table_names[1])
 
 				for i = 2, #table_names do
@@ -293,13 +294,16 @@ local damage_sources = {
 	"career_ability",
 	"charge_ability_hit",
 	"charge_ability_hit_blast",
-	"corpse_explosion",
 	"buff",
 	"life_tap",
 }
 
 for hazard, _ in pairs(EnvironmentalHazards) do
 	damage_sources[#damage_sources + 1] = hazard
+end
+
+for liquid_area_template, _ in pairs(LiquidAreaDamageTemplates.templates) do
+	damage_sources[#damage_sources + 1] = liquid_area_template
 end
 
 table.append(damage_sources, NetworkLookup.item_names)
@@ -380,6 +384,7 @@ NetworkLookup.husks = {
 	"units/beings/enemies/chaos_warrior/chr_chaos_warrior",
 	"units/beings/enemies/chaos_warrior/chr_chaos_warrior_exalted",
 	"units/beings/enemies/chaos_warrior_boss/chr_chaos_warrior_boss",
+	"units/beings/enemies/chaos_warrior_bulwark/chr_chaos_warrior_bulwark",
 	"units/beings/enemies/chaos_troll/chr_chaos_troll",
 	"units/beings/enemies/chaos_tentacle/chr_chaos_tentacle",
 	"units/beings/enemies/chaos_tentacle_portal/chr_chaos_tentacle_portal",
@@ -417,7 +422,6 @@ NetworkLookup.husks = {
 	"units/weapons/projectile/strike_missile_drachenfels/strike_missile_drachenfels",
 	"units/weapons/projectile/warp_lightning_bolt/warp_lightning_bolt",
 	"units/weapons/enemy/wpn_overpowering_blob/wpn_overpowering_blob",
-	"units/weapons/player/wpn_dwarf_smoke_grenade_01/wpn_dwarf_smoke_grenade_01_3p",
 	"units/weapons/player/pup_potion/pup_potion_t1",
 	"units/weapons/player/pup_potion/pup_potion_buff",
 	"units/weapons/player/pup_first_aid_kit/pup_first_aid_kit",
@@ -470,6 +474,9 @@ NetworkLookup.husks = {
 	"units/weapons/player/pup_magic_barrel/pup_magic_barrel_01",
 	"units/weapons/player/pup_magic_barrel/wpn_magic_barrel_01",
 	"units/weapons/player/pup_magic_barrel/wpn_magic_barrel_01_3p",
+	"units/weapons/player/pup_whale_oil_barrel/pup_whale_oil_barrel_01",
+	"units/weapons/player/pup_whale_oil_barrel/wpn_whale_oil_barrel_01",
+	"units/weapons/player/pup_whale_oil_barrel/wpn_whale_oil_barrel_01_3p",
 	"units/weapons/player/pup_wizards_barrel_01/pup_wizards_barrel_01",
 	"units/weapons/player/pup_wizards_barrel_01/wpn_wizards_barrel_01",
 	"units/weapons/player/pup_wizards_barrel_01/wpn_wizards_barrel_01_3p",
@@ -566,7 +573,6 @@ NetworkLookup.go_types = {
 	"overpowering_blob_unit",
 	"network_synched_dummy_unit",
 	"position_synched_dummy_unit",
-	"carousel_inn_door",
 	"buff_aoe_unit",
 	"buff_unit",
 	"thrown_weapon_unit",
@@ -583,6 +589,7 @@ NetworkLookup.go_types = {
 	"interest_point_level_unit",
 	"sync_unit",
 	"player_unit_health",
+	"dark_pact_horde_ability",
 	"liquid_aoe_unit",
 	"payload",
 	"rotating_hazard",
@@ -711,11 +718,7 @@ NetworkLookup.lobby_data = {
 	"selected_mission_id",
 	"num_players",
 	"matchmaking",
-	"player_slot_1",
-	"player_slot_2",
-	"player_slot_3",
-	"player_slot_4",
-	"player_slot_5",
+	"reserved_profiles",
 	"host",
 	"unique_server_name",
 	"difficulty",
@@ -776,6 +779,7 @@ NetworkLookup.buff_attack_types = {
 	"grenade",
 	"ability",
 	"action_push",
+	"gas",
 }
 NetworkLookup.keep_decoration_trophies = {
 	"hub_trophy_empty",
@@ -949,19 +953,14 @@ NetworkLookup.damage_types = {
 	"warpfire_ground",
 	"warpfire_face",
 	"cutting_berserker",
-	"player_stunned_damage",
 	"piercing",
-	"slashing_buffed",
 	"slashing",
 	"blunt",
 	"projectile",
-	"player_overcharge_explosion_brw",
-	"player_overcharge_explosion_dwarf",
 	"knockdown_bleed",
 	"blade_storm",
 	"death_explosion",
 	"nurgle_ball",
-	"nurgle_geyser",
 	"light_slashing_linesman",
 	"light_slashing_linesman_hs",
 	"slashing_linesman",
@@ -990,18 +989,12 @@ NetworkLookup.damage_types = {
 	"blunt_tank",
 	"blunt_tank_uppercut",
 	"heavy_blunt_tank",
-	"light_stab_linesman",
-	"stab_linesman",
-	"heavy_stab_linesman",
 	"light_stab_smiter",
 	"stab_smiter",
 	"heavy_stab_smiter",
 	"light_stab_fencer",
 	"stab_fencer",
 	"heavy_stab_fencer",
-	"light_stab_tank",
-	"stab_tank",
-	"heavy_stab_tank",
 	"shot_sniper",
 	"shot_carbine",
 	"shot_machinegun",
@@ -1052,9 +1045,6 @@ NetworkLookup.damage_types = {
 	"push",
 	"pack_master_grab",
 	"overcharge",
-	"weapon_bleed_dot_dagger",
-	"weapon_bleed_dot_whc",
-	"weapon_bleed_dot_maidenguard",
 	"sync_health",
 	"killing_blow",
 	"execute",
@@ -1067,6 +1057,7 @@ NetworkLookup.damage_types = {
 	"inside_forbidden_tag_volume",
 	"undefined",
 	"charge_death",
+	"gas",
 }
 
 for _, dlc in pairs(DLCSettings) do
@@ -1253,7 +1244,7 @@ NetworkLookup.effects = {
 	"fx/wpnfx_grenade_impact",
 	"fx/wpnfx_frag_grenade_impact",
 	"fx/wpnfx_smoke_grenade_impact",
-	"fx/wpnfx_smoke_grenade_impact_Upgraded",
+	"fx/wpnfx_smoke_grenade_impact_versus",
 	"fx/wpnfx_fire_grenade_impact",
 	"fx/wpnfx_warplock_pistol_impact_flesh",
 	"fx/chr_player_fak_healed",
@@ -1285,6 +1276,8 @@ NetworkLookup.effects = {
 	"fx/chr_chaos_sorcerer_teleport_direction",
 	"fx/chr_stormvermin_champion_beam_impact_dot",
 	"fx/chr_stormvermin_champion_beam_anticipation_dot",
+	"fx/chr_chaos_warrior_bulwark_explosion",
+	"fx/chr_chaos_warrior_bulwark_shield_impact",
 	"spawn_cylinder",
 	"fx/wpnfx_flamethrower_1p_01",
 	"fx/wpnfx_flamethrower_01",
@@ -1292,6 +1285,7 @@ NetworkLookup.effects = {
 	"fx/chr_warp_fire_flamethrower_remains_01",
 	"fx/chr_warp_fire_flamethrower_01",
 	"fx/chr_warpfire_flamethrower_1p",
+	"fx/chr_warp_fire_flamethrower_01_1p_versus",
 	"fx/chr_warp_fire_explosion_01",
 	"fx/wpnfx_range_crit_01",
 	"fx/chaos_sorcerer_plague_wave_hit_01",
@@ -1364,6 +1358,7 @@ NetworkLookup.statuses = {
 	"dead",
 	"blocking",
 	"charge_blocking",
+	"block_broken",
 	"wounded",
 	"revived",
 	"pushed",
@@ -1395,6 +1390,7 @@ NetworkLookup.statuses = {
 	"in_end_zone",
 	"in_liquid",
 	"overpowered",
+	"reviving",
 }
 NetworkLookup.grabbed_by_tentacle = {
 	"portal_hanging",
@@ -1585,6 +1581,14 @@ NetworkLookup.sound_events = {
 	"Play_hud_versus_score_points",
 	"Play_versus_hud_last_hero_down_riser",
 	"Stop_versus_hud_last_hero_down_riser",
+	"Play_versus_pactsworn_horde_ability",
+	"Play_enemy_chaos_bulwark_stagger",
+	"Play_enemy_chaos_bulwark_stagger_break",
+	"Play_boon_aoe_zone_explode_attackspeed",
+	"Play_boon_aoe_zone_explode_cooldown",
+	"Play_boon_aoe_zone_explode_crit",
+	"Play_boon_aoe_zone_explode_healing",
+	"Play_boon_aoe_zone_explode_power",
 }
 
 do
@@ -1649,6 +1653,7 @@ NetworkLookup.global_parameter_names = {
 }
 
 local weapon_sound_events = {}
+local weapon_synced_states = {}
 
 for _, weapon_table in pairs(Weapons) do
 	for _, action_table in pairs(weapon_table.actions) do
@@ -1662,9 +1667,18 @@ for _, weapon_table in pairs(Weapons) do
 			end
 		end
 	end
+
+	if weapon_table.synced_states then
+		for state_name, state in pairs(weapon_table.synced_states) do
+			weapon_synced_states[state_name] = true
+		end
+	end
 end
 
 NetworkLookup.sound_events = create_lookup(NetworkLookup.sound_events, weapon_sound_events)
+NetworkLookup.weapon_synced_states = create_lookup({
+	"n/a",
+}, weapon_synced_states)
 
 local attack_template_sound_types = {}
 
@@ -1682,6 +1696,7 @@ NetworkLookup.melee_impact_sound_types = create_lookup({
 NetworkLookup.sound_event_param_names = {
 	"drakegun_charge_fire",
 	"enemy_vo",
+	"bulwark_stagger_amount",
 }
 NetworkLookup.sound_event_param_string_values = {
 	"skaven_slave",
@@ -1755,6 +1770,17 @@ NetworkLookup.dialogue_events = {
 	"overcharge_critical",
 	"overcharge_explode",
 	"overcharge_lockout_end",
+	"seen_item",
+	"vs_mg_round_start",
+	"vs_mg_heroes_left_safe_room",
+	"vs_mg_heroes_objective_reached",
+	"vs_mg_heroes_objective_almost_completed",
+	"vs_mg_heroes_objective_completed",
+	"vs_mg_new_spawn_monster",
+	"vs_mg_pactsworn_wipe",
+	"vs_mg_heroes_reached_safe_room",
+	"vs_mg_heroes_reached_waystone",
+	"vs_mg_heroes_team_wipe",
 }
 NetworkLookup.dialogue_event_data_names = {
 	"num_units",
@@ -1798,6 +1824,7 @@ NetworkLookup.dialogue_event_data_names = {
 	"trail_cog",
 	"training_dummy",
 	"training_dummy_armored",
+	"whale_oil_barrel",
 	"stance_type",
 	"offensive",
 	"defensive",
@@ -1810,6 +1837,7 @@ NetworkLookup.dialogue_event_data_names = {
 	"ranged_weapon",
 	"fail_reason",
 	"out_of_ammo",
+	"item_tag",
 }
 
 DLCUtils.append("dialogue_event_data_lookup", NetworkLookup.dialogue_event_data_names)
@@ -1951,7 +1979,6 @@ NetworkLookup.statistics = {
 	"vortex_sorcerer_killed_by_melee",
 	"ratling_gunner_killed_by_melee",
 	"ratling_gunner_killed_while_shooting",
-	"ratling_gunner_blocked_shot",
 	"chaos_spawn_killed_while_grabbing",
 	"chaos_spawn_killed_without_having_grabbed",
 	"chaos_troll_killed_without_regen",
@@ -2067,6 +2094,9 @@ NetworkLookup.matchmaking_regions = {
 	"africa",
 	"default",
 }
+NetworkLookup.join_methods = {
+	"party",
+}
 NetworkLookup.debug_commands = {
 	"load_patched_items_into_backend",
 	"set_time_scale",
@@ -2142,17 +2172,17 @@ NetworkLookup.challenge_categories = {}
 
 DLCUtils.append("challenge_categories", NetworkLookup.challenge_categories)
 
+NetworkLookup.drone_templates = create_lookup({}, DroneTemplates)
 NetworkLookup.boon_consume_types = {
 	"time",
 	"venture",
 	"charges",
 }
-NetworkLookup.network_log_levels = {
-	"silent",
-	"warnings",
-	"info",
-	"messages",
-	"spew",
+NetworkLookup.request_profile_replies = {
+	"profile_declined",
+	"profile_accepted",
+	"profile_locked",
+	"previous_profile_accepted",
 }
 
 local function is_sync_statistics(stat)
@@ -2235,6 +2265,12 @@ DLCUtils.append("inventory_package_list", NetworkLookup.inventory_packages)
 
 NetworkLookup.network_packages = {}
 
+for _, mutator_template in pairs(MutatorTemplates) do
+	if mutator_template.packages then
+		table.append(NetworkLookup.network_packages, mutator_template.packages)
+	end
+end
+
 DLCUtils.append("network_packages", NetworkLookup.network_packages)
 
 local NETWORK_LOOKUP_DUPLICATES_ALLOWED = {
@@ -2265,7 +2301,12 @@ local DialogueLookup = DialogueLookup
 NetworkLookup.dialogues = DialogueLookup
 NetworkLookup.dialogue_profiles = {
 	"inn_keeper",
+	"vs_pactsworn_mission_giver",
 }
+
+table.append_unique(NetworkLookup.dialogue_profiles, table.values(table.select_map(SPProfiles, function (_, profile)
+	return profile.character_vo
+end)))
 
 local MarkerLookup = MarkerLookup
 

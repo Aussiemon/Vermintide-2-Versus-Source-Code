@@ -925,6 +925,8 @@ TitleLoadingUI.init = function (self, world, params, force_done)
 
 	if params.is_prologue then
 		first_time_video = prologue_video
+	elseif not title_settings or title_settings and not title_settings.video_override then
+		force_done = true
 	end
 
 	self.render_settings = {

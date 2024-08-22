@@ -31,7 +31,11 @@ end
 table.clone = function (t, skip_metatable)
 	local clone = {}
 
-	assert(skip_metatable or getmetatable(t) == nil, "Metatables will be sliced off")
+	if not skip_metatable then
+		local mt = getmetatable(t)
+
+		assert(mt == nil or mt.__mt_cloneable, "Metatables will be sliced off")
+	end
 
 	for key, value in pairs(t) do
 		if type(value) ~= "table" or is_class_instance(value) then
@@ -47,10 +51,30 @@ end
 table.shallow_copy = function (t, skip_metatable, out_t)
 	local copy = out_t or {}
 
-	assert(skip_metatable or getmetatable(t) == nil, "Metatables will be sliced off")
+	if not skip_metatable then
+		local mt = getmetatable(t)
+
+		assert(mt == nil or mt.__mt_cloneable, "Metatables will be sliced off")
+	end
 
 	for key, value in pairs(t) do
 		copy[key] = value
+	end
+
+	return copy
+end
+
+table.copy_array = function (t, skip_metatable, out_t)
+	local copy = out_t or {}
+
+	if not skip_metatable then
+		local mt = getmetatable(t)
+
+		assert(mt == nil or mt.__mt_cloneable, "Metatables will be sliced off")
+	end
+
+	for i = 1, #t do
+		copy[i] = t[i]
 	end
 
 	return copy
@@ -88,7 +112,9 @@ table.create_copy = function (copy, original)
 	if not copy then
 		return table.clone(original)
 	else
-		assert(getmetatable(original) == nil, "Metatables will be sliced off")
+		local mt = getmetatable(original)
+
+		assert(mt == nil or mt.__mt_cloneable, "Metatables will be sliced off")
 
 		for key, value in pairs(original) do
 			if type(value) ~= "table" or is_class_instance(value) then
@@ -180,6 +206,19 @@ table.append = function (dest, source)
 		dest_size = dest_size + 1
 		dest[dest_size] = source[i]
 	end
+
+	return dest
+end
+
+table.append_unique = function (dest, source)
+	local dest_size = #dest
+
+	for i = 1, #source do
+		if not table.contains(dest, source[i]) then
+			dest_size = dest_size + 1
+			dest[dest_size] = source[i]
+		end
+	end
 end
 
 table.append_non_indexed = function (dest, source)
@@ -189,6 +228,8 @@ table.append_non_indexed = function (dest, source)
 		dest_size = dest_size + 1
 		dest[dest_size] = value
 	end
+
+	return dest
 end
 
 table.contains = function (t, element)
@@ -221,8 +262,10 @@ table.find_by_key = function (t, search_key, search_value)
 	return nil
 end
 
-table.index_of = function (t, element)
-	for i = 1, #t do
+table.index_of = function (t, element, start_index)
+	start_index = start_index or 1
+
+	for i = start_index, #t do
 		if t[i] == element then
 			return i
 		end
@@ -623,6 +666,23 @@ table.keys = function (t, out)
 	return out, n
 end
 
+table.split_unordered = function (t)
+	local t1, t2 = {}, {}
+	local state = true
+
+	for k, v in pairs(t) do
+		if state then
+			t1[k] = v
+		else
+			t2[k] = v
+		end
+
+		state = not state
+	end
+
+	return t1, t2
+end
+
 table.keys_if = function (t, out, conditional_func)
 	out = out or {}
 
@@ -935,7 +995,17 @@ table.select_array = function (t, selector)
 	local new_t = {}
 
 	for i = 1, #t do
-		new_t[#new_t + 1] = selector(new_t, t[i])
+		new_t[#new_t + 1] = selector(i, t[i])
+	end
+
+	return new_t
+end
+
+table.select_map = function (t, selector)
+	local new_t = {}
+
+	for k, v in pairs(t) do
+		new_t[k] = selector(k, v)
 	end
 
 	return new_t

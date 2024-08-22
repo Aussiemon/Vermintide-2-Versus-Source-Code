@@ -56,18 +56,6 @@ StartGameWindowLobbyBrowserConsole.on_enter = function (self, params, offset)
 
 	self._lobby_finder = lobby_finder
 
-	local game_server_finder
-	local disable_dedicated_servers = Development.parameter("use_lan_backend") or rawget(_G, "Steam") == nil
-	local supported_on_platform = IS_WINDOWS
-
-	if disable_dedicated_servers or not supported_on_platform then
-		game_server_finder = GameServerFinderLan:new(network_options, MatchmakingSettings.MAX_NUM_SERVERS)
-	else
-		game_server_finder = GameServerFinder:new(network_options, MatchmakingSettings.MAX_NUM_SERVERS)
-	end
-
-	self._game_server_finder = game_server_finder
-
 	local ignore_dlc_check = false
 
 	self._current_weave = LevelUnlockUtils.current_weave(self._statistics_db, self._stats_id, ignore_dlc_check)
@@ -115,10 +103,6 @@ StartGameWindowLobbyBrowserConsole.on_exit = function (self, params)
 	self._lobby_finder:destroy()
 
 	self._lobby_finder = nil
-
-	self._game_server_finder:destroy()
-
-	self._game_server_finder = nil
 end
 
 StartGameWindowLobbyBrowserConsole.disable_input = function (self, input_name)
@@ -127,7 +111,6 @@ end
 
 StartGameWindowLobbyBrowserConsole.update = function (self, dt, t)
 	self._lobby_finder:update(dt)
-	self._game_server_finder:update(dt)
 
 	local is_refreshing = self:_is_refreshing()
 
@@ -150,8 +133,6 @@ end
 
 StartGameWindowLobbyBrowserConsole._is_refreshing = function (self)
 	local is_refreshing = self._lobby_finder:is_refreshing()
-
-	is_refreshing = self._game_server_finder:is_refreshing() or is_refreshing
 
 	return is_refreshing
 end
@@ -207,10 +188,6 @@ local empty_lobby_list = {}
 StartGameWindowLobbyBrowserConsole.get_lobbies = function (self)
 	local lobby_finder = self._lobby_finder
 	local lobbies = lobby_finder:lobbies() or empty_lobby_list
-	local game_server_finder = self._game_server_finder
-	local servers = game_server_finder:servers() or empty_lobby_list
-
-	table.append(lobbies, servers)
 
 	return lobbies
 end
@@ -357,7 +334,7 @@ end
 StartGameWindowLobbyBrowserConsole.reset_filters = function (self, selected_game_mode, selected_level, selected_difficulty, selected_filter, selected_distance)
 	self:set_level(selected_level or "any")
 	self:set_difficulty(selected_difficulty or "any")
-	self:set_lobby_filter(selected_filter or not (BUILD ~= "dev" and BUILD ~= "debug") and "lb_show_all" or "lb_show_joinable")
+	self:set_lobby_filter(selected_filter or (BUILD == "dev" or BUILD == "debug") and "lb_show_all" or "lb_show_joinable")
 	self:set_distance_filter(selected_distance or "map_zone_options_5")
 	self:set_game_mode(selected_game_mode or "any")
 	self:_search()
@@ -469,10 +446,6 @@ StartGameWindowLobbyBrowserConsole._search = function (self, skip_populate)
 	local force_refresh = true
 
 	lobby_finder:add_filter_requirements(requirements, force_refresh)
-
-	local game_server_finder = self._game_server_finder
-
-	game_server_finder:refresh()
 
 	self._searching = true
 	self._do_populate = not skip_populate
@@ -619,7 +592,7 @@ StartGameWindowLobbyBrowserConsole.is_lobby_joinable = function (self, lobby_dat
 		return false, "lobby_browser_own_server_error"
 	end
 
-	if lobby_data.is_private == "true" or lobby_data.matchmaking == "false" then
+	if MatchmakingManager.is_lobby_private(lobby_data) or lobby_data.matchmaking == "false" then
 		return false, "not_searching_for_players"
 	end
 

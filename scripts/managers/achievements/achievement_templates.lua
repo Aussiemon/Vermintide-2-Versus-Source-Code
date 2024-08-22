@@ -2257,6 +2257,12 @@ AchievementTemplates.achievements.unlock_first_talent_point = {
 	icon = "achievement_trophy_15",
 	name = "achv_unlock_first_talent_point_name",
 	completed = function (statistics_db, stats_id)
+		local is_versus = Managers.mechanism:current_mechanism_name() == "versus"
+
+		if is_versus then
+			return false
+		end
+
 		local heroes = {
 			"wood_elf",
 			"witch_hunter",
@@ -2282,6 +2288,12 @@ AchievementTemplates.achievements.unlock_all_talent_points = {
 	icon = "achievement_trophy_16",
 	name = "achv_unlock_all_talent_points_name",
 	completed = function (statistics_db, stats_id)
+		local is_versus = Managers.mechanism:current_mechanism_name() == "versus"
+
+		if is_versus then
+			return false
+		end
+
 		local heroes = {
 			"wood_elf",
 			"witch_hunter",
@@ -3196,8 +3208,27 @@ AchievementTemplates.achievements.skaven_ratling_gunner_3 = {
 	display_completion_ui = true,
 	icon = "achievement_trophy_skaven_ratling_gunner_3",
 	name = "achv_skaven_ratling_gunner_3_name",
+	events = {
+		"player_blocked_attack",
+	},
 	completed = function (statistics_db, stats_id)
 		return statistics_db:get_persistent_stat(stats_id, "ratling_gunner_blocked_shot") > 0
+	end,
+	on_event = function (statistics_db, stats_id, template_data, event_name, event_data)
+		local player = event_data[1]
+
+		if not player.local_player then
+			return
+		end
+
+		local attacker_unit = event_data[2]
+		local breed = Unit.alive(attacker_unit) and Unit.get_data(attacker_unit, "breed")
+
+		if not breed or breed.name ~= "ratling_gunner" then
+			return
+		end
+
+		statistics_db:increment_stat(stats_id, "ratling_gunner_blocked_shot")
 	end,
 }
 AchievementTemplates.achievements.chaos_corruptor_sorcerer_1 = {

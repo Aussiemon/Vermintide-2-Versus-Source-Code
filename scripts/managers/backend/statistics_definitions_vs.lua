@@ -6,19 +6,12 @@ local session = StatisticsDefinitions.session
 local player = StatisticsDefinitions.player
 local unit_test = StatisticsDefinitions.unit_test
 
-player.damage_dealt_pactsworn = {
+player.vs_damage_dealt_to_pactsworn = {
 	sync_on_hot_join = true,
 	value = 0,
 }
-player.kills_heroes = {
-	sync_on_hot_join = true,
-	value = 0,
-}
-player.damage_dealt_heroes = {
-	sync_on_hot_join = true,
-	value = 0,
-}
-player.disables_per_breed = {}
+player.vs_disables_per_breed = {}
+player.vs_knockdowns_per_breed = {}
 player.vs_badge_knocked_down_target_per_breed = {}
 player.vs_badge_escaped_death_per_breed = {}
 player.vs_badge_double_kill_per_breed = {}
@@ -60,7 +53,12 @@ player.vs_badge_mob_damage_per_breed = {}
 player.vs_badge_warpfire_ambush_per_breed = {}
 
 for breed_name, breed in pairs(PlayerBreeds) do
-	player.disables_per_breed[breed_name] = {
+	player.vs_disables_per_breed[breed_name] = {
+		sync_on_hot_join = true,
+		value = 0,
+		name = breed_name,
+	}
+	player.vs_knockdowns_per_breed[breed_name] = {
 		sync_on_hot_join = true,
 		value = 0,
 		name = breed_name,
@@ -418,3 +416,222 @@ for breed_name, breed in pairs(PlayerBreeds) do
 		database_name = db_vs_badge_warpfire_ambush_per_breed_name,
 	}
 end
+
+player.vs_game_won = {
+	database_name = "vs_game_won",
+	source = "player_data",
+	value = 0,
+}
+player.vs_game_lost = {
+	database_name = "vs_game_lost",
+	source = "player_data",
+	value = 0,
+}
+player.vs_hero_monster_kill = {
+	database_name = "vs_hero_monster_kill",
+	source = "player_data",
+	value = 0,
+}
+player.vs_hero_revive = {
+	database_name = "vs_hero_revive",
+	source = "player_data",
+	value = 0,
+}
+player.vs_clutch_revive = {
+	name = "vs_clutch_revive",
+	value = 0,
+}
+player.vs_air_gutter_runner = {
+	name = "vs_air_gutter_runner",
+	value = 0,
+}
+player.vs_gas_combo = {
+	name = "vs_gas_combo",
+	value = 0,
+}
+player.vs_globe_damage = {
+	name = "vs_globe_damage",
+	value = 0,
+}
+player.vs_bile_troll_vomit = {
+	database_name = "vs_bile_troll_vomit",
+	source = "player_data",
+	value = 0,
+}
+player.vs_kill_ko_hero = {
+	name = "vs_kill_ko_hero",
+	value = 0,
+}
+player.vs_kill_hoisted_hero = {
+	name = "vs_kill_hoisted_hero",
+	value = 0,
+}
+player.vs_pounce_heroes = {
+	database_name = "vs_pounce_heroes",
+	source = "player_data",
+	value = 0,
+}
+player.vs_hoist_heroes = {
+	database_name = "vs_hoist_heroes",
+	source = "player_data",
+	value = 0,
+}
+player.vs_gas_combo_pounce = {
+	name = "vs_gas_combo_pounce",
+	value = 0,
+}
+player.vs_break_hero_shield = {
+	name = "vs_break_hero_shield",
+	value = 0,
+}
+player.vs_hero_obj_reach = {
+	database_name = "vs_hero_obj_reach",
+	source = "player_data",
+	value = 0,
+}
+player.vs_hero_obj_capture = {
+	database_name = "vs_hero_obj_capture",
+	source = "player_data",
+	value = 0,
+}
+player.vs_hero_obj_safezone = {
+	database_name = "vs_hero_obj_safezone",
+	source = "player_data",
+	value = 0,
+}
+player.vs_hero_obj_barrels = {
+	database_name = "vs_hero_obj_barrels",
+	source = "player_data",
+	value = 0,
+}
+player.vs_hero_obj_chains = {
+	database_name = "vs_hero_obj_chains",
+	source = "player_data",
+	value = 0,
+}
+player.vs_drag_heroes = {
+	database_name = "vs_drag_heroes",
+	source = "player_data",
+	value = 0,
+}
+player.vs_disable_reviving_hero = {
+	name = "vs_disable_reviving_hero",
+	value = 0,
+}
+player.vs_kill_invisible_hero = {
+	name = "vs_kill_invisible_hero",
+	value = 0,
+}
+player.vs_hero_rescue = {
+	database_name = "vs_hero_rescue",
+	source = "player_data",
+	value = 0,
+}
+player.vs_push_hero_off_map = {
+	name = "vs_push_hero_off_map",
+	value = 0,
+}
+
+local db_vs_hero_eliminations = "vs_hero_eliminations"
+
+player[db_vs_hero_eliminations] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_hero_eliminations,
+}
+
+local db_vs_packmaster_eliminations = "vs_packmaster_eliminations"
+
+player[db_vs_packmaster_eliminations] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_packmaster_eliminations,
+}
+
+local db_vs_gutter_runner_eliminations = "vs_gutter_runner_eliminations"
+
+player[db_vs_gutter_runner_eliminations] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_gutter_runner_eliminations,
+}
+
+local db_vs_poison_wind_globadier_eliminations = "vs_poison_wind_globadier_eliminations"
+
+player[db_vs_poison_wind_globadier_eliminations] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_poison_wind_globadier_eliminations,
+}
+
+local db_vs_ratling_gunner_eliminations = "vs_ratling_gunner_eliminations"
+
+player[db_vs_ratling_gunner_eliminations] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_ratling_gunner_eliminations,
+}
+
+local db_vs_warpfire_thrower_eliminations = "vs_warpfire_thrower_eliminations"
+
+player[db_vs_warpfire_thrower_eliminations] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_warpfire_thrower_eliminations,
+}
+
+local db_vs_chaos_troll_eliminations = "vs_chaos_troll_eliminations"
+
+player[db_vs_chaos_troll_eliminations] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_chaos_troll_eliminations,
+}
+
+local db_vs_packmaster_damage = "vs_packmaster_damage"
+
+player[db_vs_packmaster_damage] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_packmaster_damage,
+}
+
+local db_vs_gutter_runner_damage = "vs_gutter_runner_damage"
+
+player[db_vs_gutter_runner_damage] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_gutter_runner_damage,
+}
+
+local db_vs_poison_wind_globadier_damage = "vs_poison_wind_globadier_damage"
+
+player[db_vs_poison_wind_globadier_damage] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_poison_wind_globadier_damage,
+}
+
+local db_vs_ratling_gunner_damage = "vs_ratling_gunner_damage"
+
+player[db_vs_ratling_gunner_damage] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_ratling_gunner_damage,
+}
+
+local db_vs_warpfire_thrower_damage = "vs_warpfire_thrower_damage"
+
+player[db_vs_warpfire_thrower_damage] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_warpfire_thrower_damage,
+}
+
+local db_vs_chaos_troll_damage = "vs_chaos_troll_damage"
+
+player[db_vs_chaos_troll_damage] = {
+	source = "player_data",
+	value = 0,
+	database_name = db_vs_chaos_troll_damage,
+}

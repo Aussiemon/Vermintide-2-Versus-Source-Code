@@ -8,23 +8,28 @@ PeerStates.Connecting = {
 	approved_for_joining = false,
 	on_enter = function (self, previous_state)
 		Network.write_dump_tag(string.format("%s connecting", self.peer_id))
+
+		if self.peer_id ~= Network.peer_id() then
+			Managers.mechanism:remote_client_connecting(self.peer_id)
+		end
+
 		self.server.network_transmit:send_rpc("rpc_notify_connected", self.peer_id)
 
 		self.loaded_level = nil
 		self.resend_timer = time_between_resend_rpc_notify_connected
 		self.resend_post_game_timer = time_between_resend_rpc_notify_connected
 	end,
-	rpc_notify_lobby_joined = function (self, wanted_profile_index, wanted_career_index, wanted_party_index, clan_tag, account_id)
+	rpc_notify_lobby_joined = function (self, wanted_profile_index, wanted_career_index, requested_party_index, clan_tag, account_id)
 		self.num_players = 1
 		self.has_received_rpc_notify_lobby_joined = true
 		self.clan_tag = clan_tag
 		self.account_id = account_id
 
-		printf("[PSM] Peer %s joined. Want to use profile index %q and join party %q", tostring(self.peer_id), tostring(wanted_profile_index), tostring(wanted_party_index))
+		printf("[PSM] Peer %s joined. Want to use profile index %q and join party %q", tostring(self.peer_id), tostring(wanted_profile_index), tostring(requested_party_index))
 
 		self.wanted_profile_index = wanted_profile_index
 		self.wanted_career_index = wanted_career_index
-		self.wanted_party_index = wanted_party_index
+		self.requested_party_index = requested_party_index
 
 		self.server:peer_connected(self.peer_id)
 	end,
@@ -74,14 +79,18 @@ PeerStates.Connecting = {
 
 			if resend_rpc_notify_connected then
 				if PEER_ID_TO_CHANNEL[self.peer_id] then
-					self.server.network_transmit:send_rpc("rpc_notify_connected", self.peer_id)
+					local game_mode = Managers.state.game_mode and Managers.state.game_mode:game_mode()
+
+					if game_mode and game_mode:is_joinable() then
+						self.server.network_transmit:send_rpc("rpc_notify_connected", self.peer_id)
+
+						self.resend_timer = time_between_resend_rpc_notify_connected
+					end
 				else
 					print("PeerState.Connecting lost connection, cannot send rpc_notify_connected")
 
 					return PeerStates.Disconnecting
 				end
-
-				self.resend_timer = time_between_resend_rpc_notify_connected
 			end
 		end
 
@@ -252,7 +261,9 @@ PeerStates.LoadingProfilePackages = {
 			self.wanted_profile_index = old_profile_index
 			self.wanted_career_index = old_career_index
 		elseif wanted_profile_index == 0 then
-			self.wanted_profile_index, self.wanted_career_index = profile_synchronizer:get_first_free_profile()
+			local any_party = self.requested_party_index or 1
+
+			self.wanted_profile_index, self.wanted_career_index = profile_synchronizer:get_first_free_profile(any_party)
 		elseif is_tutorial then
 			-- Nothing
 		else
@@ -299,6 +310,9 @@ PeerStates.WaitingForEnterGame = {
 
 					local game_session = server.game_session
 					local all_synced = server.profile_synchronizer:is_peer_all_synced(peer_id)
+
+					all_synced = all_synced and server:is_network_state_fully_synced_for_peer(peer_id)
+
 					local in_session = server.game_network_manager:in_game_session()
 
 					if game_session and in_session and all_synced then
@@ -330,7 +344,7 @@ PeerStates.WaitingForGameObjectSync = {
 	update = function (self, dt)
 		local peer_id = self.peer_id
 
-		if self.server.peers_completed_game_object_sync[peer_id] then
+		if self.server:has_peer_synced_game_objects(peer_id) then
 			if not self.game_started then
 				if IS_XB1 then
 					self.server.network_transmit:send_rpc("rpc_game_started", self.peer_id, Managers.account:round_id() or "")
@@ -348,13 +362,9 @@ PeerStates.WaitingForGameObjectSync = {
 				Managers.player:add_remote_player(self.peer_id, player_controlled, local_player_id, self.clan_tag, self.account_id)
 			end
 
-			local wanted_party_index = self.wanted_party_index or 0
+			local requested_party_index = self.requested_party_index
 
-			Managers.state.game_mode:player_entered_game_session(self.peer_id, 1, wanted_party_index)
-
-			if Managers.venture.challenge then
-				Managers.venture.challenge:player_entered_game_session(self.peer_id, 1)
-			end
+			Managers.state.game_mode:player_entered_game_session(self.peer_id, 1, requested_party_index)
 
 			return PeerStates.WaitingForPlayers
 		end
@@ -470,17 +480,11 @@ PeerStates.Disconnecting = {
 			Managers.state.game_mode:player_left_game_session(peer_id, local_player_id)
 		end
 
-		if Managers.venture.challenge then
-			Managers.venture.challenge:player_left_game_session(peer_id, local_player_id)
-		end
-
+		Managers.mechanism:remote_client_disconnected(peer_id)
 		Managers.party:server_peer_left_session(peer_id, previous_state.approved_for_joining, previous_state.state_name)
-
-		server.peers_completed_game_object_sync[peer_id] = nil
+		server:set_peer_synced_game_objects(peer_id, false)
 	end,
 	update = function (self, dt)
-		local peer_id = self.peer_id
-
 		return PeerStates.Disconnected
 	end,
 	on_exit = function (self, new_state)
@@ -500,6 +504,7 @@ PeerStates.Disconnected = {
 			local enemy_package_loader = Managers.level_transition_handler.enemy_package_loader
 
 			enemy_package_loader:client_disconnected(peer_id)
+			Managers.mechanism:remote_client_disconnected(peer_id)
 		end
 
 		Managers.account:update_presence()

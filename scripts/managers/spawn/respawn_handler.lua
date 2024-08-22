@@ -678,8 +678,6 @@ RespawnHandler.find_best_respawn_point = function (self, reserve_best, evaluate_
 			end
 		end
 
-		respawn_data._score = score
-
 		if not best_respawn or best_score < score or best_score == score and (score < 3 and respawn_dist > best_respawn.distance_through_level and respawn_dist < preferred_spawn_travel_dist or score >= 3 and respawn_dist < best_respawn.distance_through_level) then
 			best_score = score
 			best_respawn = respawn_data

@@ -193,8 +193,8 @@ StatisticsUtil.register_kill = function (victim_unit, damage_data, statistics_db
 
 				local local_player = Managers.player:local_player()
 
-				if Managers.level_transition_handler:get_current_game_mode() == "versus" and victim_player and attacker_player == local_player then
-					Managers.state.event:trigger("add_kill_confirmation", attacker_side:name(), victim_player)
+				if victim_player and attacker_player == local_player then
+					Managers.state.event:trigger("add_player_kill_confirmation", attacker_side:name(), victim_player)
 				end
 			end
 
@@ -222,7 +222,7 @@ StatisticsUtil.register_kill = function (victim_unit, damage_data, statistics_db
 				local attack_type = damage_data[DamageDataIndex.ATTACK_TYPE]
 
 				if attack_type then
-					slot_type = not (attack_type ~= "heavy_attack" and attack_type ~= "light_attack") and "melee" or "ranged"
+					slot_type = (attack_type == "heavy_attack" or attack_type == "light_attack") and "melee" or "ranged"
 				end
 
 				if not slot_type then
@@ -308,6 +308,12 @@ StatisticsUtil.register_knockdown = function (victim_unit, damage_data, statisti
 	local attacker_unique_id = victim_damage_data.attacker_unique_id
 	local attacker_player = player_manager:player_from_unique_id(attacker_unique_id)
 
+	if attacker_player and is_server and breed_killed and attacker_player ~= victim_player then
+		local stats_id = attacker_player:stats_id()
+
+		statistics_db:increment_stat(stats_id, "vs_knockdowns_per_breed", breed_killed.name)
+	end
+
 	if breed_killed and breed_attacker then
 		local print_message = breed_killed.awards_positive_reinforcement_message
 
@@ -325,12 +331,11 @@ StatisticsUtil.register_knockdown = function (victim_unit, damage_data, statisti
 
 			Managers.state.event:trigger("add_coop_feedback_kill", stats_id .. breed_killed_name, local_human, predicate, breed_attacker_name, breed_killed_name)
 
-			if Managers.level_transition_handler:get_current_game_mode() == "versus" then
-				local local_player = Managers.player:local_player()
+			local local_player = Managers.player:local_player()
 
-				if victim_player and attacker_player == local_player then
-					Managers.state.event:trigger("add_knock_confirmation", victim_player)
-				end
+			if victim_player and attacker_player == local_player then
+				Managers.state.event:trigger("add_player_knock_confirmation", victim_player)
+				Managers.state.achievement:trigger_event("register_knockdown", stats_id, victim_unit, attacker_player, breed_killed)
 			end
 		end
 	end
@@ -553,8 +558,8 @@ StatisticsUtil.register_damage = function (victim_unit, damage_data, statistics_
 
 				local is_enemy, attacker_side = Managers.state.side:is_enemy(attacker_unit, victim_unit)
 
-				if is_enemy and attacker_side:name() == "heroes" then
-					statistics_db:modify_stat_by_amount(stats_id, "damage_dealt_pactsworn", damage_amount)
+				if is_enemy and attacker_side:name() == "heroes" and Managers.mechanism:current_mechanism_name() == "versus" then
+					statistics_db:modify_stat_by_amount(stats_id, "vs_damage_dealt_to_pactsworn", damage_amount)
 				end
 
 				if target_breed.is_player and is_enemy and attacker_side.show_damage_feedback and HEALTH_ALIVE[victim_unit] then
@@ -756,6 +761,12 @@ StatisticsUtil.register_complete_level = function (statistics_db)
 			end
 		end
 	end
+end
+
+StatisticsUtil.register_versus_game_won = function (statistics_db, player, game_won)
+	local stats_id = player:stats_id()
+
+	statistics_db:increment_stat(stats_id, game_won and "vs_game_won" or "vs_game_lost")
 end
 
 StatisticsUtil.register_weave_complete = function (statistics_db, player, is_quick_game, difficulty_key)
@@ -1174,7 +1185,9 @@ StatisticsUtil.register_complete_survival_level = function (statistics_db)
 end
 
 StatisticsUtil.register_disable = function (disabler_player, statistics_db, disabler_breed_name)
-	local stats_id = disabler_player:stats_id()
+	if Managers.mechanism:current_mechanism_name() == "versus" then
+		local stats_id = disabler_player:stats_id()
 
-	statistics_db:increment_stat(stats_id, "disables_per_breed", disabler_breed_name)
+		statistics_db:increment_stat(stats_id, "vs_disables_per_breed", disabler_breed_name)
+	end
 end

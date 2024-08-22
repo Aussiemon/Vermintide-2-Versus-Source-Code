@@ -6,7 +6,6 @@ PlayerUnitFirstPerson = class(PlayerUnitFirstPerson)
 script_data.disable_aim_lead_rig_motion = script_data.disable_aim_lead_rig_motion or Development.parameter("disable_aim_lead_rig_motion") or true
 
 local Unit_alive = Unit.alive
-local Unit_animation_event = Unit.animation_event
 local Unit_animation_find_variable = Unit.animation_find_variable
 local Unit_animation_set_variable = Unit.animation_set_variable
 local MOUSE_SCALE = 0.001
@@ -171,13 +170,13 @@ PlayerUnitFirstPerson.set_state_machine = function (self, new_state_machine)
 	Unit.set_animation_state_machine_blend_base_layer(unit, new_state_machine)
 
 	if self.profile.supports_motion_sickness_modes then
-		Unit_animation_event(unit, self._head_bob and "enable_headbob" or "disable_headbob")
-		Unit_animation_event(unit, "motion_sickness_hit_" .. self._motion_sickness_hit)
-		Unit_animation_event(unit, "motion_sickness_swing_" .. self._motion_sickness_swing)
-		Unit_animation_event(unit, "motion_sickness_misc_" .. self._motion_sickness_misc_cam)
+		Unit.animation_event(unit, self._head_bob and "enable_headbob" or "disable_headbob")
+		Unit.animation_event(unit, "motion_sickness_hit_" .. self._motion_sickness_hit)
+		Unit.animation_event(unit, "motion_sickness_swing_" .. self._motion_sickness_swing)
+		Unit.animation_event(unit, "motion_sickness_misc_" .. self._motion_sickness_misc_cam)
 
 		if self._motion_sickness_swing == "off" and self._motion_sickness_hit == "off" then
-			Unit_animation_event(unit, "motion_sickness_both_muted")
+			Unit.animation_event(unit, "motion_sickness_both_muted")
 		end
 	end
 
@@ -202,7 +201,7 @@ PlayerUnitFirstPerson.update_game_options = function (self)
 	local head_bob = Application.user_setting("head_bob")
 
 	if self._head_bob ~= head_bob then
-		Unit_animation_event(self.first_person_unit, head_bob and "enable_headbob" or "disable_headbob")
+		Unit.animation_event(self.first_person_unit, head_bob and "enable_headbob" or "disable_headbob")
 
 		self._head_bob = head_bob
 	end
@@ -213,7 +212,7 @@ PlayerUnitFirstPerson.update_game_options = function (self)
 		if self._motion_sickness_hit ~= motion_sickness_hit then
 			local event_name = "motion_sickness_hit_" .. motion_sickness_hit
 
-			Unit_animation_event(self.first_person_unit, event_name)
+			Unit.animation_event(self.first_person_unit, event_name)
 
 			self._motion_sickness_hit = motion_sickness_hit
 		end
@@ -223,13 +222,13 @@ PlayerUnitFirstPerson.update_game_options = function (self)
 		if self._motion_sickness_swing ~= motion_sickness_swing then
 			local event_name = "motion_sickness_swing_" .. motion_sickness_swing
 
-			Unit_animation_event(self.first_person_unit, event_name)
+			Unit.animation_event(self.first_person_unit, event_name)
 
 			self._motion_sickness_swing = motion_sickness_swing
 		end
 
 		if motion_sickness_swing == "off" and motion_sickness_hit == "off" then
-			Unit_animation_event(self.first_person_unit, "motion_sickness_both_muted")
+			Unit.animation_event(self.first_person_unit, "motion_sickness_both_muted")
 		end
 
 		local motion_sickness_misc_cam = Application.user_setting("motion_sickness_misc_cam")
@@ -237,7 +236,7 @@ PlayerUnitFirstPerson.update_game_options = function (self)
 		if self._motion_sickness_misc_cam ~= motion_sickness_misc_cam then
 			local event_name = "motion_sickness_misc_" .. motion_sickness_misc_cam
 
-			Unit_animation_event(self.first_person_unit, event_name)
+			Unit.animation_event(self.first_person_unit, event_name)
 
 			self._motion_sickness_misc_cam = motion_sickness_misc_cam
 		end
@@ -404,18 +403,10 @@ PlayerUnitFirstPerson._draw_smart_objects = function (self, jump_data, smart_obj
 		drawer:sphere(control_points[1], 0.02, debug_color)
 	end
 
-	if false then
-		-- Nothing
-	end
-
 	is_position_on_navmesh = GwNavQueries.triangle_from_position(nav_world, control_points[2])
 
 	if is_position_on_navmesh then
 		drawer:sphere(control_points[2], 0.02, debug_color)
-	end
-
-	if false then
-		-- Nothing
 	end
 end
 
@@ -801,7 +792,7 @@ PlayerUnitFirstPerson.set_weapon_sway_settings = function (self, weapon_sway_set
 end
 
 PlayerUnitFirstPerson.play_animation_event = function (self, anim_event)
-	Unit_animation_event(self.first_person_unit, anim_event)
+	Unit.animation_event(self.first_person_unit, anim_event)
 end
 
 PlayerUnitFirstPerson.set_aim_constraint_target = function (self, id, target)
@@ -1048,7 +1039,7 @@ PlayerUnitFirstPerson.animation_set_variable = function (self, variable_name, va
 end
 
 PlayerUnitFirstPerson.animation_event = function (self, event)
-	Unit_animation_event(self.first_person_unit, event)
+	Unit.animation_event(self.first_person_unit, event)
 end
 
 PlayerUnitFirstPerson.create_screen_particles = function (self, name, pos, ...)
@@ -1166,7 +1157,7 @@ PlayerUnitFirstPerson.enable_rig_movement = function (self)
 	if not self._rig_movement_enabled then
 		self._rig_movement_enabled = true
 
-		Unit_animation_event(self.first_person_unit, "activate_aim")
+		Unit.animation_event(self.first_person_unit, "activate_aim")
 	end
 end
 
@@ -1174,7 +1165,7 @@ PlayerUnitFirstPerson.disable_rig_movement = function (self)
 	if self._rig_movement_enabled then
 		self._rig_movement_enabled = false
 
-		Unit_animation_event(self.first_person_unit, "deactivate_aim")
+		Unit.animation_event(self.first_person_unit, "deactivate_aim")
 	end
 end
 
@@ -1345,29 +1336,34 @@ end
 
 local weapon_sway_lerp_variables = {
 	vs_packmaster = {
-		0.05,
-		0.05,
-		0.05,
+		5,
+		5,
+		5,
 	},
 	vs_gutter_runner = {
-		0.05,
-		0.05,
-		0.05,
+		5,
+		5,
+		5,
 	},
 	vs_poison_wind_globadier = {
-		0.05,
-		0.05,
-		0.05,
+		5,
+		5,
+		5,
 	},
 	vs_warpfire_thrower = {
-		0.05,
-		0.05,
-		0.05,
+		5,
+		5,
+		5,
 	},
 	vs_ratling_gunner = {
-		0.05,
-		0.05,
-		0.05,
+		5,
+		5,
+		5,
+	},
+	vs_chaos_troll = {
+		5,
+		5,
+		5,
 	},
 }
 local math_min = math.min
@@ -1441,7 +1437,7 @@ PlayerUnitFirstPerson._update_state_machine_variables = function (self, dt, t)
 	local move_z = current_velocity.z
 	local profile = self.profile
 	local profile_name = profile.display_name
-	local lerp_move_x, lerp_move_y, lerp_move_z = 0.05, 0.05, 0.05
+	local lerp_move_x, lerp_move_y, lerp_move_z = 5, 5, 5
 	local lerp_variables = weapon_sway_lerp_variables[profile_name]
 
 	if lerp_variables then
@@ -1451,20 +1447,20 @@ PlayerUnitFirstPerson._update_state_machine_variables = function (self, dt, t)
 	end
 
 	if move_x <= 0.3 then
-		lerp_move_x = 0.075
+		lerp_move_x = 7.5
 	end
 
 	if move_y <= 0.3 then
-		lerp_move_y = 0.075
+		lerp_move_y = 7.5
 	end
 
 	if move_z <= 0.3 then
-		lerp_move_z = 0.075
+		lerp_move_z = 7.5
 	end
 
-	move_y = math.clamp(math.lerp(self._move_x, move_x, lerp_move_x), -1, 1)
-	move_x = math.clamp(math.lerp(self._move_y, move_y, lerp_move_y), -1, 1)
-	move_z = math.clamp(math.lerp(self._move_z, move_z, lerp_move_z), -1, 1)
+	move_y = math.clamp(math.lerp(self._move_x, move_x, lerp_move_x * dt), -1, 1)
+	move_x = math.clamp(math.lerp(self._move_y, move_y, lerp_move_y * dt), -1, 1)
+	move_z = math.clamp(math.lerp(self._move_z, move_z, lerp_move_z * dt), -1, 1)
 	self._move_y = move_y
 	self._move_x = move_x
 	self._move_z = move_z

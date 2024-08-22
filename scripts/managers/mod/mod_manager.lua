@@ -27,7 +27,7 @@ ModManager.init = function (self, boot_gui)
 		Presence.set_presence("status", in_modded_realm and "Modded Realm" or "Official Realm")
 	end
 
-	ModShim.start()
+	self._mod_shim = ModShim:new()
 
 	local has_enabled_mods = self:_has_enabled_mods()
 	local is_bundled = Application.bundled()
@@ -170,6 +170,11 @@ ModManager.update = function (self, dt)
 				mod.object = object or {}
 
 				self:_run_callback(mod, "init", self._reload_data[mod.id])
+
+				if self._mod_shim then
+					self._mod_shim:mod_post_create(mod)
+				end
+
 				self:print("info", "%s loaded.", name)
 
 				self._state = self:_load_mod(self._mod_load_index + 1)
@@ -188,6 +193,10 @@ ModManager.update = function (self, dt)
 	if old_state ~= self._state then
 		self:print("info", "%s -> %s", old_state, self._state)
 	end
+end
+
+ModManager.currently_loading_mod = function (self)
+	return self._mods[self._mod_load_index]
 end
 
 ModManager.all_mods_loaded = function (self)
@@ -294,20 +303,23 @@ ModManager._build_mod_table = function (self, mod_handles)
 		end
 
 		local metadata = mod_metadata[id]
+		local ok, timestamp
 
-		if enabled and metadata then
-			local ok, timestamp = SteamUGC.get_item_install_info(id)
+		if enabled then
+			ok, timestamp = SteamUGC.get_item_install_info(id)
 
-			if ok then
-				local iso8601 = os.date("!%Y%m%dT%H%M%SZ", timestamp)
+			if metadata then
+				if ok then
+					local iso8601 = os.date("!%Y%m%dT%H%M%SZ", timestamp)
 
-				if iso8601 < metadata then
+					if iso8601 < metadata then
+						enabled = false
+					end
+				else
+					printf("[ModManager] Could not get item install info for item %q", id)
+
 					enabled = false
 				end
-			else
-				printf("[ModManager] Could not get item install info for item %q", id)
-
-				enabled = false
 			end
 		end
 
@@ -317,8 +329,10 @@ ModManager._build_mod_table = function (self, mod_handles)
 			id = id,
 			name = mod_data.name,
 			enabled = enabled,
+			timestamp = timestamp,
 			handle = handle,
 			loaded_packages = {},
+			last_updated = mod_data.last_updated,
 		}
 	end
 

@@ -36,6 +36,18 @@ TeamPreviewer.on_enter = function (self)
 	return
 end
 
+TeamPreviewer.loading_done = function (self)
+	local previewers = self.hero_previewers
+
+	for i = 1, #previewers do
+		if not previewers[i]:loading_done() then
+			return false
+		end
+	end
+
+	return true
+end
+
 TeamPreviewer.update = function (self, dt, t)
 	local previewers = self.hero_previewers
 
@@ -115,14 +127,12 @@ TeamPreviewer.cb_hero_unit_spawned_skin_preview = function (self, hero_previewer
 	end
 
 	if weapon_slot then
-		hero_previewer:wield_weapon_slot(weapon_slot)
+		hero_previewer:wield_weapon_slot(weapon_slot, hero_data)
 	end
 
 	local preview_idle_animation = hero_data.preview_animation or "idle"
 
-	if preview_idle_animation then
-		hero_previewer:play_character_animation(preview_idle_animation)
-	end
+	hero_previewer:play_character_animation(preview_idle_animation)
 end
 
 TeamPreviewer.update_hero_arrangement = function (self, hero_arrangement, lookat_target, orientate_towards_camera)

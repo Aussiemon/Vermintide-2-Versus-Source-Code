@@ -1,5 +1,7 @@
 ﻿-- chunkname: @scripts/unit_extensions/objectives/versus_capture_point_objective_extension.lua
 
+local versus_capture_point_objective_extension_testify = script_data.testify and require("scripts/unit_extensions/objectives/testify/versus_capture_point_objective_extension_testify")
+
 VersusCapturePointObjectiveExtension = class(VersusCapturePointObjectiveExtension, VersusBaseObjectiveExtension)
 VersusCapturePointObjectiveExtension.NAME = "VersusCapturePointObjectiveExtension"
 
@@ -32,6 +34,10 @@ VersusCapturePointObjectiveExtension._activate = function (self, game_object_id,
 	if not self._is_server then
 		self._percentage = 0
 	end
+
+	if not DEDICATED_SERVER then
+		self:play_local_unit_sound("Play_versus_objective_capture_world_loop")
+	end
 end
 
 VersusCapturePointObjectiveExtension._deactivate = function (self)
@@ -40,6 +46,7 @@ VersusCapturePointObjectiveExtension._deactivate = function (self)
 
 		self:play_local_sound(complete_event)
 		self:play_local_unit_sound("Stop_versus_objective_capture_loop")
+		self:play_local_unit_sound("Stop_versus_objective_capture_ticking_loop")
 	end
 end
 
@@ -84,28 +91,31 @@ VersusCapturePointObjectiveExtension._client_update = function (self, dt, t)
 	self:_update_local_player(dt, t, previous_percentage)
 end
 
+VersusCapturePointObjectiveExtension.update_testify = function (self, dt, t)
+	Testify:poll_requests_through_handler(versus_capture_point_objective_extension_testify, self)
+end
+
 VersusCapturePointObjectiveExtension._update_local_player = function (self, dt, t, previous_percentage)
 	local percentage_done = self:get_percentage_done()
 
 	if previous_percentage ~= percentage_done then
 		Material.set_scalar(self._material, "radial_cutoff", percentage_done)
-
-		if self._local_side:name() == "heroes" then
-			if self:_is_local_player_inside() then
-				if not self._local_player_entered then
-					self._local_player_entered = true
-
-					self:play_local_unit_sound("Play_versus_objective_capture_loop")
-				end
-			elseif self._local_player_entered then
-				self._local_player_entered = false
-
-				self:play_local_unit_sound("Stop_versus_objective_capture_loop")
-			end
-
-			self._audio_system:set_global_parameter("versus_checkpoint", percentage_done * 100)
-		end
+		self._audio_system:set_global_parameter("versus_checkpoint", percentage_done * 100)
 	end
+
+	if self._local_side:name() ~= "heroes" then
+		return
+	end
+
+	local local_player_inside = self:_is_local_player_inside()
+
+	if local_player_inside and not self._local_player_entered then
+		self:play_local_unit_sound("Play_versus_objective_capture_ticking_loop")
+	elseif not local_player_inside and self._local_player_entered then
+		self:play_local_unit_sound("Stop_versus_objective_capture_ticking_loop")
+	end
+
+	self._local_player_entered = local_player_inside
 end
 
 VersusCapturePointObjectiveExtension._is_local_player_inside = function (self)

@@ -112,6 +112,10 @@ settings.unlock_settings = {
 		class = "UnlockDlc",
 		id = "2585630",
 		requires_restart = true,
+		always_unlocked_game_app_ids = {
+			2792380,
+			1270350,
+		},
 	},
 	shovel_upgrade = {
 		class = "UnlockDlc",

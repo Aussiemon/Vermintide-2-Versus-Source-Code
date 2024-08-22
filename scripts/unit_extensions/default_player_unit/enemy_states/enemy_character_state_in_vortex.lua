@@ -15,8 +15,17 @@ EnemyCharacterStateInVortex.on_enter = function (self, unit, input, dt, context,
 	local status_extension = self._status_extension
 	local vortex_unit = status_extension.in_vortex_unit
 	local vortex_go_id = unit_storage:go_id(vortex_unit)
-	local vortex_extension = ScriptUnit.extension(vortex_unit, "ai_supplementary_system")
-	local vortex_template = vortex_extension.vortex_template
+	local chaos_vortex_extension = ScriptUnit.has_extension(vortex_unit, "ai_supplementary_system")
+	local summoned_vortex_extension = ScriptUnit.has_extension(vortex_unit, "area_damage_system")
+	local vortex_template
+
+	if chaos_vortex_extension then
+		vortex_template = chaos_vortex_extension.vortex_template
+	elseif summoned_vortex_extension then
+		vortex_template = summoned_vortex_extension.vortex_template
+	else
+		error("[EnemyCharacterStateInVortex] Could not deduce vortex template.")
+	end
 
 	self.vortex_unit = vortex_unit
 	self.vortex_unit_go_id = vortex_go_id
@@ -24,12 +33,13 @@ EnemyCharacterStateInVortex.on_enter = function (self, unit, input, dt, context,
 	local player_actions_allowed = vortex_template.player_actions_allowed
 
 	self.vortex_full_inner_radius = vortex_template.full_inner_radius
+	self.keep_enemies_within_radius = vortex_template.keep_enemies_within_radius
 	self.ascend_speed = vortex_template.player_ascend_speed
 	self.rotation_speed = vortex_template.player_rotation_speed
 	self.radius_change_speed = vortex_template.player_radius_change_speed
-	self.force_player_look_dir_to_spinn_dir = vortex_template.force_player_look_dir_to_spinn_dir
 	self.player_actions_allowed = player_actions_allowed
-	self.vortex_max_height = vortex_template.max_height
+	self.vortex_max_height = vortex_template.max_height_player_target or vortex_template.max_height
+	self.post_vortex_buff = vortex_template.post_vortex_buff
 
 	local interactor_extension = self._interactor_extension
 
@@ -87,9 +97,11 @@ EnemyCharacterStateInVortex.on_exit = function (self, unit, input, dt, context, 
 
 		self.screenspace_effect_particle_id = nil
 
-		local buff_system = Managers.state.entity:system("buff_system")
+		if self.post_vortex_buff then
+			local buff_system = Managers.state.entity:system("buff_system")
 
-		buff_system:add_buff(unit, "vortex_base", unit)
+			buff_system:add_buff(unit, self.post_vortex_buff, unit)
+		end
 
 		if not self.player_actions_allowed then
 			first_person_extension:unhide_weapons("in_vortex")
@@ -107,13 +119,13 @@ end
 EnemyCharacterStateInVortex.update_spin_velocity = function (self, unit, vortex_unit, vortex_unit_go_id, dt)
 	local game = self.game
 	local radius_percentage = GameSession.game_object_field(game, vortex_unit_go_id, "inner_radius_percentage")
-	local wanted_inner_radius = self.vortex_full_inner_radius * radius_percentage * 0.75
+	local wanted_inner_radius = (self.keep_enemies_within_radius or self.vortex_full_inner_radius * 0.75) * radius_percentage
 	local ascend_speed = self.ascend_speed
 	local rotation_speed = self.rotation_speed
 	local radius_change_speed = self.radius_change_speed
 	local unit_position = POSITION_LOOKUP[unit]
 	local vortex_position = POSITION_LOOKUP[vortex_unit]
-	local velocity, new_radius, new_height, spinn_dir = LocomotionUtils.get_vortex_spin_velocity(unit_position, vortex_position, wanted_inner_radius, Vector3.up(), rotation_speed, radius_change_speed, ascend_speed, dt)
+	local velocity, _, new_height = LocomotionUtils.get_vortex_spin_velocity(unit_position, vortex_position, wanted_inner_radius, Vector3.up(), rotation_speed, radius_change_speed, ascend_speed, dt)
 	local height_percentage = GameSession.game_object_field(game, vortex_unit_go_id, "height_percentage")
 	local vortex_height = self.vortex_max_height * height_percentage
 
@@ -125,8 +137,6 @@ EnemyCharacterStateInVortex.update_spin_velocity = function (self, unit, vortex_
 
 	locomotion_extension:set_forced_velocity(velocity)
 	locomotion_extension:set_wanted_velocity(velocity)
-
-	return spinn_dir
 end
 
 EnemyCharacterStateInVortex.update = function (self, unit, input, dt, context, t)
@@ -171,7 +181,7 @@ EnemyCharacterStateInVortex.update = function (self, unit, input, dt, context, t
 	end
 
 	if Unit.alive(self.vortex_unit) then
-		local spin_direction = self:update_spin_velocity(unit, self.vortex_unit, self.vortex_unit_go_id, dt)
+		self:update_spin_velocity(unit, self.vortex_unit, self.vortex_unit_go_id, dt)
 	end
 
 	local player = self._player
@@ -179,10 +189,4 @@ EnemyCharacterStateInVortex.update = function (self, unit, input, dt, context, t
 	local inventory_extension = self._inventory_extension
 
 	CharacterStateHelper.look(input_extension, viewport_name, first_person_extension, status_extension, inventory_extension)
-
-	if self.force_player_look_dir_to_spinn_dir and rot then
-		local rot = Quaternion.look(-spin_direction, Vector3.up())
-
-		first_person_extension:force_look_rotation(rot)
-	end
 end

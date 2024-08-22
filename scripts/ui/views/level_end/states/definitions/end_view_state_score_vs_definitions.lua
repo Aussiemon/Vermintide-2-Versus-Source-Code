@@ -8,9 +8,9 @@ local tab_layouts = {
 		name = "end_view_state_score_vs_tab_details",
 	},
 }
-local game_option_size = {
-	220,
-	68,
+local tab_size = {
+	210,
+	48,
 }
 local scenegraph_definition = {
 	screen = {
@@ -30,7 +30,7 @@ local scenegraph_definition = {
 		vertical_alignment = "top",
 		size = {
 			1920,
-			79,
+			200,
 		},
 		position = {
 			0,
@@ -64,6 +64,20 @@ local scenegraph_definition = {
 			UILayer.default + 1,
 		},
 	},
+	fit_panel = {
+		horizontal_alignment = "center",
+		parent = "panel",
+		vertical_alignment = "top",
+		size = {
+			1920,
+			160,
+		},
+		position = {
+			0,
+			0,
+			0,
+		},
+	},
 	back_button = {
 		horizontal_alignment = "left",
 		parent = "panel",
@@ -93,28 +107,110 @@ local scenegraph_definition = {
 		},
 	},
 	panel_entry_area = {
-		horizontal_alignment = "left",
+		horizontal_alignment = "center",
 		parent = "panel",
-		vertical_alignment = "top",
+		vertical_alignment = "bottom",
 		size = {
 			1600,
-			70,
+			0,
 		},
 		position = {
-			70,
+			0,
 			0,
 			1,
 		},
 	},
-	game_mode_option = {
-		horizontal_alignment = "left",
-		parent = "panel_entry_area",
+	tab = {
+		horizontal_alignment = "center",
+		parent = "panel",
 		vertical_alignment = "top",
-		size = game_option_size,
+		size = tab_size,
 		position = {
-			20,
-			0,
+			455,
+			-110 + tab_size[2] * 0.5,
 			14,
+		},
+	},
+	tab_selection = {
+		horizontal_alignment = "center",
+		parent = "tab",
+		vertical_alignment = "bottom",
+		size = {
+			tab_size[1],
+			2,
+		},
+		position = {
+			0,
+			-5,
+			0,
+		},
+	},
+	level = {
+		horizontal_alignment = "left",
+		parent = "fit_panel",
+		vertical_alignment = "top",
+		size = {
+			180,
+			180,
+		},
+		position = {
+			230,
+			-12,
+			50,
+		},
+	},
+	team_icon_local = {
+		horizontal_alignment = "left",
+		parent = "fit_panel",
+		vertical_alignment = "center",
+		size = {
+			180,
+			180,
+		},
+		position = {
+			75,
+			35,
+			50,
+		},
+	},
+	team_icon_opponent = {
+		parent = "team_icon_local",
+		size = {
+			180,
+			180,
+		},
+		position = {
+			0,
+			-70,
+			0,
+		},
+	},
+	level_text = {
+		horizontal_alignment = "left",
+		parent = "level",
+		vertical_alignment = "top",
+		size = {
+			1920,
+			180,
+		},
+		position = {
+			200,
+			80,
+			0,
+		},
+	},
+	match_finished_text = {
+		horizontal_alignment = "left",
+		parent = "level_text",
+		vertical_alignment = "top",
+		size = {
+			1920,
+			180,
+		},
+		position = {
+			0,
+			-30,
+			0,
 		},
 	},
 	continue_button = {
@@ -127,11 +223,37 @@ local scenegraph_definition = {
 		},
 		position = {
 			0,
-			100,
+			50,
+			0,
+		},
+	},
+	test = {
+		horizontal_alignment = "center",
+		parent = "screen",
+		vertical_alignment = "center",
+		size = {
+			512,
+			200,
+		},
+		position = {
+			0,
+			0,
 			0,
 		},
 	},
 }
+local selected_color = {
+	255,
+	197,
+	188,
+	175,
+}
+local hammers_team_color = Colors.get_color_table_with_alpha("local_player_team", 255)
+local hammers_team_color_light = Colors.get_color_table_with_alpha("local_player_team_lighter", 255)
+local hammers_team_color_dark = Colors.get_color_table_with_alpha("local_player_team_darker", 255)
+local skulls_team_color = Colors.get_color_table_with_alpha("opponent_team", 255)
+local skulls_team_color_light = Colors.get_color_table_with_alpha("opponent_team_lighter", 255)
+local skulls_team_color_dark = Colors.get_color_table_with_alpha("opponent_team_darkened", 255)
 local summary_title_style = {
 	font_size = 150,
 	font_type = "hell_shark_header",
@@ -147,8 +269,359 @@ local summary_title_style = {
 		2,
 	},
 }
+local level_text_style = {
+	font_size = 52,
+	font_type = "hell_shark_header",
+	horizontal_alignment = "top",
+	localize = false,
+	use_shadow = true,
+	vertical_alignment = "left",
+	word_wrap = true,
+	text_color = selected_color,
+	offset = {
+		0,
+		0,
+		2,
+	},
+}
+local match_finished_text_style = {
+	font_size = 28,
+	font_type = "hell_shark",
+	horizontal_alignment = "top",
+	localize = false,
+	use_shadow = true,
+	vertical_alignment = "left",
+	word_wrap = true,
+	text_color = Colors.get_color_table_with_alpha("font_button_normal", 255),
+	offset = {
+		0,
+		0,
+		2,
+	},
+}
+local tab_selection_style = {
+	font_size = 24,
+	font_type = "hell_shark_header",
+	horizontal_alignment = "center",
+	localize = false,
+	use_shadow = true,
+	vertical_alignment = "center",
+	word_wrap = true,
+	text_color = selected_color,
+	hover_color = selected_color,
+	base_color = {
+		255,
+		128,
+		128,
+		128,
+	},
+	offset = {
+		0,
+		30,
+		2,
+	},
+}
+local team_score_style = {
+	dynamic_font_size = true,
+	font_size = 28,
+	font_type = "hell_shark",
+	horizontal_alignment = "left",
+	localize = false,
+	upper_case = true,
+	vertical_alignment = "center",
+	word_wrap = false,
+	text_color = Colors.get_color_table_with_alpha("white", 255),
+	offset = {
+		0,
+		-2,
+		1,
+	},
+	size = {
+		0,
+		0,
+	},
+}
+
+local function create_tab_selection(scenegraph_id, color)
+	local size = scenegraph_definition[scenegraph_id].size
+
+	return {
+		element = {
+			passes = {
+				{
+					pass_type = "rect",
+					style_id = "rect",
+				},
+			},
+		},
+		content = {},
+		style = {
+			rect = {
+				horizontal_alignment = "center",
+				vertical_alignment = "bottom",
+				color = color or {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					0,
+				},
+				texture_size = size,
+			},
+		},
+		offset = {
+			0,
+			0,
+			0,
+		},
+		scenegraph_id = scenegraph_id,
+	}
+end
+
+local function create_team_score(team, team_name, score)
+	local is_local_team = team == "local_team"
+	local scenegraph_id = is_local_team and "team_icon_local" or "team_icon_opponent"
+	local scenegraph_data = scenegraph_definition[scenegraph_id]
+	local size = table.clone(scenegraph_data.size)
+
+	size[1] = 140
+
+	local settings = UISettings.teams_ui_assets
+	local team_ui_settings = settings[team_name]
+	local team_color = is_local_team and Colors.get_color_table_with_alpha("local_player_team_lighter", 255) or Colors.get_color_table_with_alpha("opponent_team_lighter", 255)
+	local internal_score_style = table.clone(team_score_style)
+
+	internal_score_style.size = size
+	internal_score_style.text_color = team_color
+	internal_score_style.offset = {
+		70,
+		0,
+		0,
+	}
+
+	local widget = {
+		element = {
+			passes = {},
+		},
+		content = {},
+		style = {},
+		scenegraph_id = scenegraph_id,
+		offset = {
+			0,
+			0,
+			0,
+		},
+	}
+	local element = widget.element
+	local passes = element.passes
+	local content = widget.content
+	local style = widget.style
+
+	passes[#passes + 1] = {
+		pass_type = "texture",
+		style_id = "icon",
+		texture_id = "icon",
+	}
+	passes[#passes + 1] = {
+		pass_type = "texture",
+		style_id = "icon_bg",
+		texture_id = "icon_bg",
+	}
+	content.icon = team_ui_settings.team_icon
+	content.icon_bg = team_ui_settings.background_texture
+	style.icon = {
+		horizontal_alignment = "center",
+		vertical_alignment = "center",
+		texture_size = {
+			80,
+			80,
+		},
+		color = team_color,
+		offset = {
+			-70,
+			0,
+			2,
+		},
+	}
+	style.icon_bg = table.clone(style.icon)
+	style.icon_bg.texture_size = {
+		80,
+		80,
+	}
+	style.icon_bg.offset[3] = 0
+	style.icon_bg.color = team_color
+	passes[#passes + 1] = {
+		pass_type = "text",
+		style_id = "score",
+		text_id = "score",
+	}
+	passes[#passes + 1] = {
+		pass_type = "text",
+		style_id = "score_shadow",
+		text_id = "score",
+	}
+	content.score = tostring(score)
+	style.score = internal_score_style
+	style.score_shadow = table.clone(internal_score_style)
+	style.score_shadow.text_color = {
+		255,
+		0,
+		0,
+		0,
+	}
+	style.score_shadow.offset = {
+		style.score_shadow.offset[1] + 1,
+		-1,
+		-1,
+	}
+
+	return widget
+end
+
+local function create_tab_text(text, gamepad_text, scenegraph_id, text_style)
+	local text_offset = text_style and text_style.offset or {
+		0,
+		0,
+		2,
+	}
+	local text_color = text_style and text_style.text_color or {
+		255,
+		255,
+		255,
+		255,
+	}
+	local text_shadow_style = table.clone(text_style)
+	local text_shadow_style_color = text_style.shadow_color or {
+		255,
+		0,
+		0,
+		0,
+	}
+	local text_shadow_offset = text_style.shadow_offset or {
+		2,
+		2,
+		0,
+	}
+
+	text_shadow_style_color[1] = text_color[1]
+	text_shadow_style.text_color = text_shadow_style_color
+	text_shadow_style.offset = {
+		text_offset[1] + text_shadow_offset[1],
+		text_offset[2] - text_shadow_offset[2],
+		text_offset[3] - 1,
+	}
+	text_shadow_style.skip_button_rendering = true
+
+	local gamepad_text_style = table.clone(text_style)
+
+	gamepad_text_style.offset[1] = gamepad_text_style.font_size * 0.75
+
+	return {
+		element = {
+			passes = {
+				{
+					content_id = "hotspot",
+					pass_type = "hotspot",
+					style_id = "hotspot",
+					content_check_function = function (content, style)
+						return not Managers.input:is_device_active("gamepad")
+					end,
+				},
+				{
+					pass_type = "text",
+					style_id = "text",
+					text_id = "text",
+					content_check_function = function (content, style)
+						return not Managers.input:is_device_active("gamepad")
+					end,
+					content_change_function = function (content, style)
+						style.text_color = content.hotspot.is_hover and style.hover_color or style.base_color
+					end,
+				},
+				{
+					pass_type = "text",
+					style_id = "gamepad_text",
+					text_id = "gamepad_text",
+					content_check_function = function (content, style)
+						return Managers.input:is_device_active("gamepad")
+					end,
+				},
+				{
+					pass_type = "text",
+					style_id = "text_shadow",
+					text_id = "text",
+					content_check_function = function (content, style)
+						return not Managers.input:is_device_active("gamepad")
+					end,
+				},
+			},
+		},
+		content = {
+			text = text,
+			gamepad_text = gamepad_text,
+			original_text = text,
+			color = text_color,
+			use_shadow = text_style and text_style.use_shadow or false,
+			hotspot = {},
+		},
+		style = {
+			hotspot = {
+				horizontal_alignment = "center",
+				vertical_alignment = "bottom",
+				area_size = {
+					60,
+					60,
+				},
+			},
+			text = text_style,
+			gamepad_text = gamepad_text_style,
+			text_shadow = text_shadow_style,
+		},
+		offset = {
+			0,
+			0,
+			0,
+		},
+		scenegraph_id = scenegraph_id,
+	}
+end
+
+local disable_with_gamepad = true
 local widgets = {
-	continue_button = UIWidgets.create_default_button("continue_button", scenegraph_definition.continue_button.size, nil, nil, Localize("popup_choice_continue"), 25),
+	level = UIWidgets.create_level_widget("level"),
+	level_text = UIWidgets.create_simple_text("Righteous Stand", "level_text", nil, nil, level_text_style),
+	match_finsihed_text = UIWidgets.create_simple_text("Match finished", "match_finished_text", nil, nil, match_finished_text_style),
+	banner = UIWidgets.create_shader_tiled_texture("panel", "carousel_end_screen_panel", {
+		512,
+		200,
+	}),
+	banner_mask = UIWidgets.create_shader_tiled_texture("panel", "carousel_end_screen_panel_mask", {
+		512,
+		200,
+	}),
+	banner_gradient = UIWidgets.create_simple_texture("end_screen_banner_gradient", "panel", nil, nil, {
+		76.8,
+		255,
+		255,
+		255,
+	}, {
+		0,
+		0,
+		10,
+	}),
+	tab_selection = create_tab_selection("tab_selection", {
+		255,
+		201,
+		201,
+		201,
+	}),
+	prev_tab = create_tab_text("$KEY;ingame_menu__cycle_prev_raw:", "$KEY;ingame_menu__cycle_prev_raw:", "tab_selection", tab_selection_style),
+	next_tab = create_tab_text("$KEY;ingame_menu__cycle_next_alt_raw:", "$KEY;ingame_menu__cycle_next_alt_raw:", "tab_selection", tab_selection_style),
+	continue_button = UIWidgets.create_default_button("continue_button", scenegraph_definition.continue_button.size, nil, nil, Localize("popup_choice_continue"), 25, nil, nil, nil, disable_with_gamepad),
 }
 local animation_definitions = {
 	transition_enter = {
@@ -187,300 +660,94 @@ local animation_definitions = {
 	},
 }
 
-local function create_panel_button(scenegraph_id, size, text, font_size, optional_offset, optional_horizontal_alignment, highlight_color)
-	local new_marker_offset = {
-		-19,
-		-25,
-		10,
-	}
-	local marker_offset = {
-		0,
-		-3,
-		1,
-	}
-	local selection_offset = {
-		0,
-		-4,
-		0,
-	}
-	local shadow_offset = {
-		2,
-		3,
-		3,
-	}
-
-	if optional_offset then
-		shadow_offset[1] = shadow_offset[1] + optional_offset[1]
-		shadow_offset[2] = shadow_offset[2] + optional_offset[2]
-		shadow_offset[3] = optional_offset[3] - 1
-		selection_offset[1] = selection_offset[1] + optional_offset[1]
-		selection_offset[2] = selection_offset[2] + optional_offset[2]
-		selection_offset[3] = optional_offset[3] - 3
-		marker_offset[1] = marker_offset[1] + optional_offset[1]
-		marker_offset[2] = marker_offset[2] + optional_offset[2]
-		marker_offset[3] = optional_offset[3] - 2
-		new_marker_offset[1] = new_marker_offset[1] + optional_offset[1]
-		new_marker_offset[2] = new_marker_offset[2] + optional_offset[2]
-		new_marker_offset[3] = optional_offset[3] - 2
-	end
-
+local function create_tab(scenegraph_id, size, text)
 	return {
 		element = {
 			passes = {
 				{
-					content_id = "button_hotspot",
+					content_id = "hotspot",
 					pass_type = "hotspot",
 				},
 				{
 					pass_type = "text",
-					style_id = "text_shadow",
-					text_id = "text_field",
-				},
-				{
-					pass_type = "text",
-					style_id = "text_hover",
-					text_id = "text_field",
-					content_check_function = function (content)
-						return not content.button_hotspot.disable_button and (content.button_hotspot.is_hover or content.button_hotspot.is_selected)
-					end,
-				},
-				{
-					pass_type = "text",
 					style_id = "text",
-					text_id = "text_field",
-					content_check_function = function (content)
-						return not content.button_hotspot.disable_button and not content.button_hotspot.is_hover and not content.button_hotspot.is_selected
+					text_id = "text",
+					content_check_function = function (content, style)
+						return not content.hotspot.is_hover and not content.hotspot.is_selected
 					end,
 				},
 				{
 					pass_type = "text",
-					style_id = "text_disabled",
-					text_id = "text_field",
+					style_id = "hover_text",
+					text_id = "text",
 					content_check_function = function (content)
-						return content.button_hotspot.disable_button
+						return content.hotspot.is_hover or content.hotspot.is_selected
 					end,
 				},
 				{
-					pass_type = "texture",
-					style_id = "selected_texture",
-					texture_id = "selected_texture",
-					content_check_function = function (content)
-						return not content.button_hotspot.disable_button
-					end,
-				},
-				{
-					pass_type = "texture",
-					style_id = "marker_left",
-					texture_id = "marker",
-				},
-				{
-					pass_type = "texture",
-					style_id = "marker_right",
-					texture_id = "marker",
-				},
-				{
-					pass_type = "texture",
-					style_id = "marker_highlight_left",
-					texture_id = "marker_highlight",
-					content_check_function = function (content)
-						return content.button_hotspot.is_selected
-					end,
-				},
-				{
-					pass_type = "texture",
-					style_id = "marker_highlight_right",
-					texture_id = "marker_highlight",
-					content_check_function = function (content)
-						return content.button_hotspot.is_selected
-					end,
-				},
-				{
-					pass_type = "texture",
-					style_id = "new_marker",
-					texture_id = "new_marker",
-					content_check_function = function (content)
-						return content.new
-					end,
+					pass_type = "text",
+					style_id = "text_shadow",
+					text_id = "text",
 				},
 			},
 		},
 		content = {
-			marker = "morris_panel_divider",
-			marker_highlight = "morris_panel_highlight",
-			new_marker = "list_item_tag_new",
-			selected_texture = "hero_panel_selection_glow",
-			button_hotspot = {},
-			text_field = text,
-			default_font_size = font_size,
+			text = text,
+			hotspot = {},
 		},
 		style = {
 			text = {
-				dynamic_font_size = true,
-				font_type = "hell_shark_header",
+				font_size = 24,
+				font_type = "hell_shark",
+				horizontal_alignment = "center",
 				localize = true,
 				upper_case = true,
 				vertical_alignment = "center",
-				word_wrap = false,
-				font_size = font_size,
-				horizontal_alignment = optional_horizontal_alignment or "left",
 				text_color = Colors.get_color_table_with_alpha("font_button_normal", 255),
-				default_offset = optional_offset or {
+				line_colors = {},
+				offset = {
 					0,
-					10,
-					4,
-				},
-				offset = optional_offset or {
 					0,
-					5,
-					4,
+					2,
 				},
-				size = size,
+			},
+			hover_text = {
+				font_size = 24,
+				font_type = "hell_shark",
+				horizontal_alignment = "center",
+				localize = true,
+				upper_case = true,
+				vertical_alignment = "center",
+				text_color = selected_color,
+				line_colors = {},
+				offset = {
+					0,
+					0,
+					2,
+				},
 			},
 			text_shadow = {
-				dynamic_font_size = true,
-				font_type = "hell_shark_header",
+				font_size = 24,
+				font_type = "hell_shark",
+				horizontal_alignment = "center",
 				localize = true,
 				upper_case = true,
 				vertical_alignment = "center",
-				word_wrap = false,
-				font_size = font_size,
-				horizontal_alignment = optional_horizontal_alignment or "left",
 				text_color = Colors.get_color_table_with_alpha("black", 255),
-				default_offset = shadow_offset,
-				offset = shadow_offset,
-				size = size,
-			},
-			text_hover = {
-				dynamic_font_size = true,
-				font_type = "hell_shark_header",
-				localize = true,
-				upper_case = true,
-				vertical_alignment = "center",
-				word_wrap = false,
-				font_size = font_size,
-				horizontal_alignment = optional_horizontal_alignment or "left",
-				text_color = Colors.get_color_table_with_alpha("white", 255),
-				default_offset = optional_offset or {
-					0,
-					10,
-					4,
-				},
-				offset = optional_offset or {
-					0,
-					5,
-					4,
-				},
-				size = size,
-			},
-			text_disabled = {
-				dynamic_font_size = true,
-				font_type = "hell_shark_header",
-				localize = true,
-				upper_case = true,
-				vertical_alignment = "center",
-				word_wrap = false,
-				font_size = font_size,
-				horizontal_alignment = optional_horizontal_alignment or "left",
-				text_color = Colors.get_color_table_with_alpha("gray", 50),
-				default_offset = optional_offset or {
-					0,
-					10,
-					4,
-				},
-				offset = optional_offset or {
-					0,
-					5,
-					4,
-				},
-				size = size,
-			},
-			selected_texture = {
-				horizontal_alignment = "center",
-				vertical_alignment = "top",
-				texture_size = {
-					169,
-					35,
-				},
-				color = highlight_color or Colors.get_color_table_with_alpha("font_title", 255),
-				offset = selection_offset,
-			},
-			marker_left = {
-				horizontal_alignment = "left",
-				vertical_alignment = "top",
-				texture_size = {
-					52,
-					30,
-				},
-				color = Colors.get_color_table_with_alpha("white", 255),
+				line_colors = {},
 				offset = {
-					marker_offset[1] - 26,
-					marker_offset[2],
-					marker_offset[3],
-				},
-			},
-			marker_right = {
-				horizontal_alignment = "right",
-				vertical_alignment = "top",
-				texture_size = {
-					52,
-					30,
-				},
-				color = Colors.get_color_table_with_alpha("white", 255),
-				offset = {
-					marker_offset[1] + 26,
-					marker_offset[2],
-					marker_offset[3],
-				},
-			},
-			marker_highlight_left = {
-				horizontal_alignment = "left",
-				vertical_alignment = "top",
-				texture_size = {
-					52,
-					30,
-				},
-				color = Colors.get_color_table_with_alpha("white", 255),
-				offset = {
-					marker_offset[1] - 26,
-					marker_offset[2],
-					marker_offset[3] + 1,
-				},
-			},
-			marker_highlight_right = {
-				horizontal_alignment = "right",
-				vertical_alignment = "top",
-				texture_size = {
-					52,
-					30,
-				},
-				color = Colors.get_color_table_with_alpha("white", 255),
-				offset = {
-					marker_offset[1] + 26,
-					marker_offset[2],
-					marker_offset[3] + 1,
-				},
-			},
-			new_marker = {
-				horizontal_alignment = "center",
-				vertical_alignment = "center",
-				texture_size = {
-					math.floor(88.19999999999999),
-					math.floor(35.699999999999996),
-				},
-				color = Colors.get_color_table_with_alpha("white", 255),
-				offset = {
-					new_marker_offset[1],
-					new_marker_offset[2],
-					new_marker_offset[3],
+					2,
+					-2,
+					1,
 				},
 			},
 		},
+		scenegraph_id = scenegraph_id,
 		offset = {
 			0,
 			0,
 			0,
 		},
-		scenegraph_id = scenegraph_id,
 	}
 end
 
@@ -489,5 +756,7 @@ return {
 	tab_layouts = tab_layouts,
 	scenegraph_definition = scenegraph_definition,
 	animation_definitions = animation_definitions,
-	create_panel_button = create_panel_button,
+	create_tab = create_tab,
+	tab_size = tab_size,
+	create_team_score_func = create_team_score,
 }

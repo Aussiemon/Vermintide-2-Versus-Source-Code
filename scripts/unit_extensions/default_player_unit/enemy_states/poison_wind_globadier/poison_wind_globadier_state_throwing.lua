@@ -101,8 +101,14 @@ PoisonWindGlobadierStateThrowing.update = function (self, unit, input, dt, conte
 	end
 
 	local done_throwing = false
+	local ghost_mode_extension = ScriptUnit.extension(unit, "ghost_mode_system")
+	local is_in_ghost_mode = ghost_mode_extension:is_in_ghost_mode()
 
-	if self._throw_time then
+	if is_in_ghost_mode then
+		self:_stop_priming()
+
+		done_throwing = true
+	elseif self._throw_time then
 		done_throwing = self:_throw_anim_update(t)
 	end
 
@@ -204,7 +210,7 @@ PoisonWindGlobadierStateThrowing._calculate_trajectory = function (self)
 	local breed = self._breed
 	local rotation = Unit.local_rotation(first_person_unit, 0)
 	local angle = ActionUtils.pitch_from_rotation(rotation)
-	local throw_node_index = Unit.node(first_person_unit, "j_rightweaponattach")
+	local throw_node_index = Unit.node(first_person_unit, "root_point")
 	local initial_position = Unit.world_position(first_person_unit, throw_node_index)
 	local current_position = initial_position
 	local prev_position = self._position:unbox()
@@ -229,56 +235,70 @@ PoisonWindGlobadierStateThrowing._calculate_trajectory = function (self)
 	local points = {
 		WeaponHelper:position_on_trajectory(initial_position, target_vector, speed, radians, gravity, 0),
 	}
+	local radius = 0.05
+	local max_hits = 5
+	local network_manager = Managers.state.network
 
 	for t = interval, 10, interval do
 		local new_position = WeaponHelper:position_on_trajectory(initial_position, target_vector, speed, radians, gravity, t)
-		local result = PhysicsWorld.linear_sphere_sweep(physics_world, current_position, new_position, 0.1, 5, "collision_filter", "filter_player_ray_projectile_static_only", "report_initial_overlap")
+		local result = PhysicsWorld.linear_sphere_sweep(physics_world, current_position, new_position, radius, max_hits, "collision_filter", "filter_player_ray_projectile_static_only")
+		local num_results = result and #result or 0
 
-		if result and #result > 0 then
-			local hit = result[1]
-			local position = hit.position
-			local hit_normal = hit.normal
-			local hit_actor = hit.actor
-			local distance = hit.distance
-			local direction = Vector3.normalize(position - current_position)
+		if num_results > 0 then
+			local done = false
 
-			if distance > 0 then
-				points[#points + 1] = position
+			for i = 1, num_results do
+				local hit = result[i]
+				local position = hit.position
+				local hit_normal = hit.normal
+				local hit_actor = hit.actor
+				local distance = hit.distance
+				local direction = Vector3.normalize(position - current_position)
 
-				local next_position = WeaponHelper:position_on_trajectory(initial_position, target_vector, speed, radians, gravity, t + interval)
-				local no_impact_delta = current_position - next_position
-				local no_impact_length = Vector3.length(no_impact_delta)
-				local buffer = 0.2
-				local time = t - (interval - distance / no_impact_length * interval) + buffer
-				local impact_data = self._impact_data
-				local hit_unit = Actor.unit(hit_actor)
+				if distance > 0 then
+					local hit_unit = Actor.unit(hit_actor)
 
-				if hit_unit then
-					impact_data.position:store(position)
-					impact_data.hit_normal:store(hit_normal)
-					impact_data.direction:store(direction)
+					if network_manager:level_object_id(hit_unit) then
+						points[#points + 1] = position
 
-					impact_data.hit_unit = hit_unit
+						local next_position = WeaponHelper:position_on_trajectory(initial_position, target_vector, speed, radians, gravity, t + interval)
+						local no_impact_delta = current_position - next_position
+						local no_impact_length = Vector3.length(no_impact_delta)
+						local buffer = 0.2
+						local time = t - (interval - distance / no_impact_length * interval) + buffer
+						local impact_data = self._impact_data
 
-					local num_actors = Unit.num_actors(hit_unit)
-					local unit_actor = Unit.actor
-					local actor_index
+						impact_data.position:store(position)
+						impact_data.hit_normal:store(hit_normal)
+						impact_data.direction:store(direction)
 
-					for i = 0, num_actors - 1 do
-						local actor = unit_actor(hit_unit, i)
+						impact_data.hit_unit = hit_unit
 
-						if hit_actor == actor then
-							actor_index = i
+						local num_actors = Unit.num_actors(hit_unit)
+						local unit_actor = Unit.actor
+						local actor_index
 
-							break
+						for i = 0, num_actors - 1 do
+							local actor = unit_actor(hit_unit, i)
+
+							if hit_actor == actor then
+								actor_index = i
+
+								break
+							end
 						end
+
+						impact_data.actor_index = actor_index
+						impact_data.time = time
+						done = true
+
+						break
 					end
-
-					impact_data.actor_index = actor_index
-					impact_data.time = time
-
-					break
 				end
+			end
+
+			if done then
+				break
 			end
 		end
 
@@ -424,6 +444,11 @@ PoisonWindGlobadierStateThrowing._update_indicator_unit = function (self)
 		local impact_position = impact_data.position:unbox()
 
 		Unit.set_local_position(self._indicator_unit, 0, impact_position)
+
+		local player_pos = POSITION_LOOKUP[Managers.player:local_player().player_unit]
+		local desired_rot = Quaternion.multiply(Quaternion.axis_angle(Vector3.up(), math.pi * 0.5), Quaternion.look(player_pos - impact_position, Vector3.up()))
+
+		Unit.set_local_rotation(self._indicator_unit, 0, desired_rot)
 		self:check_enemies_in_range_vfx(impact_position)
 	end
 end
@@ -433,6 +458,10 @@ PoisonWindGlobadierStateThrowing._create_indicator_unit = function (self)
 	local unit_name = self._indicator_fx_unit_name
 
 	self._indicator_unit = World.spawn_unit(world, unit_name, Vector3.zero())
+
+	local radius = self._breed.globe_throw_aoe_radius
+
+	Unit.set_local_scale(self._indicator_unit, 0, Vector3(radius, radius, radius))
 end
 
 PoisonWindGlobadierStateThrowing._destroy_indicator_unit = function (self)
@@ -455,8 +484,10 @@ PoisonWindGlobadierStateThrowing._update_movement = function (self, unit, t, dt,
 	local current_movement_speed_scale = self.current_movement_speed_scale
 
 	if not self.is_bot then
-		local move_acceleration_up_dt = movement_settings_table.move_acceleration_up * dt
-		local move_acceleration_down_dt = movement_settings_table.move_acceleration_down * dt
+		local breed_move_acceleration_up = self._breed and self._breed.breed_move_acceleration_up
+		local breed_move_acceleration_down = self._breed and self._breed.breed_move_acceleration_down
+		local move_acceleration_up_dt = breed_move_acceleration_up * dt or movement_settings_table.move_acceleration_up * dt
+		local move_acceleration_down_dt = breed_move_acceleration_down * dt or movement_settings_table.move_acceleration_down * dt
 
 		if is_moving then
 			current_movement_speed_scale = math.min(1, current_movement_speed_scale + move_acceleration_up_dt)
@@ -496,7 +527,7 @@ PoisonWindGlobadierStateThrowing._update_movement = function (self, unit, t, dt,
 		self.move_anim_1p = move_anim_1p
 	end
 
-	if self._previous_state == "jumping" or self._previous_state == "falling" then
+	if (self._previous_state == "jumping" or self._previous_state == "falling") and not self._locomotion_extension:is_on_ground() then
 		CharacterStateHelper.move_in_air_pactsworn(self._first_person_extension, input_extension, self._locomotion_extension, final_move_speed, unit)
 	else
 		CharacterStateHelper.move_on_ground(first_person_extension, input_extension, self._locomotion_extension, move_input_direction, final_move_speed, unit)

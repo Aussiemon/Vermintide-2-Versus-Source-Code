@@ -24,6 +24,7 @@ local breed_data = {
 	flingable = true,
 	has_inventory = true,
 	has_running_attack = true,
+	height = 1.4,
 	hit_effect_template = "HitEffectsSkavenClanRatShield",
 	hit_mass_count = 1.5,
 	hit_mass_count_block = 3,

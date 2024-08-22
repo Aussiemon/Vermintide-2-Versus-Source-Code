@@ -8,7 +8,7 @@ local RPCS = {
 	"rpc_from_server_send_spawn_state",
 }
 
-VersusSpawning.init = function (self, profile_synchronizer, available_profiles, is_server, game_mode_settings)
+VersusSpawning.init = function (self, profile_synchronizer, available_profiles, is_server, game_mode_settings, career_delegator)
 	self._profile_synchronizer = profile_synchronizer
 	self._available_profiles = available_profiles
 	self._available_special_profiles = available_profiles
@@ -16,6 +16,7 @@ VersusSpawning.init = function (self, profile_synchronizer, available_profiles, 
 	self._respawn_timer_margin = game_mode_settings.dark_pact_respawn_timer_margin
 	self._is_server = is_server
 	self._server_peer_id = Managers.mechanism:server_peer_id()
+	self._career_delegator = career_delegator
 	self._spawn_points = {}
 	self._spawn_groups = {}
 	self._used_spawn_group_positions = {}
@@ -60,6 +61,13 @@ VersusSpawning.get_spawn_time = function (self, party)
 	spawn_time = math.clamp(spawn_time, minimum_spawn_time, math.huge)
 
 	return spawn_time
+end
+
+local function cb_spawned_darkpact_bot_func(unit, breed, optional_data)
+	local bot_data = optional_data.bot_data
+
+	bot_data.state = "alive"
+	bot_data.unit = unit
 end
 
 VersusSpawning.update = function (self, t, dt, side_name)
@@ -117,7 +125,7 @@ VersusSpawning.update = function (self, t, dt, side_name)
 
 						local game_mode = Managers.state.game_mode:game_mode()
 
-						game_mode:assign_temporary_dark_pact_profile(player)
+						game_mode:assign_temporary_dark_pact_profile(status)
 
 						local spawn_time = self:get_spawn_time(party)
 
@@ -168,41 +176,6 @@ VersusSpawning.get_spawn_point = function (self, spawn_group_id, optional_slot_i
 	end
 end
 
-local current_available_profiles = {}
-
-VersusSpawning._get_available_profiles = function (self, available_profiles, pick_history)
-	table.clear(current_available_profiles)
-
-	local mechanism_manager = Managers.mechanism
-	local num_available_profiles = #available_profiles
-	local last_picked_profile = pick_history[#pick_history]
-
-	for i = 1, num_available_profiles do
-		local profile_name = available_profiles[i]
-		local profile_id = FindProfileIndex(profile_name)
-		local profile = SPProfiles[profile_id]
-		local career_name = profile.careers[1].display_name
-
-		if mechanism_manager:profile_available(profile_name, career_name) then
-			current_available_profiles[#current_available_profiles + 1] = profile_name
-		end
-	end
-
-	return current_available_profiles
-end
-
-VersusSpawning._pick_available_enemy = function (self, pick_history)
-	local available_profiles = self:_get_available_profiles(self._available_special_profiles, pick_history)
-	local profile_name = available_profiles[math.random(#available_profiles)]
-	local profile_settings = PROFILES_BY_NAME[profile_name]
-
-	if not profile_settings then
-		return nil
-	end
-
-	return profile_settings.index, 1, profile_name
-end
-
 VersusSpawning._check_spawn_observer = function (self, player)
 	local spawn_at_players_on_side = self._settings.side_settings.dark_pact.spawn_at_players_on_side
 	local observed_unit = player:observed_unit()
@@ -211,21 +184,21 @@ VersusSpawning._check_spawn_observer = function (self, player)
 		local side_manager = Managers.state.side
 		local observer_side = side_manager.side_by_unit[observed_unit]
 		local observed_position = Unit.local_position(observed_unit, 0)
+		local observed_rotation = Unit.local_rotation(observed_unit, 0)
 
 		if observer_side then
 			local observer_side_name = observer_side:name()
 			local valid_func = spawn_at_players_on_side[observer_side_name]
 
 			if valid_func and valid_func() then
-				return observed_position
+				return observed_position, observed_rotation
 			end
 		else
-			return observed_position
+			return observed_position, observed_rotation
 		end
 	end
 
 	local valid_sides = table.keys(spawn_at_players_on_side)
-	local random_position
 
 	while #valid_sides > 0 do
 		local index = math.random(1, #valid_sides)
@@ -234,19 +207,27 @@ VersusSpawning._check_spawn_observer = function (self, player)
 
 		if is_allowed_func() then
 			local side = Managers.state.side:get_side_from_name(side_name)
-			local positions = table.clone(side.PLAYER_AND_BOT_POSITIONS)
+			local units = side.PLAYER_AND_BOT_UNITS
+			local num_units = #units
+			local random_index = math.random(1, num_units)
 
-			while #positions > 0 do
-				local pos_index = math.random(1, #positions)
+			for i = 1, num_units do
+				local idx = math.index_wrapper(i + random_index - 1, num_units)
+				local unit = units[idx]
+				local position = POSITION_LOOKUP[unit]
 
-				random_position = table.remove(positions, pos_index)
+				if position then
+					local rotation = Unit.local_rotation(unit, 0)
 
-				if random_position then
-					return random_position + Vector3(0, 0, 0.2)
+					position = position + Vector3(0, 0, 0.1)
+
+					return position, rotation
 				end
 			end
 		end
 	end
+
+	return nil, nil
 end
 
 VersusSpawning._get_fallback_spawn_position = function (self, player)
@@ -265,9 +246,7 @@ VersusSpawning._get_fallback_spawn_position = function (self, player)
 end
 
 VersusSpawning._get_allowed_spawn_position = function (self, player)
-	local position, rotation
-
-	position = self:_check_spawn_observer(player)
+	local position, rotation = self:_check_spawn_observer(player)
 
 	if not position and not Managers.state.game_mode:is_round_started() then
 		local mechanism = Managers.mechanism:game_mechanism()

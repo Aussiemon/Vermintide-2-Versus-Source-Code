@@ -160,7 +160,7 @@ SimpleInventoryExtension.extensions_ready = function (self, world, unit)
 			table.dump(self._equipment.slots, "self._equipment.slots", 1)
 
 			local career_name = career_extension:career_name()
-			local career_loadout = Managers.backend:get_interface("items"):get_loadout_by_career_name(career_name)
+			local career_loadout = Managers.backend:get_interface("items"):get_loadout_by_career_name(career_name, self.is_bot)
 
 			table.dump(career_loadout, "career_loadout", 1)
 			ferror("Tried to wield default slot %s for %s that contained no weapon.", default_wielded_slot, career_name)
@@ -201,7 +201,7 @@ SimpleInventoryExtension.extensions_ready = function (self, world, unit)
 	self._equipment.wielded_slot = profile.default_wielded_slot
 end
 
-SimpleInventoryExtension.update_career_skill_weapon_slot = function (self)
+SimpleInventoryExtension._update_career_skill_weapon_slot = function (self)
 	if not self._first_person_unit then
 		local first_person_extension = ScriptUnit.extension(unit, "first_person_system")
 
@@ -334,7 +334,7 @@ SimpleInventoryExtension._override_career_skill_item_template = function (self, 
 		local slot_override_item_template, override_item_data
 
 		if WeaponUtils.is_valid_weapon_override(override_slot_data, item_data) then
-			slot_override_item_template = override_slot_data.item_template
+			slot_override_item_template = self:get_item_template(override_slot_data)
 			override_item_data = override_slot_data.item_data
 		else
 			local default_item_name = item_data.default_item_to_replace
@@ -374,7 +374,7 @@ SimpleInventoryExtension.add_equipment_by_category = function (self, category)
 		repeat
 			local slot = category_slots[i]
 			local slot_name = slot.name
-			local item = BackendUtils.get_loadout_item(career_name, slot_name)
+			local item = BackendUtils.get_loadout_item(career_name, slot_name, self.is_bot)
 			local item_data
 
 			if item then
@@ -386,7 +386,7 @@ SimpleInventoryExtension.add_equipment_by_category = function (self, category)
 				item_data = rawget(ItemMasterList, item_name)
 
 				if not item_data then
-					local backend_id = BackendUtils.get_loadout_item_id(career_name, slot_name)
+					local backend_id = BackendUtils.get_loadout_item_id(career_name, slot_name, self.is_bot)
 					local backend_id_string = backend_id and tostring(backend_id) or "No backend ID"
 					local backend_items = Managers.backend:get_interface("items")
 					local item_string = "No item"
@@ -399,7 +399,7 @@ SimpleInventoryExtension.add_equipment_by_category = function (self, category)
 
 					local loadout_interface_override = Managers.backend._current_loadout_interface_override
 					local loadout_interface_override_string = loadout_interface_override or "No override"
-					local career_loadout = backend_items:get_loadout_by_career_name(career_name)
+					local career_loadout = backend_items:get_loadout_by_career_name(career_name, self.is_bot)
 
 					printf("self.initial_inventory: \n%s", table.tostring(self.initial_inventory))
 					printf("Tried add_equipment_by_category for category <%s> for career <%s> at slot <%s>.\n BackendUtils.get_loadout_item didnt return a item.\n backend_id_string: %s\n item_string: %s\n loadout_interface_override_string: %s\n", category, career_name, slot_name, backend_id_string, item_string, loadout_interface_override_string)
@@ -496,7 +496,7 @@ end
 
 SimpleInventoryExtension.update = function (self, unit, input, dt, context, t)
 	if self._queue_update_career_skill_weapon_slot then
-		self:update_career_skill_weapon_slot()
+		self:_update_career_skill_weapon_slot()
 
 		self._queue_update_career_skill_weapon_slot = false
 	end
@@ -544,7 +544,7 @@ SimpleInventoryExtension._update_resync_loadout = function (self)
 	local local_player_id = self.player:local_player_id()
 
 	if self.resync_loadout_needed then
-		profile_synchronizer:resync_loadout(peer_id, local_player_id)
+		profile_synchronizer:resync_loadout(peer_id, local_player_id, self.is_bot)
 
 		self.resync_loadout_needed = false
 	end
@@ -694,7 +694,7 @@ SimpleInventoryExtension.wield = function (self, slot_name)
 
 	self:_spawn_attached_units(item_template.first_person_attached_units)
 
-	if slot_name == "slot_melee" or slot_name == "slot_ranged" or item_template.is_utility_weapon then
+	if slot_name == "slot_melee" or slot_name == "slot_ranged" then
 		self._previously_wielded_weapon_slot = slot_name
 	end
 
@@ -719,6 +719,8 @@ SimpleInventoryExtension.wield = function (self, slot_name)
 	if right_weapon then
 		right_weapon:on_wield("right")
 	end
+
+	self.buff_extension:trigger_procs("on_wield")
 
 	return true
 end
@@ -782,7 +784,7 @@ SimpleInventoryExtension.apply_buffs = function (self, buffs_by_buffer, reason, 
 	for buffer, buffs in pairs(buffs_by_buffer) do
 		if self.is_server or buffer == "client" or buffer == "both" then
 			for buff_name, variable_data in pairs(buffs) do
-				local buff_data = BuffTemplates[buff_name]
+				local buff_data = BuffUtils.get_buff_template(buff_name)
 
 				fassert(buff_data, "buff name %s does not exist on item %s, typo?", buff_name, item_name)
 				table.clear(params)
@@ -1170,8 +1172,7 @@ SimpleInventoryExtension.current_ammo_status = function (self, slot_name)
 		return
 	end
 
-	local item_data = slot_data.item_data
-	local item_template = slot_data.item_template or BackendUtils.get_item_template(item_data)
+	local item_template = self:get_item_template(slot_data)
 	local ammo_data = item_template.ammo_data
 
 	if ammo_data then
@@ -1212,8 +1213,7 @@ SimpleInventoryExtension.current_ammo_kind = function (self, slot_name)
 		return
 	end
 
-	local item_data = slot_data.item_data
-	local item_template = slot_data.item_template or BackendUtils.get_item_template(item_data)
+	local item_template = self:get_item_template(slot_data)
 	local ammo_data = item_template.ammo_data
 
 	if ammo_data then
@@ -1238,8 +1238,7 @@ SimpleInventoryExtension.add_ammo_from_pickup = function (self, pickup_settings)
 	fassert(not refill_percentage or not refill_amount, "ammo pickups has to contain either refill_percentage or refill_amount, not both")
 
 	for slot_name, slot_data in pairs(slots) do
-		local item_data = slot_data.item_data
-		local item_template = slot_data.item_template or BackendUtils.get_item_template(item_data)
+		local item_template = self:get_item_template(slot_data)
 		local ammo_data = item_template.ammo_data
 
 		if ammo_data and not ammo_data.ignore_ammo_pickup then
@@ -1291,7 +1290,7 @@ end
 SimpleInventoryExtension.get_item_template = function (self, slot_data)
 	if slot_data then
 		local item_data = slot_data.item_data
-		local item_template = slot_data.item_template or BackendUtils.get_item_template(item_data)
+		local item_template = Weapons[slot_data.item_template_name] or BackendUtils.get_item_template(item_data)
 
 		return item_template
 	end
@@ -1456,7 +1455,7 @@ SimpleInventoryExtension.has_unique_ammo_type_weapon_equipped = function (self)
 
 	for slot_name, slot_data in pairs(inventory_slots) do
 		if slots_to_check[slot_name] then
-			local item_template = slot_data.item_template
+			local item_template = self:get_item_template(slot_data)
 
 			if item_template then
 				local ammo_data = item_template.ammo_data

@@ -124,6 +124,9 @@ local function create_static_widget()
 					style_id = "character_portrait",
 					texture_id = "character_portrait",
 					retained_mode = RETAINED_MODE_ENABLED,
+					content_change_function = function (content, style)
+						style.color = content.dim_portraits and Colors.get_color_table_with_alpha("dim_gray", 255) or Colors.get_color_table_with_alpha("white", 255)
+					end,
 				},
 				{
 					pass_type = "text",
@@ -477,10 +480,11 @@ local function create_dynamic_portait_widget()
 				},
 			},
 			respawn_countdown_text = {
-				font_size = 64,
-				font_type = "hell_shark",
+				font_size = 72,
+				font_type = "hell_shark_header",
 				horizontal_alignment = "center",
 				scenegraph_id = "portrait_pivot",
+				use_shadow = true,
 				vertical_alignment = "center",
 				word_wrap = true,
 				size = {
@@ -490,13 +494,18 @@ local function create_dynamic_portait_widget()
 				text_color = {
 					255,
 					255,
-					168,
-					0,
+					255,
+					255,
 				},
 				offset = {
 					-(86 * portrait_scale) / 2,
 					-(108 * portrait_scale) / 2,
 					50,
+				},
+				shadow_offset = {
+					2,
+					2,
+					0,
 				},
 			},
 		},

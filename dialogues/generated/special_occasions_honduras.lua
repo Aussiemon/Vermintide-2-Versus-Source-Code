@@ -747,6 +747,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pbw_gameplay_elf_killing_troll_ranged_01",
+		response = "pbw_gameplay_elf_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pbw_gameplay_elf_misses_bomb_01",
 		response = "pbw_gameplay_elf_misses_bomb_01",
 		criterias = {
@@ -779,6 +821,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"bright_wizard",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -1512,6 +1580,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pbw_gameplay_hunter_killing_troll_ranged_01",
+		response = "pbw_gameplay_hunter_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pbw_gameplay_hunter_kills_3_specials_in_a_row_02",
 		response = "pbw_gameplay_hunter_kills_3_specials_in_a_row_02",
 		criterias = {
@@ -1600,6 +1710,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"bright_wizard",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -2268,6 +2404,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pbw_gameplay_ranger_killing_troll_ranged_01",
+		response = "pbw_gameplay_ranger_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pbw_gameplay_ranger_misses_bomb_01",
 		response = "pbw_gameplay_ranger_misses_bomb_01",
 		criterias = {
@@ -2300,6 +2478,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"bright_wizard",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -2965,42 +3169,6 @@ return function ()
 				OP.EQ,
 				"bright_wizard",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"empire_soldier",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"witch_hunter",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_melee",
-			},
 		},
 	})
 	define_rule({
@@ -3121,42 +3289,6 @@ return function ()
 				OP.EQ,
 				"bright_wizard",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"witch_hunter",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"empire_soldier",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
-			},
 		},
 	})
 	define_rule({
@@ -3180,42 +3312,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"bright_wizard",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"dwarf_ranger",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"wood_elf",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
 			},
 		},
 	})
@@ -3265,42 +3361,6 @@ return function ()
 				OP.EQ,
 				"bright_wizard",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"empire_soldier",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"witch_hunter",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
-			},
 		},
 	})
 	define_rule({
@@ -3324,42 +3384,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"bright_wizard",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"bright_wizard",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"witch_hunter",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
 			},
 		},
 	})
@@ -3385,42 +3409,6 @@ return function ()
 				OP.EQ,
 				"bright_wizard",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"empire_soldier",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"bright_wizard",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
-			},
 		},
 	})
 	define_rule({
@@ -3444,42 +3432,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"bright_wizard",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"witch_hunter",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"bright_wizard",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
 			},
 		},
 	})
@@ -3912,42 +3864,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"bright_wizard",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"bright_wizard",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"dwarf_ranger",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_melee",
 			},
 		},
 	})
@@ -4594,6 +4510,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pbw_gameplay_soldier_killing_troll_ranged_01",
+		response = "pbw_gameplay_soldier_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pbw_gameplay_soldier_misses_bomb_01",
 		response = "pbw_gameplay_soldier_misses_bomb_01",
 		criterias = {
@@ -4626,6 +4584,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"bright_wizard",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -5887,6 +5871,37 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pbw_gameplay_wizard_potions_above_half_health_03_reply_04",
+		response = "pbw_gameplay_wizard_potions_above_half_health_03_reply_04",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pwh_gameplay_wizard_potions_above_half_health_03",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"bright_wizard",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
 		name = "pbw_killing_a_second_rat_ogre_02",
 		response = "pbw_killing_a_second_rat_ogre_02",
 		criterias = {
@@ -6555,6 +6570,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pdr_gameplay_elf_killing_troll_ranged_01",
+		response = "pdr_gameplay_elf_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pdr_gameplay_elf_misses_bomb_01",
 		response = "pdr_gameplay_elf_misses_bomb_01",
 		criterias = {
@@ -6587,6 +6644,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"dwarf_ranger",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -7467,6 +7550,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pdr_gameplay_hunter_killing_troll_ranged_01",
+		response = "pdr_gameplay_hunter_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pdr_gameplay_hunter_misses_bomb_01",
 		response = "pdr_gameplay_hunter_misses_bomb_01",
 		criterias = {
@@ -7499,6 +7624,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"dwarf_ranger",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -8538,6 +8689,37 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pdr_gameplay_ranger_potions_above_half_health_01_reply_03",
+		response = "pdr_gameplay_ranger_potions_above_half_health_01_reply_03",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pwh_gameplay_ranger_potions_above_half_health_01",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
 		name = "pdr_gameplay_ranger_potions_above_half_health_02_reply_01",
 		response = "pdr_gameplay_ranger_potions_above_half_health_02_reply_01",
 		criterias = {
@@ -8631,6 +8813,37 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pdr_gameplay_ranger_potions_above_half_health_02_reply_04",
+		response = "pdr_gameplay_ranger_potions_above_half_health_02_reply_04",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pwh_gameplay_ranger_potions_above_half_health_02",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
 		name = "pdr_gameplay_ranger_potions_above_half_health_03_reply_01",
 		response = "pdr_gameplay_ranger_potions_above_half_health_03_reply_01",
 		criterias = {
@@ -8707,6 +8920,37 @@ return function ()
 				"sound_event",
 				OP.EQ,
 				"pwe_gameplay_ranger_potions_above_half_health_03",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pdr_gameplay_ranger_potions_above_half_health_03_reply_04",
+		response = "pdr_gameplay_ranger_potions_above_half_health_03_reply_04",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pwh_gameplay_ranger_potions_above_half_health_03",
 			},
 			{
 				"user_context",
@@ -9394,42 +9638,6 @@ return function ()
 				OP.EQ,
 				"dwarf_ranger",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"witch_hunter",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"wood_elf",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
-			},
 		},
 	})
 	define_rule({
@@ -9525,42 +9733,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"dwarf_ranger",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"wood_elf",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"dwarf_ranger",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
 			},
 		},
 	})
@@ -10793,6 +10965,90 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pdr_gameplay_soldier_killing_troll_melee_01",
+		response = "pdr_gameplay_soldier_killing_troll_melee_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_melee",
+			},
+		},
+	})
+	define_rule({
+		name = "pdr_gameplay_soldier_killing_troll_ranged_01",
+		response = "pdr_gameplay_soldier_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pdr_gameplay_soldier_misses_bomb_01",
 		response = "pdr_gameplay_soldier_misses_bomb_01",
 		criterias = {
@@ -10825,6 +11081,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"dwarf_ranger",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -11373,9 +11655,9 @@ return function ()
 			},
 			{
 				"query_context",
-				"dot_type",
+				"weapon_type",
 				OP.EQ,
-				"burning_dot",
+				"bw_staff_flamethrower",
 			},
 			{
 				"user_context",
@@ -11646,6 +11928,90 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pdr_gameplay_wizard_killing_troll_melee_01",
+		response = "pdr_gameplay_wizard_killing_troll_melee_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_melee",
+			},
+		},
+	})
+	define_rule({
+		name = "pdr_gameplay_wizard_killing_troll_ranged_01",
+		response = "pdr_gameplay_wizard_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pdr_gameplay_wizard_kills_3_specials_in_a_row_02",
 		response = "pdr_gameplay_wizard_kills_3_specials_in_a_row_02",
 		criterias = {
@@ -11734,6 +12100,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"dwarf_ranger",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -12587,6 +12979,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pes_gameplay_elf_killing_troll_ranged_01",
+		response = "pes_gameplay_elf_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pes_gameplay_elf_misses_bomb_01",
 		response = "pes_gameplay_elf_misses_bomb_01",
 		criterias = {
@@ -12619,6 +13053,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"empire_soldier",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -13466,6 +13926,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pes_gameplay_hunter_killing_troll_ranged_01",
+		response = "pes_gameplay_hunter_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pes_gameplay_hunter_kills_3_specials_in_a_row_02_reply_01",
 		response = "pes_gameplay_hunter_kills_3_specials_in_a_row_02_reply_01",
 		criterias = {
@@ -13522,6 +14024,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"empire_soldier",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -14363,6 +14891,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pes_gameplay_ranger_killing_troll_ranged_01",
+		response = "pes_gameplay_ranger_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pes_gameplay_ranger_misses_bomb_01",
 		response = "pes_gameplay_ranger_misses_bomb_01",
 		criterias = {
@@ -14395,6 +14965,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"empire_soldier",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -15005,42 +15601,6 @@ return function ()
 				OP.EQ,
 				"witch_hunter",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"bright_wizard",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"witch_hunter",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_melee",
-			},
 		},
 	})
 	define_rule({
@@ -15185,42 +15745,6 @@ return function ()
 				OP.EQ,
 				"empire_soldier",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"wood_elf",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"bright_wizard",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
-			},
 		},
 	})
 	define_rule({
@@ -15268,42 +15792,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"empire_soldier",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"wood_elf",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"empire_soldier",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
 			},
 		},
 	})
@@ -15353,42 +15841,6 @@ return function ()
 				OP.EQ,
 				"empire_soldier",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"dwarf_ranger",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"bright_wizard",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
-			},
 		},
 	})
 	define_rule({
@@ -15412,42 +15864,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"empire_soldier",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"dwarf_ranger",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"empire_soldier",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
 			},
 		},
 	})
@@ -16835,6 +17251,37 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pes_gameplay_soldier_potions_above_half_health_02_reply_04",
+		response = "pes_gameplay_soldier_potions_above_half_health_02_reply_04",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pwh_gameplay_soldier_potions_above_half_health_02",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"empire_soldier",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
 		name = "pes_gameplay_soldier_potions_above_half_health_03_reply_01",
 		response = "pes_gameplay_soldier_potions_above_half_health_03_reply_01",
 		criterias = {
@@ -17424,6 +17871,90 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pes_gameplay_wizard_killing_troll_melee_01",
+		response = "pes_gameplay_wizard_killing_troll_melee_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_melee",
+			},
+		},
+	})
+	define_rule({
+		name = "pes_gameplay_wizard_killing_troll_ranged_01",
+		response = "pes_gameplay_wizard_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pes_gameplay_wizard_kills_3_specials_in_a_row_02_reply_01",
 		response = "pes_gameplay_wizard_kills_3_specials_in_a_row_02_reply_01",
 		criterias = {
@@ -17480,6 +18011,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"empire_soldier",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -17833,13 +18390,7 @@ return function ()
 				"query_context",
 				"pickup_name",
 				OP.EQ,
-				"pickup_frag_grenade_t2",
-			},
-			{
-				"query_context",
-				"source_name",
-				OP.EQ,
-				"wood_elf",
+				"frag_grenade_t2",
 			},
 			{
 				"query_context",
@@ -17848,10 +18399,29 @@ return function ()
 				"dwarf_ranger",
 			},
 			{
+				"query_context",
+				"source_name",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
 				"user_context",
 				"player_profile",
 				OP.EQ,
 				"wood_elf",
+			},
+			{
+				"global_context",
+				"level_time",
+				OP.GT,
+				200,
+			},
+			{
+				"faction_memory",
+				"last_saw_pickup",
+				OP.TIMEDIFF,
+				OP.LT,
+				3,
 			},
 			{
 				"user_memory",
@@ -18608,6 +19178,37 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pwe_gameplay_elf_potions_above_half_health_01_reply_03",
+		response = "pwe_gameplay_elf_potions_above_half_health_01_reply_03",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pwh_gameplay_elf_potions_above_half_health_01",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"wood_elf",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
 		name = "pwe_gameplay_elf_potions_above_half_health_02_reply_01",
 		response = "pwe_gameplay_elf_potions_above_half_health_02_reply_01",
 		criterias = {
@@ -18653,6 +19254,37 @@ return function ()
 				"sound_event",
 				OP.EQ,
 				"pes_gameplay_elf_potions_above_half_health_02",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"wood_elf",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwe_gameplay_elf_potions_above_half_health_02_reply_03",
+		response = "pwe_gameplay_elf_potions_above_half_health_02_reply_03",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pwh_gameplay_elf_potions_above_half_health_02",
 			},
 			{
 				"user_context",
@@ -19418,6 +20050,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pwe_gameplay_hunter_killing_troll_ranged_01",
+		response = "pwe_gameplay_hunter_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pwe_gameplay_hunter_misses_bomb_01",
 		response = "pwe_gameplay_hunter_misses_bomb_01",
 		criterias = {
@@ -19450,6 +20124,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"wood_elf",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -20415,6 +21115,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pwe_gameplay_ranger_killing_troll_ranged_01",
+		response = "pwe_gameplay_ranger_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pwe_gameplay_ranger_misses_bomb_01",
 		response = "pwe_gameplay_ranger_misses_bomb_01",
 		criterias = {
@@ -20447,6 +21189,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"wood_elf",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -21102,42 +21870,6 @@ return function ()
 				OP.EQ,
 				"wood_elf",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"bright_wizard",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"empire_soldier",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_melee",
-			},
 		},
 	})
 	define_rule({
@@ -21209,42 +21941,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"wood_elf",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"empire_soldier",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"dwarf_ranger",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_melee",
 			},
 		},
 	})
@@ -21342,42 +22038,6 @@ return function ()
 				OP.EQ,
 				"wood_elf",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"bright_wizard",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"empire_soldier",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
-			},
 		},
 	})
 	define_rule({
@@ -21425,42 +22085,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"wood_elf",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"bright_wizard",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"wood_elf",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
 			},
 		},
 	})
@@ -21510,42 +22134,6 @@ return function ()
 				OP.EQ,
 				"wood_elf",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"witch_hunter",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"dwarf_ranger",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
-			},
 		},
 	})
 	define_rule({
@@ -21569,42 +22157,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"wood_elf",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"bright_wizard",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"dwarf_ranger",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
 			},
 		},
 	})
@@ -22873,6 +23425,90 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pwe_gameplay_soldier_killing_troll_melee_01",
+		response = "pwe_gameplay_soldier_killing_troll_melee_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_melee",
+			},
+		},
+	})
+	define_rule({
+		name = "pwe_gameplay_soldier_killing_troll_ranged_01",
+		response = "pwe_gameplay_soldier_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pwe_gameplay_soldier_misses_bomb_01",
 		response = "pwe_gameplay_soldier_misses_bomb_01",
 		criterias = {
@@ -22905,6 +23541,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"wood_elf",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -23522,6 +24184,90 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pwe_gameplay_wizard_killing_troll_melee_01",
+		response = "pwe_gameplay_wizard_killing_troll_melee_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_melee",
+			},
+		},
+	})
+	define_rule({
+		name = "pwe_gameplay_wizard_killing_troll_ranged_01",
+		response = "pwe_gameplay_wizard_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pwe_gameplay_wizard_misses_bomb_01",
 		response = "pwe_gameplay_wizard_misses_bomb_01",
 		criterias = {
@@ -23554,6 +24300,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"wood_elf",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -24368,6 +25140,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pwh_gameplay_elf_killing_troll_ranged_01",
+		response = "pwh_gameplay_elf_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pwh_gameplay_elf_misses_bomb_01",
 		response = "pwh_gameplay_elf_misses_bomb_01",
 		criterias = {
@@ -24400,6 +25214,182 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"witch_hunter",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_elf_potions_above_half_health_01",
+		response = "pwh_gameplay_elf_potions_above_half_health_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"early_healing_draught",
+			},
+			{
+				"query_context",
+				"source_name",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"target_name",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMEDIFF,
+				OP.GT,
+				900,
+			},
+		},
+		on_done = {
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_elf_potions_above_half_health_01_reply_01",
+		response = "pwh_gameplay_elf_potions_above_half_health_01_reply_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pwe_gameplay_elf_potions_above_half_health_01_reply_03",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_elf_potions_above_half_health_02",
+		response = "pwh_gameplay_elf_potions_above_half_health_02",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"early_healing_draught",
+			},
+			{
+				"query_context",
+				"source_name",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"target_name",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMEDIFF,
+				OP.GT,
+				900,
+			},
+		},
+		on_done = {
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_elf_potions_above_half_health_02_reply_01",
+		response = "pwh_gameplay_elf_potions_above_half_health_02_reply_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pwe_gameplay_elf_potions_above_half_health_02_reply_03",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
 			},
 		},
 	})
@@ -26017,6 +27007,48 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pwh_gameplay_ranger_killing_troll_ranged_01",
+		response = "pwh_gameplay_ranger_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pwh_gameplay_ranger_misses_bomb_01",
 		response = "pwh_gameplay_ranger_misses_bomb_01",
 		criterias = {
@@ -26049,6 +27081,257 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"witch_hunter",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_ranger_potions_above_half_health_01",
+		response = "pwh_gameplay_ranger_potions_above_half_health_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"early_healing_draught",
+			},
+			{
+				"query_context",
+				"source_name",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"target_name",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMEDIFF,
+				OP.GT,
+				900,
+			},
+		},
+		on_done = {
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_ranger_potions_above_half_health_01_reply_01",
+		response = "pwh_gameplay_ranger_potions_above_half_health_01_reply_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pdr_gameplay_ranger_potions_above_half_health_01_reply_03",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_ranger_potions_above_half_health_02",
+		response = "pwh_gameplay_ranger_potions_above_half_health_02",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"early_healing_draught",
+			},
+			{
+				"query_context",
+				"source_name",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"target_name",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMEDIFF,
+				OP.GT,
+				900,
+			},
+		},
+		on_done = {
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_ranger_potions_above_half_health_02_reply_01",
+		response = "pwh_gameplay_ranger_potions_above_half_health_02_reply_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pdr_gameplay_ranger_potions_above_half_health_02_reply_04",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_ranger_potions_above_half_health_03",
+		response = "pwh_gameplay_ranger_potions_above_half_health_03",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"early_healing_draught",
+			},
+			{
+				"query_context",
+				"source_name",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"target_name",
+				OP.EQ,
+				"dwarf_ranger",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMEDIFF,
+				OP.GT,
+				900,
+			},
+		},
+		on_done = {
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_ranger_potions_above_half_health_03_reply_01",
+		response = "pwh_gameplay_ranger_potions_above_half_health_03_reply_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pdr_gameplay_ranger_potions_above_half_health_03_reply_04",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
 			},
 		},
 	})
@@ -26400,42 +27683,6 @@ return function ()
 				OP.EQ,
 				"witch_hunter",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"empire_soldier",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"wood_elf",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_melee",
-			},
 		},
 	})
 	define_rule({
@@ -26483,42 +27730,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"witch_hunter",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"bright_wizard",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"wood_elf",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_melee",
 			},
 		},
 	})
@@ -26664,42 +27875,6 @@ return function ()
 				OP.EQ,
 				"witch_hunter",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"empire_soldier",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"wood_elf",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
-			},
 		},
 	})
 	define_rule({
@@ -26747,42 +27922,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"witch_hunter",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"wood_elf",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"witch_hunter",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
 			},
 		},
 	})
@@ -26832,42 +27971,6 @@ return function ()
 				OP.EQ,
 				"witch_hunter",
 			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"dwarf_ranger",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"witch_hunter",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
-			},
 		},
 	})
 	define_rule({
@@ -26915,42 +28018,6 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"witch_hunter",
-			},
-			{
-				"query_context",
-				"concept",
-				OP.EQ,
-				"killed_enemy",
-			},
-			{
-				"query_context",
-				"enemy_tag",
-				OP.EQ,
-				"chaos_troll",
-			},
-			{
-				"user_context",
-				"friends_close",
-				OP.GTEQ,
-				1,
-			},
-			{
-				"query_context",
-				"killer_name",
-				OP.EQ,
-				"empire_soldier",
-			},
-			{
-				"user_context",
-				"player_profile",
-				OP.EQ,
-				"dwarf_ranger",
-			},
-			{
-				"query_context",
-				"weapon_slot",
-				OP.EQ,
-				"slot_ranged",
 			},
 		},
 	})
@@ -28083,6 +29150,134 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pwh_gameplay_soldier_killing_troll_melee_01",
+		response = "pwh_gameplay_soldier_killing_troll_melee_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_melee",
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_soldier_killing_troll_ranged_01",
+		response = "pwh_gameplay_soldier_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_soldier_potions_above_half_health_02",
+		response = "pwh_gameplay_soldier_potions_above_half_health_02",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"early_healing_draught",
+			},
+			{
+				"query_context",
+				"source_name",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"target_name",
+				OP.EQ,
+				"empire_soldier",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMEDIFF,
+				OP.GT,
+				900,
+			},
+		},
+		on_done = {
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
 		name = "pwh_gameplay_solider_misses_bomb_01",
 		response = "pwh_gameplay_solider_misses_bomb_01",
 		criterias = {
@@ -28115,6 +29310,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"witch_hunter",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -28765,6 +29986,90 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pwh_gameplay_wizard_killing_troll_melee_01",
+		response = "pwh_gameplay_wizard_killing_troll_melee_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_melee",
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_wizard_killing_troll_ranged_01",
+		response = "pwh_gameplay_wizard_killing_troll_ranged_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"killed_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_troll",
+			},
+			{
+				"user_context",
+				"friends_close",
+				OP.GTEQ,
+				1,
+			},
+			{
+				"query_context",
+				"killer_name",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"weapon_slot",
+				OP.EQ,
+				"slot_ranged",
+			},
+		},
+	})
+	define_rule({
 		name = "pwh_gameplay_wizard_misses_bomb_01",
 		response = "pwh_gameplay_wizard_misses_bomb_01",
 		criterias = {
@@ -28797,6 +30102,32 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"witch_hunter",
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.EQ,
+				0,
+			},
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_player_missed_bomb",
+				OP.TIMESET,
+			},
+			{
+				"user_memory",
+				"player_missed_bomb",
+				OP.ADD,
+				1,
 			},
 		},
 	})
@@ -28863,6 +30194,50 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pwh_gameplay_wizard_potions_above_half_health_03",
+		response = "pwh_gameplay_wizard_potions_above_half_health_03",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"early_healing_draught",
+			},
+			{
+				"query_context",
+				"source_name",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"query_context",
+				"target_name",
+				OP.EQ,
+				"bright_wizard",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMEDIFF,
+				OP.GT,
+				900,
+			},
+		},
+		on_done = {
+			{
+				"user_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
 		name = "pwh_gameplay_wizard_potions_above_half_health_03_reply_01",
 		response = "pwh_gameplay_wizard_potions_above_half_health_03_reply_01",
 		criterias = {
@@ -28883,6 +30258,74 @@ return function ()
 				"player_profile",
 				OP.EQ,
 				"witch_hunter",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_gameplay_wizard_potions_above_half_health_03_reply_02",
+		response = "pwh_gameplay_wizard_potions_above_half_health_03_reply_02",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pbw_gameplay_wizard_potions_above_half_health_03_reply_04",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_early_healing_draught",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwh_pwh_gameplay_soldier_potions_above_half_health_02_reply_01",
+		response = "pwh_pwh_gameplay_soldier_potions_above_half_health_02_reply_01",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"heard_speak",
+			},
+			{
+				"query_context",
+				"sound_event",
+				OP.EQ,
+				"pes_gameplay_soldier_potions_above_half_health_02_reply_04",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"witch_hunter",
+			},
+			{
+				"global_context",
+				"es_questingknight",
+				OP.EQ,
+				0,
 			},
 		},
 		on_done = {
@@ -29400,6 +30843,28 @@ return function ()
 				[1] = 3.2810208797455,
 			},
 		},
+		pbw_gameplay_elf_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pbw_gameplay_elf_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pbw_gameplay_elf_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 1.246749997139,
+			},
+		},
 		pbw_gameplay_elf_misses_bomb_01 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
@@ -29867,6 +31332,28 @@ return function ()
 				[1] = 2.6131250858307,
 			},
 		},
+		pbw_gameplay_hunter_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pbw_gameplay_hunter_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pbw_gameplay_hunter_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 2.3018333911896,
+			},
+		},
 		pbw_gameplay_hunter_kills_3_specials_in_a_row_02 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
@@ -30327,6 +31814,28 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 1.6492916345596,
+			},
+		},
+		pbw_gameplay_ranger_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pbw_gameplay_ranger_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pbw_gameplay_ranger_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 2.2381875514984,
 			},
 		},
 		pbw_gameplay_ranger_misses_bomb_01 = {
@@ -30860,30 +32369,23 @@ return function ()
 		pbw_gameplay_response_145 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pbw_gameplay_response_145",
-				[2] = "pwh_gameplay_soldier_killing_troll_melee_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pbw_gameplay_response_145",
-				[2] = "pwh_gameplay_soldier_killing_troll_melee_01",
 			},
 			sound_events_duration = {
 				[1] = 0.88218748569489,
-				[2] = 6.2334585189819,
 			},
 		},
 		pbw_gameplay_response_146 = {
@@ -30977,59 +32479,45 @@ return function ()
 		pbw_gameplay_response_150 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pbw_gameplay_response_150",
-				[2] = "pes_gameplay_hunter_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pbw_gameplay_response_150",
-				[2] = "pes_gameplay_hunter_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 3.4987082481384,
-				[2] = 2.0599687099457,
 			},
 		},
 		pbw_gameplay_response_151 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pbw_gameplay_response_151",
-				[2] = "pwe_gameplay_ranger_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pbw_gameplay_response_151",
-				[2] = "pwe_gameplay_ranger_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 5.1344165802002,
-				[2] = 4.4044165611267,
 			},
 		},
 		pbw_gameplay_response_152 = {
@@ -31057,117 +32545,89 @@ return function ()
 		pbw_gameplay_response_153 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pbw_gameplay_response_153",
-				[2] = "pwh_gameplay_soldier_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pbw_gameplay_response_153",
-				[2] = "pwh_gameplay_soldier_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 4.164083480835,
-				[2] = 1.3996249437332,
 			},
 		},
 		pbw_gameplay_response_154 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pbw_gameplay_response_154",
-				[2] = "pwh_gameplay_wizard_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pbw_gameplay_response_154",
-				[2] = "pwh_gameplay_wizard_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 3.3548958301544,
-				[2] = 6.673291683197,
 			},
 		},
 		pbw_gameplay_response_155 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pbw_gameplay_response_155",
-				[2] = "pbw_gameplay_soldier_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pbw_gameplay_response_155",
-				[2] = "pbw_gameplay_soldier_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 2.2663540840149,
-				[2] = 1.6343749761581,
 			},
 		},
 		pbw_gameplay_response_156 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pbw_gameplay_response_156",
-				[2] = "pbw_gameplay_hunter_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pbw_gameplay_response_156",
-				[2] = "pbw_gameplay_hunter_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 3.4592082500458,
-				[2] = 2.3018333911896,
 			},
 		},
 		pbw_gameplay_response_157 = {
@@ -31547,30 +33007,23 @@ return function ()
 		pbw_gameplay_response_199 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pbw_gameplay_response_199",
-				[2] = "pdr_gameplay_wizard_killing_troll_melee_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pbw_gameplay_response_199",
-				[2] = "pdr_gameplay_wizard_killing_troll_melee_01",
 			},
 			sound_events_duration = {
 				[1] = 4.5523958206177,
-				[2] = 3.3403542041779,
 			},
 		},
 		pbw_gameplay_response_20 = {
@@ -31989,6 +33442,28 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 2.0032708644867,
+			},
+		},
+		pbw_gameplay_soldier_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pbw_gameplay_soldier_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pbw_gameplay_soldier_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 1.6343749761581,
 			},
 		},
 		pbw_gameplay_soldier_misses_bomb_01 = {
@@ -32959,6 +34434,28 @@ return function ()
 				[1] = 2.0208957195282,
 			},
 		},
+		pbw_gameplay_wizard_potions_above_half_health_03_reply_04 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pbw_gameplay_wizard_potions_above_half_health_03_reply_04",
+			},
+			sound_events = {
+				[1] = "pbw_gameplay_wizard_potions_above_half_health_03_reply_04",
+			},
+			sound_events_duration = {
+				[1] = 0.81927084922791,
+			},
+		},
 		pbw_killing_a_second_rat_ogre_02 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
@@ -33353,6 +34850,28 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 3.6752083301544,
+			},
+		},
+		pdr_gameplay_elf_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pdr_gameplay_elf_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pdr_gameplay_elf_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 2.8445208072662,
 			},
 		},
 		pdr_gameplay_elf_misses_bomb_01 = {
@@ -33974,6 +35493,28 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 2.9719791412353,
+			},
+		},
+		pdr_gameplay_hunter_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pdr_gameplay_hunter_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pdr_gameplay_hunter_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 3.7712917327881,
 			},
 		},
 		pdr_gameplay_hunter_misses_bomb_01 = {
@@ -34835,6 +36376,28 @@ return function ()
 				[1] = 5.4451456069946,
 			},
 		},
+		pdr_gameplay_ranger_potions_above_half_health_01_reply_03 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pdr_gameplay_ranger_potions_above_half_health_01_reply_03",
+			},
+			sound_events = {
+				[1] = "pdr_gameplay_ranger_potions_above_half_health_01_reply_03",
+			},
+			sound_events_duration = {
+				[1] = 3.2645833492279,
+			},
+		},
 		pdr_gameplay_ranger_potions_above_half_health_02_reply_01 = {
 			category = "casual_talk",
 			database = "special_occasions_honduras",
@@ -34901,6 +36464,28 @@ return function ()
 				[1] = 2.9191875457764,
 			},
 		},
+		pdr_gameplay_ranger_potions_above_half_health_02_reply_04 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pdr_gameplay_ranger_potions_above_half_health_02_reply_04",
+			},
+			sound_events = {
+				[1] = "pdr_gameplay_ranger_potions_above_half_health_02_reply_04",
+			},
+			sound_events_duration = {
+				[1] = 3.3283751010895,
+			},
+		},
 		pdr_gameplay_ranger_potions_above_half_health_03_reply_01 = {
 			category = "casual_talk",
 			database = "special_occasions_honduras",
@@ -34965,6 +36550,28 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 4.3161668777466,
+			},
+		},
+		pdr_gameplay_ranger_potions_above_half_health_03_reply_04 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pdr_gameplay_ranger_potions_above_half_health_03_reply_04",
+			},
+			sound_events = {
+				[1] = "pdr_gameplay_ranger_potions_above_half_health_03_reply_04",
+			},
+			sound_events_duration = {
+				[1] = 2.2877082824707,
 			},
 		},
 		pdr_gameplay_ranger_potions_above_half_health_04_reply_01 = {
@@ -35520,30 +37127,23 @@ return function ()
 		pdr_gameplay_response_157 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pdr_gameplay_response_157",
-				[2] = "pwe_gameplay_hunter_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pdr_gameplay_response_157",
-				[2] = "pwe_gameplay_hunter_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 2.120374917984,
-				[2] = 2.0093333721161,
 			},
 		},
 		pdr_gameplay_response_158 = {
@@ -35615,30 +37215,23 @@ return function ()
 		pdr_gameplay_response_161 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pdr_gameplay_response_161",
-				[2] = "pdr_gameplay_elf_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pdr_gameplay_response_161",
-				[2] = "pdr_gameplay_elf_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 5.8654789924622,
-				[2] = 2.8445208072662,
 			},
 		},
 		pdr_gameplay_response_162 = {
@@ -36631,6 +38224,50 @@ return function ()
 				[1] = 3.8858542442322,
 			},
 		},
+		pdr_gameplay_soldier_killing_troll_melee_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pdr_gameplay_soldier_killing_troll_melee_01",
+			},
+			sound_events = {
+				[1] = "pdr_gameplay_soldier_killing_troll_melee_01",
+			},
+			sound_events_duration = {
+				[1] = 6.2466039657593,
+			},
+		},
+		pdr_gameplay_soldier_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pdr_gameplay_soldier_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pdr_gameplay_soldier_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 3.1486666202545,
+			},
+		},
 		pdr_gameplay_soldier_misses_bomb_01 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
@@ -37157,6 +38794,50 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 3.0931665897369,
+			},
+		},
+		pdr_gameplay_wizard_killing_troll_melee_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pdr_gameplay_wizard_killing_troll_melee_01",
+			},
+			sound_events = {
+				[1] = "pdr_gameplay_wizard_killing_troll_melee_01",
+			},
+			sound_events_duration = {
+				[1] = 3.3403542041779,
+			},
+		},
+		pdr_gameplay_wizard_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pdr_gameplay_wizard_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pdr_gameplay_wizard_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 3.7340624332428,
 			},
 		},
 		pdr_gameplay_wizard_kills_3_specials_in_a_row_02 = {
@@ -37729,6 +39410,28 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 4.1620626449585,
+			},
+		},
+		pes_gameplay_elf_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pes_gameplay_elf_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pes_gameplay_elf_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 3.5201041698456,
 			},
 		},
 		pes_gameplay_elf_misses_bomb_01 = {
@@ -38306,6 +40009,28 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 1.6237916946411,
+			},
+		},
+		pes_gameplay_hunter_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pes_gameplay_hunter_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pes_gameplay_hunter_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 2.0599687099457,
 			},
 		},
 		pes_gameplay_hunter_kills_3_specials_in_a_row_02_reply_01 = {
@@ -38893,6 +40618,28 @@ return function ()
 				[1] = 2.3619999885559,
 			},
 		},
+		pes_gameplay_ranger_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pes_gameplay_ranger_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pes_gameplay_ranger_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 3.9827499389648,
+			},
+		},
 		pes_gameplay_ranger_misses_bomb_01 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
@@ -39380,30 +41127,23 @@ return function ()
 		pes_gameplay_response_139 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pes_gameplay_response_139",
-				[2] = "pwh_gameplay_wizard_killing_troll_melee_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pes_gameplay_response_139",
-				[2] = "pwh_gameplay_wizard_killing_troll_melee_01",
 			},
 			sound_events_duration = {
 				[1] = 2.3132915496826,
-				[2] = 5.0317916870117,
 			},
 		},
 		pes_gameplay_response_14 = {
@@ -39519,30 +41259,23 @@ return function ()
 		pes_gameplay_response_144 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pes_gameplay_response_144",
-				[2] = "pbw_gameplay_elf_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pes_gameplay_response_144",
-				[2] = "pbw_gameplay_elf_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 3.5143959522247,
-				[2] = 1.246749997139,
 			},
 		},
 		pes_gameplay_response_145 = {
@@ -39570,30 +41303,23 @@ return function ()
 		pes_gameplay_response_146 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pes_gameplay_response_146",
-				[2] = "pes_gameplay_elf_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pes_gameplay_response_146",
-				[2] = "pes_gameplay_elf_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 1.7487291097641,
-				[2] = 3.5201041698456,
 			},
 		},
 		pes_gameplay_response_147 = {
@@ -39621,59 +41347,45 @@ return function ()
 		pes_gameplay_response_148 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pes_gameplay_response_148",
-				[2] = "pbw_gameplay_ranger_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pes_gameplay_response_148",
-				[2] = "pbw_gameplay_ranger_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 2.309291601181,
-				[2] = 2.2381875514984,
 			},
 		},
 		pes_gameplay_response_149 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pes_gameplay_response_149",
-				[2] = "pes_gameplay_ranger_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pes_gameplay_response_149",
-				[2] = "pes_gameplay_ranger_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 3.6704375743866,
-				[2] = 3.9827499389648,
 			},
 		},
 		pes_gameplay_response_15 = {
@@ -40886,6 +42598,28 @@ return function ()
 				[1] = 1.9096250534058,
 			},
 		},
+		pes_gameplay_soldier_potions_above_half_health_02_reply_04 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pes_gameplay_soldier_potions_above_half_health_02_reply_04",
+			},
+			sound_events = {
+				[1] = "pes_gameplay_soldier_potions_above_half_health_02_reply_04",
+			},
+			sound_events_duration = {
+				[1] = 4.3956873416901,
+			},
+		},
 		pes_gameplay_soldier_potions_above_half_health_03_reply_01 = {
 			category = "casual_talk",
 			database = "special_occasions_honduras",
@@ -41282,6 +43016,50 @@ return function ()
 				[1] = 3.0062084197998,
 			},
 		},
+		pes_gameplay_wizard_killing_troll_melee_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pes_gameplay_wizard_killing_troll_melee_01",
+			},
+			sound_events = {
+				[1] = "pes_gameplay_wizard_killing_troll_melee_01",
+			},
+			sound_events_duration = {
+				[1] = 1.8489583730698,
+			},
+		},
+		pes_gameplay_wizard_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pes_gameplay_wizard_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pes_gameplay_wizard_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 2.239458322525,
+			},
+		},
 		pes_gameplay_wizard_kills_3_specials_in_a_row_02_reply_01 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
@@ -41547,7 +43325,7 @@ return function ()
 			},
 		},
 		pwe_gameplay_dwarf_picks_up_a_bomb = {
-			category = "default",
+			category = "special_occasion",
 			database = "special_occasions_honduras",
 			dialogue_animations_n = 1,
 			face_animations_n = 1,
@@ -42206,6 +43984,28 @@ return function ()
 				[1] = 3.8659167289734,
 			},
 		},
+		pwe_gameplay_elf_potions_above_half_health_01_reply_03 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwe_gameplay_elf_potions_above_half_health_01_reply_03",
+			},
+			sound_events = {
+				[1] = "pwe_gameplay_elf_potions_above_half_health_01_reply_03",
+			},
+			sound_events_duration = {
+				[1] = 5.3971877098083,
+			},
+		},
 		pwe_gameplay_elf_potions_above_half_health_02_reply_01 = {
 			category = "casual_talk",
 			database = "special_occasions_honduras",
@@ -42248,6 +44048,28 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 3.3643124103546,
+			},
+		},
+		pwe_gameplay_elf_potions_above_half_health_02_reply_03 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwe_gameplay_elf_potions_above_half_health_02_reply_03",
+			},
+			sound_events = {
+				[1] = "pwe_gameplay_elf_potions_above_half_health_02_reply_03",
+			},
+			sound_events_duration = {
+				[1] = 4.7010626792908,
 			},
 		},
 		pwe_gameplay_elf_potions_above_half_health_03_reply_01 = {
@@ -42759,6 +44581,28 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 2.9165832996368,
+			},
+		},
+		pwe_gameplay_hunter_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwe_gameplay_hunter_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pwe_gameplay_hunter_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 2.0093333721161,
 			},
 		},
 		pwe_gameplay_hunter_misses_bomb_01 = {
@@ -43377,6 +45221,28 @@ return function ()
 				[1] = 2.7956042289734,
 			},
 		},
+		pwe_gameplay_ranger_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwe_gameplay_ranger_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pwe_gameplay_ranger_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 4.4044165611267,
+			},
+		},
 		pwe_gameplay_ranger_misses_bomb_01 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
@@ -43886,30 +45752,23 @@ return function ()
 		pwe_gameplay_response_148 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pwe_gameplay_response_148",
-				[2] = "pes_gameplay_wizard_killing_troll_melee_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pwe_gameplay_response_148",
-				[2] = "pes_gameplay_wizard_killing_troll_melee_01",
 			},
 			sound_events_duration = {
 				[1] = 5.3911666870117,
-				[2] = 1.8489583730698,
 			},
 		},
 		pwe_gameplay_response_149 = {
@@ -43959,30 +45818,23 @@ return function ()
 		pwe_gameplay_response_151 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pwe_gameplay_response_151",
-				[2] = "pdr_gameplay_soldier_killing_troll_melee_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pwe_gameplay_response_151",
-				[2] = "pdr_gameplay_soldier_killing_troll_melee_01",
 			},
 			sound_events_duration = {
 				[1] = 2.5986042022705,
-				[2] = 6.2466039657593,
 			},
 		},
 		pwe_gameplay_response_152 = {
@@ -44054,30 +45906,23 @@ return function ()
 		pwe_gameplay_response_156 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pwe_gameplay_response_156",
-				[2] = "pes_gameplay_wizard_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pwe_gameplay_response_156",
-				[2] = "pes_gameplay_wizard_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 2.7527084350586,
-				[2] = 2.239458322525,
 			},
 		},
 		pwe_gameplay_response_157 = {
@@ -44105,30 +45950,23 @@ return function ()
 		pwe_gameplay_response_158 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pwe_gameplay_response_158",
-				[2] = "pwe_gameplay_wizard_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pwe_gameplay_response_158",
-				[2] = "pwe_gameplay_wizard_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 2.7744791507721,
-				[2] = 2.8671040534973,
 			},
 		},
 		pwe_gameplay_response_159 = {
@@ -44156,59 +45994,45 @@ return function ()
 		pwe_gameplay_response_160 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pwe_gameplay_response_160",
-				[2] = "pdr_gameplay_hunter_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pwe_gameplay_response_160",
-				[2] = "pdr_gameplay_hunter_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 3.9625415802002,
-				[2] = 3.7712917327881,
 			},
 		},
 		pwe_gameplay_response_161 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pwe_gameplay_response_161",
-				[2] = "pdr_gameplay_wizard_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pwe_gameplay_response_161",
-				[2] = "pdr_gameplay_wizard_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 7.3709998130798,
-				[2] = 3.7340624332428,
 			},
 		},
 		pwe_gameplay_response_162 = {
@@ -45223,6 +47047,50 @@ return function ()
 				[1] = 3.9452707767487,
 			},
 		},
+		pwe_gameplay_soldier_killing_troll_melee_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwe_gameplay_soldier_killing_troll_melee_01",
+			},
+			sound_events = {
+				[1] = "pwe_gameplay_soldier_killing_troll_melee_01",
+			},
+			sound_events_duration = {
+				[1] = 5.2760210037231,
+			},
+		},
+		pwe_gameplay_soldier_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwe_gameplay_soldier_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pwe_gameplay_soldier_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 4.4217500686645,
+			},
+		},
 		pwe_gameplay_soldier_misses_bomb_01 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
@@ -45595,6 +47463,50 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 3.7967500686645,
+			},
+		},
+		pwe_gameplay_wizard_killing_troll_melee_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwe_gameplay_wizard_killing_troll_melee_01",
+			},
+			sound_events = {
+				[1] = "pwe_gameplay_wizard_killing_troll_melee_01",
+			},
+			sound_events_duration = {
+				[1] = 2.8948750495911,
+			},
+		},
+		pwe_gameplay_wizard_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwe_gameplay_wizard_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pwe_gameplay_wizard_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 2.8671040534973,
 			},
 		},
 		pwe_gameplay_wizard_misses_bomb_01 = {
@@ -46147,6 +48059,28 @@ return function ()
 				[1] = 1.9789375066757,
 			},
 		},
+		pwh_gameplay_elf_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_elf_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_elf_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 3.8949999809265,
+			},
+		},
 		pwh_gameplay_elf_misses_bomb_01 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
@@ -46167,6 +48101,94 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 2.9102499485016,
+			},
+		},
+		pwh_gameplay_elf_potions_above_half_health_01 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_smug",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_elf_potions_above_half_health_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_elf_potions_above_half_health_01",
+			},
+			sound_events_duration = {
+				[1] = 3.8222916126251,
+			},
+		},
+		pwh_gameplay_elf_potions_above_half_health_01_reply_01 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_elf_potions_above_half_health_01_reply_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_elf_potions_above_half_health_01_reply_01",
+			},
+			sound_events_duration = {
+				[1] = 2.7792499065399,
+			},
+		},
+		pwh_gameplay_elf_potions_above_half_health_02 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_smug",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_elf_potions_above_half_health_02",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_elf_potions_above_half_health_02",
+			},
+			sound_events_duration = {
+				[1] = 2.6821665763855,
+			},
+		},
+		pwh_gameplay_elf_potions_above_half_health_02_reply_01 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_elf_potions_above_half_health_02_reply_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_elf_potions_above_half_health_02_reply_01",
+			},
+			sound_events_duration = {
+				[1] = 1.1868749856949,
 			},
 		},
 		pwh_gameplay_hanging_help = {
@@ -47362,6 +49384,28 @@ return function ()
 				[1] = 2.5898332595825,
 			},
 		},
+		pwh_gameplay_ranger_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_ranger_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_ranger_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 2.9807915687561,
+			},
+		},
 		pwh_gameplay_ranger_misses_bomb_01 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
@@ -47382,6 +49426,138 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 5.2872290611267,
+			},
+		},
+		pwh_gameplay_ranger_potions_above_half_health_01 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_smug",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_ranger_potions_above_half_health_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_ranger_potions_above_half_health_01",
+			},
+			sound_events_duration = {
+				[1] = 2.4495000839233,
+			},
+		},
+		pwh_gameplay_ranger_potions_above_half_health_01_reply_01 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_ranger_potions_above_half_health_01_reply_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_ranger_potions_above_half_health_01_reply_01",
+			},
+			sound_events_duration = {
+				[1] = 3.2312290668488,
+			},
+		},
+		pwh_gameplay_ranger_potions_above_half_health_02 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_smug",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_ranger_potions_above_half_health_02",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_ranger_potions_above_half_health_02",
+			},
+			sound_events_duration = {
+				[1] = 3.4193749427795,
+			},
+		},
+		pwh_gameplay_ranger_potions_above_half_health_02_reply_01 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_ranger_potions_above_half_health_02_reply_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_ranger_potions_above_half_health_02_reply_01",
+			},
+			sound_events_duration = {
+				[1] = 2.095541715622,
+			},
+		},
+		pwh_gameplay_ranger_potions_above_half_health_03 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_smug",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_ranger_potions_above_half_health_03",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_ranger_potions_above_half_health_03",
+			},
+			sound_events_duration = {
+				[1] = 6.2178750038147,
+			},
+		},
+		pwh_gameplay_ranger_potions_above_half_health_03_reply_01 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_ranger_potions_above_half_health_03_reply_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_ranger_potions_above_half_health_03_reply_01",
+			},
+			sound_events_duration = {
+				[1] = 2.7486667633057,
 			},
 		},
 		pwh_gameplay_response_043 = {
@@ -47673,30 +49849,23 @@ return function ()
 		pwh_gameplay_response_145 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pwh_gameplay_response_145",
-				[2] = "pwe_gameplay_soldier_killing_troll_melee_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pwh_gameplay_response_145",
-				[2] = "pwe_gameplay_soldier_killing_troll_melee_01",
 			},
 			sound_events_duration = {
 				[1] = 3.5002915859222,
-				[2] = 5.2760210037231,
 			},
 		},
 		pwh_gameplay_response_146 = {
@@ -47724,30 +49893,23 @@ return function ()
 		pwh_gameplay_response_147 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pwh_gameplay_response_147",
-				[2] = "pwe_gameplay_wizard_killing_troll_melee_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pwh_gameplay_response_147",
-				[2] = "pwe_gameplay_wizard_killing_troll_melee_01",
 			},
 			sound_events_duration = {
 				[1] = 3.765625,
-				[2] = 2.8948750495911,
 			},
 		},
 		pwh_gameplay_response_148 = {
@@ -47863,30 +50025,23 @@ return function ()
 		pwh_gameplay_response_153 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pwh_gameplay_response_153",
-				[2] = "pwe_gameplay_soldier_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pwh_gameplay_response_153",
-				[2] = "pwe_gameplay_soldier_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 2.2950832843781,
-				[2] = 4.4217500686645,
 			},
 		},
 		pwh_gameplay_response_154 = {
@@ -47914,30 +50069,23 @@ return function ()
 		pwh_gameplay_response_155 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pwh_gameplay_response_155",
-				[2] = "pwh_gameplay_elf_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pwh_gameplay_response_155",
-				[2] = "pwh_gameplay_elf_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 4.0076456069946,
-				[2] = 3.8949999809265,
 			},
 		},
 		pwh_gameplay_response_156 = {
@@ -47965,30 +50113,23 @@ return function ()
 		pwh_gameplay_response_157 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pwh_gameplay_response_157",
-				[2] = "pwh_gameplay_ranger_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pwh_gameplay_response_157",
-				[2] = "pwh_gameplay_ranger_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 4.8428750038147,
-				[2] = 2.9807915687561,
 			},
 		},
 		pwh_gameplay_response_158 = {
@@ -48016,30 +50157,23 @@ return function ()
 		pwh_gameplay_response_159 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
-			dialogue_animations_n = 2,
-			face_animations_n = 2,
-			randomize_indexes_n = 0,
-			sound_events_n = 2,
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
 			dialogue_animations = {
 				[1] = "dialogue_talk",
-				[2] = "dialogue_talk",
 			},
 			face_animations = {
 				[1] = "face_neutral",
-				[2] = "face_neutral",
 			},
 			localization_strings = {
 				[1] = "pwh_gameplay_response_159",
-				[2] = "pdr_gameplay_soldier_killing_troll_ranged_01",
 			},
-			randomize_indexes = {},
 			sound_events = {
 				[1] = "pwh_gameplay_response_159",
-				[2] = "pdr_gameplay_soldier_killing_troll_ranged_01",
 			},
 			sound_events_duration = {
 				[1] = 5.3045415878296,
-				[2] = 3.1486666202545,
 			},
 		},
 		pwh_gameplay_response_160 = {
@@ -48922,6 +51056,72 @@ return function ()
 				[1] = 2.170104265213,
 			},
 		},
+		pwh_gameplay_soldier_killing_troll_melee_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_soldier_killing_troll_melee_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_soldier_killing_troll_melee_01",
+			},
+			sound_events_duration = {
+				[1] = 6.2334585189819,
+			},
+		},
+		pwh_gameplay_soldier_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_soldier_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_soldier_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 1.3996249437332,
+			},
+		},
+		pwh_gameplay_soldier_potions_above_half_health_02 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_smug",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_soldier_potions_above_half_health_02",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_soldier_potions_above_half_health_02",
+			},
+			sound_events_duration = {
+				[1] = 2.2024166584015,
+			},
+		},
 		pwh_gameplay_solider_misses_bomb_01 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
@@ -49384,6 +51584,50 @@ return function ()
 				[1] = 3.736624956131,
 			},
 		},
+		pwh_gameplay_wizard_killing_troll_melee_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_wizard_killing_troll_melee_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_wizard_killing_troll_melee_01",
+			},
+			sound_events_duration = {
+				[1] = 5.0317916870117,
+			},
+		},
+		pwh_gameplay_wizard_killing_troll_ranged_01 = {
+			category = "special_occasion",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_wizard_killing_troll_ranged_01",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_wizard_killing_troll_ranged_01",
+			},
+			sound_events_duration = {
+				[1] = 6.673291683197,
+			},
+		},
 		pwh_gameplay_wizard_misses_bomb_01 = {
 			category = "special_occasion",
 			database = "special_occasions_honduras",
@@ -49450,6 +51694,28 @@ return function ()
 				[1] = 2.943437576294,
 			},
 		},
+		pwh_gameplay_wizard_potions_above_half_health_03 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_smug",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_wizard_potions_above_half_health_03",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_wizard_potions_above_half_health_03",
+			},
+			sound_events_duration = {
+				[1] = 2.7536041736603,
+			},
+		},
 		pwh_gameplay_wizard_potions_above_half_health_03_reply_01 = {
 			category = "casual_talk",
 			database = "special_occasions_honduras",
@@ -49470,6 +51736,50 @@ return function ()
 			},
 			sound_events_duration = {
 				[1] = 4.358916759491,
+			},
+		},
+		pwh_gameplay_wizard_potions_above_half_health_03_reply_02 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_gameplay_wizard_potions_above_half_health_03_reply_02",
+			},
+			sound_events = {
+				[1] = "pwh_gameplay_wizard_potions_above_half_health_03_reply_02",
+			},
+			sound_events_duration = {
+				[1] = 2.536333322525,
+			},
+		},
+		pwh_pwh_gameplay_soldier_potions_above_half_health_02_reply_01 = {
+			category = "casual_talk",
+			database = "special_occasions_honduras",
+			dialogue_animations_n = 1,
+			face_animations_n = 1,
+			sound_events_n = 1,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwh_pwh_gameplay_soldier_potions_above_half_health_02_reply_01",
+			},
+			sound_events = {
+				[1] = "pwh_pwh_gameplay_soldier_potions_above_half_health_02_reply_01",
+			},
+			sound_events_duration = {
+				[1] = 8.430832862854,
 			},
 		},
 	})

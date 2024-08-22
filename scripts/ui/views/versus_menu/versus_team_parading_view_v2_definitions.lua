@@ -20,6 +20,11 @@ local scenegraph_position = {
 		0,
 		1,
 	},
+	top_bar_detail = {
+		0,
+		-20,
+		1,
+	},
 	center_pivot = {
 		0,
 		0,
@@ -56,8 +61,12 @@ local scenegraph_size = {
 		250,
 	},
 	bottom_bar_detail = {
-		1920,
-		10,
+		1860,
+		14,
+	},
+	top_bar_detail = {
+		1860,
+		14,
 	},
 	center_pivot = {
 		0,
@@ -92,8 +101,8 @@ local scenegraph_definition = {
 		horizontal_alignment = "center",
 		parent = "screen",
 		vertical_alignment = "top",
-		size = scenegraph_size.bottom_bar_detail,
-		position = scenegraph_position.bottom_bar,
+		size = scenegraph_size.top_bar_detail,
+		position = scenegraph_position.top_bar_detail,
 	},
 	center_pivot = {
 		horizontal_alignment = "center",
@@ -132,7 +141,7 @@ local scenegraph_definition = {
 	},
 }
 local team_text_style = {
-	font_size = 150,
+	font_size = 72,
 	font_type = "hell_shark_header",
 	horizontal_alignment = "left",
 	localize = false,
@@ -140,7 +149,7 @@ local team_text_style = {
 	use_shadow = true,
 	vertical_alignment = "top",
 	word_wrap = true,
-	text_color = Colors.get_color_table_with_alpha("local_player_team", 255),
+	text_color = Colors.get_color_table_with_alpha("local_player_team", 0),
 	offset = {
 		0,
 		-10,
@@ -212,7 +221,7 @@ function create_player_name_career_text(scenegraph_id)
 		},
 		style = {
 			player_name = {
-				font_size = 30,
+				font_size = 28,
 				font_type = "hell_shark_header",
 				horizontal_alignment = "center",
 				localize = false,
@@ -220,7 +229,7 @@ function create_player_name_career_text(scenegraph_id)
 				use_shadow = true,
 				vertical_alignment = "center",
 				word_wrap = true,
-				text_color = Colors.get_color_table_with_alpha("local_player_team", 255),
+				text_color = Colors.get_color_table_with_alpha("local_player_team_lighter", 255),
 				offset = {
 					0,
 					0,
@@ -228,7 +237,7 @@ function create_player_name_career_text(scenegraph_id)
 				},
 			},
 			career_name = {
-				font_size = 30,
+				font_size = 24,
 				font_type = "hell_shark_header",
 				horizontal_alignment = "center",
 				localize = true,
@@ -255,12 +264,11 @@ end
 
 local bottom_widgets_definitions = {
 	bottom_background = UIWidgets.create_simple_rect("bottom_bar", Colors.get_color_table_with_alpha("black", 185)),
-	bottom_background_detail = UIWidgets.create_simple_rect("bottom_bar_detail", Colors.get_color_table_with_alpha("local_player_team", 255)),
+	bottom_background_detail = UIWidgets.create_parading_screen_divider("bottom_bar_detail", scenegraph_definition.bottom_bar_detail.size),
 }
 local top_widgets_definitions = {
-	team_text = UIWidgets.create_simple_text("HAMMERS", "top_bar_detail", nil, nil, team_text_style),
-	top_background_detail = UIWidgets.create_simple_rect("top_bar_detail", Colors.get_color_table_with_alpha("local_player_team", 255)),
-	team_flag = UIWidgets.create_simple_texture("team_one_banner", "top_bar_detail", nil, nil, {
+	top_background_detail = UIWidgets.create_parading_screen_divider("top_bar_detail", scenegraph_definition.top_bar_detail.size),
+	team_flag = UIWidgets.create_simple_texture("banner_hammers_local_long", "top_bar_detail", nil, nil, {
 		255,
 		255,
 		255,
@@ -270,8 +278,8 @@ local top_widgets_definitions = {
 		-252,
 		0,
 	}, {
-		156,
-		252,
+		232,
+		484,
 	}),
 }
 local vs_text_size = {
@@ -420,20 +428,14 @@ local animation_definitions = {
 				local anim_progress = math.easeOutCubic(progress)
 				local anim_quad_progress = math.ease_out_quad(progress)
 				local self = params.self
-				local team_name = self._widgets_by_name.team_text
 				local top_detail = self._widgets_by_name.top_background_detail
 				local team_banner = self._widgets_by_name.team_flag
-				local x_text = -1664 + 1920 * anim_quad_progress
-				local offset = team_name.offset
-
-				offset[1] = x_text
-
 				local x_detail = 1920 - 1920 * anim_progress
 				local detail_offset = top_detail.offset
 
 				detail_offset[1] = x_detail
 
-				local y_banner = -252 + 252 * (1 - anim_progress)
+				local y_banner = -480 + 480 * (1 - anim_progress)
 				local banner_offset = team_banner.offset
 
 				banner_offset[2] = y_banner
@@ -599,24 +601,15 @@ local animation_definitions = {
 				local anim_progress = math.easeOutCubic(progress)
 				local anim_quad_progress = math.ease_out_quad(progress)
 				local self = params.self
-				local team_name = self._widgets_by_name.team_text
 				local top_detail = self._widgets_by_name.top_background_detail
 				local team_banner = self._widgets_by_name.team_flag
 				local ui_renderer = self._ui_top_renderer
-				local text_style = team_name.style.text
-				local text = team_name.content.text
-				local width = UIUtils.get_text_width(ui_renderer, text_style, text)
-				local x_text = 1920 - width - 250 + 1920 * (1 - anim_quad_progress)
-				local offset = team_name.offset
-
-				offset[1] = x_text
-
 				local x_detail = 0 + -3840 * (1 - anim_progress)
 				local detail_offset = top_detail.offset
 
 				detail_offset[1] = x_detail
 
-				local y_banner = -252 + 252 * (1 - anim_progress)
+				local y_banner = -480 + 480 * (1 - anim_progress)
 				local banner_offset = team_banner.offset
 
 				banner_offset[2] = y_banner

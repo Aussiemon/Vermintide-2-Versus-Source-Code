@@ -11,45 +11,9 @@ end
 
 RatlingGunnerStateWalking.on_enter = function (self, unit, input, dt, context, t, previous_state, params)
 	RatlingGunnerStateWalking.super.on_enter(self, unit, input, dt, context, t, previous_state, params)
-	CharacterStateHelper.play_animation_event(unit, "no_anim_upperbody")
 
 	self._left_wpn_particle_node_name = "g_ratlinggun"
 	self._left_wpn_particle_name = "fx/wpnfx_gunner_enemy_in_range_1p"
-
-	self:check_enemies_in_range_vfx()
-end
-
-RatlingGunnerStateWalking.update = function (self, unit, input, dt, context, t)
-	local handled = self:common_state_changes()
-
-	if handled then
-		return
-	end
-
-	local csm = self._csm
-	local career_extension = self._career_extension
-
-	self:check_enemies_in_range_vfx()
-	RatlingGunnerStateWalking.super:debug_display_ratling_gunner_ammo(unit)
-
-	if career_extension:ability_was_triggered(self._reload_ability_id) then
-		csm:change_state("ratling_gunner_reloading")
-
-		return
-	end
-
-	if career_extension:ability_was_triggered(self._fire_ability_id) then
-		csm:change_state("ratling_gunner_firing")
-
-		return
-	end
-
-	self:_update_taunt_dialogue(t)
-
-	local ghost_mode_extension = self._ghost_mode_extension
-	local in_ghost_mode = ghost_mode_extension:is_in_ghost_mode()
-
-	handled = self:common_movement(in_ghost_mode, dt)
 end
 
 RatlingGunnerStateWalking.debug_display_ammo = function (self)

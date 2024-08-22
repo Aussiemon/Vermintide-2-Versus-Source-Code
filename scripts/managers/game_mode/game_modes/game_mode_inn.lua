@@ -103,10 +103,6 @@ end
 GameModeInn.event_local_player_spawned = function (self, is_initial_spawn)
 	self._local_player_spawned = true
 	self._is_initial_spawn = is_initial_spawn
-
-	if self._is_server then
-		Managers.state.unit_spawner:spawn_network_unit("units/architecture/keep/keep_gamemode_door_03", "carousel_inn_door", {}, Vector3(-12.382, -0.294, 6.212), Quaternion.from_euler_angles_xyz(90, 0, 0))
-	end
 end
 
 GameModeInn.COMPLETE_LEVEL = function (self)
@@ -117,8 +113,8 @@ GameModeInn.FAIL_LEVEL = function (self)
 	FAIL_LEVEL_VAR = true
 end
 
-GameModeInn.player_entered_game_session = function (self, peer_id, local_player_id, wanted_party_index)
-	GameModeInn.super.player_entered_game_session(self, peer_id, local_player_id, wanted_party_index)
+GameModeInn.player_entered_game_session = function (self, peer_id, local_player_id, requested_party_index)
+	GameModeInn.super.player_entered_game_session(self, peer_id, local_player_id, requested_party_index)
 
 	local status = Managers.party:get_player_status(peer_id, local_player_id)
 
@@ -353,11 +349,14 @@ GameModeInn.local_player_game_starts = function (self, player, loading_context)
 		if IS_CONSOLE then
 			transition_name = "initial_character_selection_force"
 			menu_state_name = "character"
-		else
+		elseif GameSettingsDevelopment.skip_start_screen or Development.parameter("skip_start_screen") then
 			local show_hero_selection = not SaveData.first_hero_selection_made and not Managers.backend:is_waiting_for_user_input()
 
 			transition_name = "initial_start_menu_view_force"
 			menu_state_name = show_hero_selection and "character" or "overview"
+		else
+			transition_name = "initial_character_selection_force"
+			menu_state_name = "character"
 		end
 
 		Managers.ui:handle_transition(transition_name, {
@@ -407,4 +406,6 @@ GameModeInn._cb_start_menu_closed = function (self)
 	if player_data_changed then
 		Managers.save:auto_save(SaveFileName, SaveData, nil)
 	end
+
+	Managers.ui:ingame_ui().has_left_menu = true
 end

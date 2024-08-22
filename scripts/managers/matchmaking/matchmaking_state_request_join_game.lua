@@ -48,7 +48,9 @@ MatchmakingStateRequestJoinGame.on_enter = function (self, state_context)
 		self._matchmaking_manager.debug.text = "Joining lobby"
 		self._matchmaking_manager.debug.state = "hosted by: " .. host
 
-		self._matchmaking_manager:send_system_chat_message("matchmaking_status_starting_handshake")
+		local pop_chat = true
+
+		Managers.chat:add_local_system_message(PEER_ID_TO_CHANNEL[Network.peer_id()], Localize("matchmaking_status_starting_handshake"), pop_chat)
 	else
 		self._state = "failed_pre_connection_verification"
 		self._pre_verification_error = error_message or "pre_verification_failed"
@@ -153,7 +155,7 @@ MatchmakingStateRequestJoinGame.update = function (self, dt, t)
 		local host_name = LobbyInternal.user_name and LobbyInternal.user_name(host) or "-"
 
 		if other_hash ~= nil then
-			if this_hash == other_hash then
+			if this_hash == other_hash or Development.parameter("ignore_network_hash") or Managers.mechanism:setting("ignore_network_hash") then
 				mm_printf("Network hashes matches, waiting to connect to host with user name '%s'...", tostring(host_name))
 
 				self._state = "verify_not_blocked"
@@ -219,20 +221,20 @@ MatchmakingStateRequestJoinGame.update = function (self, dt, t)
 			return
 		end
 
-		local difficulty = lobby_client:lobby_data("difficulty") or "normal"
-		local difficutly_settings = DifficultySettings[difficulty]
-		local local_player = Managers.player:local_player()
-		local best_aquired_power_level = local_player:best_aquired_power_level()
 		local difficulty_approved = true
 		local requirements = ""
+		local difficulty = lobby_client:lobby_data("difficulty") or "normal"
+		local difficulty_settings = DifficultySettings[difficulty]
+		local local_player = Managers.player:local_player()
+		local best_aquired_power_level = local_player:best_aquired_power_level()
 
-		if best_aquired_power_level < difficutly_settings.required_power_level then
+		if best_aquired_power_level < difficulty_settings.required_power_level then
 			difficulty_approved = false
-			requirements = string.format("%s: %s\n", Localize("required_power_level"), tostring(UIUtils.presentable_hero_power_level(difficutly_settings.required_power_level)))
+			requirements = string.format("%s: %s\n", Localize("required_power_level"), tostring(UIUtils.presentable_hero_power_level(difficulty_settings.required_power_level)))
 		end
 
-		if difficutly_settings.extra_requirement_name then
-			local extra_requirement_data = ExtraDifficultyRequirements[difficutly_settings.extra_requirement_name]
+		if difficulty_settings.extra_requirement_name then
+			local extra_requirement_data = ExtraDifficultyRequirements[difficulty_settings.extra_requirement_name]
 
 			if not extra_requirement_data.requirement_function() then
 				difficulty_approved = false
@@ -254,6 +256,10 @@ MatchmakingStateRequestJoinGame.update = function (self, dt, t)
 			self._matchmaking_manager.debug.text = "Requesting to join"
 
 			mm_printf("Connected, requesting to join game...")
+
+			if HAS_STEAM and self.lobby_client.set_steam_lobby_reconnectable then
+				self.lobby_client:set_steam_lobby_reconnectable(false)
+			end
 
 			local friend_join = not not self.state_context.friend_join
 			local unlocked_dlcs_array = self:_gather_dlc_ids()
@@ -321,12 +327,6 @@ MatchmakingStateRequestJoinGame._join_game_success = function (self, t)
 	if join_method == "party" then
 		return MatchmakingStatePartyJoins, self.state_context
 	else
-		if Managers.mechanism:current_mechanism_name() == "versus" then
-			self.state_context.profiles_data = {}
-
-			return MatchmakingStateJoinGame, self.state_context
-		end
-
 		return MatchmakingStateRequestProfiles, self.state_context
 	end
 end
@@ -351,6 +351,7 @@ MatchmakingStateRequestJoinGame._join_game_failed = function (self, reason, t, i
 
 	self._matchmaking_manager:reset_joining()
 
+	self.state_context.lobby_client = nil
 	self.state_context.join_lobby_data = nil
 
 	if reason ~= "cancelled" and not disable_chat_message then
@@ -359,12 +360,20 @@ MatchmakingStateRequestJoinGame._join_game_failed = function (self, reason, t, i
 		self._matchmaking_manager:send_system_chat_message(status_message)
 	end
 
-	local join_by_lobby_browser = self.state_context.join_by_lobby_browser
+	local state_context = self.state_context
+	local cancel_matchmaking = state_context.join_by_lobby_browser or state_context.is_flexmatch
+	local search_config = self.state_context.search_config
 
-	if join_by_lobby_browser then
+	if cancel_matchmaking then
 		self._matchmaking_manager:cancel_join_lobby(reason, reason_variable)
 
 		return MatchmakingStateIdle, self.state_context
+	elseif search_config and search_config.dedicated_server and search_config.join_method == "party" then
+		if search_config.aws then
+			return MatchmakingStateFlexmatchHost, self.state_context
+		end
+
+		return MatchmakingStateReserveLobby, self.state_context
 	else
 		return MatchmakingStateSearchGame, self.state_context
 	end

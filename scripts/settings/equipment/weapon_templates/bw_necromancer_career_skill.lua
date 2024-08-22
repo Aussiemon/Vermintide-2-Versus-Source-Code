@@ -35,6 +35,13 @@ weapon_template.actions = {
 					sub_action = "spawn_summon_area",
 				},
 				{
+					action = "action_career_hold",
+					auto_chain = true,
+					release_required = "action_career_hold",
+					start_time = 0,
+					sub_action = "spawn_summon_area",
+				},
+				{
 					action = "action_wield",
 					input = "action_wield",
 					start_time = 0,
@@ -73,7 +80,7 @@ weapon_template.actions = {
 
 				local inventory_extension = ScriptUnit.extension(owner_unit, "inventory_system")
 
-				inventory_extension:wield_previous_weapon()
+				inventory_extension:wield_previous_non_level_slot()
 			end,
 		},
 	},
@@ -110,9 +117,6 @@ weapon_template.buffs = {
 	change_dodge_speed = {
 		external_optional_multiplier = 1,
 	},
-}
-weapon_template.wwise_dep_left_hand = {
-	"wwise/two_handed_swords",
 }
 
 return {

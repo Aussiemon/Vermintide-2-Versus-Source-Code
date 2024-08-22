@@ -41,6 +41,7 @@ local breed_data = {
 	force_walk_while_tired = true,
 	has_inventory = true,
 	has_running_attack = true,
+	height = 1.75,
 	hit_effect_template = "HitEffectsChaosBerzerker",
 	hit_mass_count = 4,
 	hit_reaction = "ai_default",

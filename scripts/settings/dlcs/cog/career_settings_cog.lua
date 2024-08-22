@@ -40,8 +40,7 @@ CareerSettings.dr_engineer = {
 	passive_ability = PassiveAbilitySettings.dr_4,
 	attributes = {
 		base_critical_strike_chance = 0.05,
-		max_hp = 100,
-		max_hp_kd = 300,
+		max_hp = 125,
 	},
 	video = {
 		material_name = "dr_engineer",
@@ -58,7 +57,7 @@ CareerSettings.dr_engineer = {
 	is_unlocked_function = function (career, hero_name, hero_level)
 		local unlocked, reason = career:override_available_for_mechanism()
 
-		if unlocked ~= nil then
+		if not unlocked then
 			return unlocked, reason
 		end
 
@@ -83,32 +82,27 @@ CareerSettings.dr_engineer = {
 		local settings = Managers.mechanism:mechanism_setting_for_title("override_career_availability")
 		local career_name = career.display_name
 
-		if settings and settings[career_name] ~= nil then
-			return settings[career_name], "disabled_for_mechanism"
+		if settings and settings[career_name] == false then
+			return false, "disabled_for_mechanism"
 		end
 
-		return nil
+		return true
 	end,
 	animation_variables = {
 		is_engineer = 1,
 	},
-	talent_packages = function (talent_ids, packages_list, is_first_person)
-		local career_skill_index = 1
+	talent_packages = function (talent_ids, packages_list, is_first_person, is_bot)
 		local career_weapon_index = 1
 
 		for _, talent_id in ipairs(talent_ids) do
 			local talent = TalentUtils.get_talent_by_id("dwarf_ranger", talent_id)
-
-			if talent and talent.talent_career_skill_index then
-				career_skill_index = talent.talent_career_skill_index
-			end
 
 			if talent and talent.talent_career_weapon_index then
 				career_weapon_index = talent.talent_career_weapon_index
 			end
 		end
 
-		local weapon_names = ActivatedAbilitySettings.dr_4[career_skill_index].weapon_names_by_index
+		local weapon_names = ActivatedAbilitySettings.dr_4[1].weapon_names_by_index
 		local weapon_name = weapon_names[career_weapon_index]
 		local weapon = ItemMasterList[weapon_name]
 		local weapon_tempalte = Weapons[weapon.template]

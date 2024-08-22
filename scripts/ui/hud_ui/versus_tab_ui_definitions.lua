@@ -1,6 +1,10 @@
 ﻿-- chunkname: @scripts/ui/hud_ui/versus_tab_ui_definitions.lua
 
 local SIZE_X, SIZE_Y = 1920, 1080
+local PLAYER_PANEL_SIZE = {
+	620,
+	160,
+}
 local scenegraph_definition = {
 	screen = {
 		position = {
@@ -24,7 +28,7 @@ local scenegraph_definition = {
 		},
 		position = {
 			0,
-			-60,
+			-200,
 			10,
 		},
 	},
@@ -98,6 +102,76 @@ local scenegraph_definition = {
 			10,
 		},
 	},
+	talent_tooltip = {
+		horizontal_alignment = "center",
+		parent = "screen",
+		vertical_alignment = "center",
+		size = {
+			400,
+			0,
+		},
+		position = {
+			0,
+			0,
+			20,
+		},
+	},
+	item_tooltip = {
+		horizontal_alignment = "center",
+		parent = "screen",
+		vertical_alignment = "center",
+		size = {
+			400,
+			0,
+		},
+		position = {
+			0,
+			0,
+			20,
+		},
+	},
+	objective = {
+		horizontal_alignment = "center",
+		parent = "screen",
+		vertical_alignment = "top",
+		size = {
+			544,
+			55,
+		},
+		position = {
+			0,
+			-4,
+			2,
+		},
+	},
+	score = {
+		horizontal_alignment = "center",
+		parent = "screen",
+		vertical_alignment = "top",
+		size = {
+			302.4,
+			117.6,
+		},
+		position = {
+			0,
+			-60,
+			10,
+		},
+	},
+	console_cursor = {
+		horizontal_alignment = "center",
+		parent = "screen",
+		vertical_alignment = "center",
+		size = {
+			1920,
+			1080,
+		},
+		position = {
+			0,
+			0,
+			-10,
+		},
+	},
 	team_1 = {
 		horizontal_alignment = "left",
 		parent = "screen",
@@ -107,23 +181,23 @@ local scenegraph_definition = {
 			0,
 		},
 		position = {
-			110,
+			20,
 			210,
 			10,
 		},
 	},
 	team_1_icon = {
-		horizontal_alignment = "left",
-		parent = "team_1",
+		horizontal_alignment = "center",
+		parent = "screen",
 		vertical_alignment = "top",
 		size = {
-			96,
-			112,
+			232,
+			196,
 		},
 		position = {
-			14,
-			160,
-			3,
+			-320,
+			0,
+			20,
 		},
 	},
 	team_1_name = {
@@ -131,12 +205,12 @@ local scenegraph_definition = {
 		parent = "team_1",
 		vertical_alignment = "top",
 		size = {
-			380,
+			500,
 			50,
 		},
 		position = {
-			128,
-			95,
+			28,
+			105,
 			3,
 		},
 	},
@@ -145,11 +219,11 @@ local scenegraph_definition = {
 		parent = "team_1",
 		vertical_alignment = "top",
 		size = {
-			380,
+			500,
 			40,
 		},
 		position = {
-			128,
+			28,
 			160,
 			3,
 		},
@@ -159,12 +233,12 @@ local scenegraph_definition = {
 		parent = "team_1",
 		vertical_alignment = "top",
 		size = {
-			380,
+			500,
 			40,
 		},
 		position = {
-			128,
-			132,
+			28,
+			40,
 			3,
 		},
 	},
@@ -186,10 +260,7 @@ local scenegraph_definition = {
 		horizontal_alignment = "left",
 		parent = "team_1",
 		vertical_alignment = "top",
-		size = {
-			480,
-			100,
-		},
+		size = PLAYER_PANEL_SIZE,
 		position = {
 			0,
 			0,
@@ -200,13 +271,10 @@ local scenegraph_definition = {
 		horizontal_alignment = "left",
 		parent = "team_1",
 		vertical_alignment = "top",
-		size = {
-			480,
-			100,
-		},
+		size = PLAYER_PANEL_SIZE,
 		position = {
 			0,
-			-150,
+			-170,
 			10,
 		},
 	},
@@ -214,13 +282,10 @@ local scenegraph_definition = {
 		horizontal_alignment = "left",
 		parent = "team_1",
 		vertical_alignment = "top",
-		size = {
-			480,
-			100,
-		},
+		size = PLAYER_PANEL_SIZE,
 		position = {
 			0,
-			-300,
+			-340,
 			10,
 		},
 	},
@@ -228,13 +293,10 @@ local scenegraph_definition = {
 		horizontal_alignment = "left",
 		parent = "team_1",
 		vertical_alignment = "top",
-		size = {
-			480,
-			100,
-		},
+		size = PLAYER_PANEL_SIZE,
 		position = {
 			0,
-			-450,
+			-510,
 			10,
 		},
 	},
@@ -359,23 +421,23 @@ local scenegraph_definition = {
 			0,
 		},
 		position = {
-			-110,
+			-20,
 			210,
 			10,
 		},
 	},
 	team_2_icon = {
-		horizontal_alignment = "right",
-		parent = "team_2",
+		horizontal_alignment = "center",
+		parent = "screen",
 		vertical_alignment = "top",
 		size = {
-			96,
-			112,
+			232,
+			196,
 		},
 		position = {
-			-14,
-			160,
-			3,
+			320,
+			0,
+			20,
 		},
 	},
 	team_2_name = {
@@ -383,12 +445,12 @@ local scenegraph_definition = {
 		parent = "team_2",
 		vertical_alignment = "top",
 		size = {
-			380,
+			500,
 			50,
 		},
 		position = {
-			-128,
-			95,
+			-28,
+			105,
 			3,
 		},
 	},
@@ -397,11 +459,11 @@ local scenegraph_definition = {
 		parent = "team_2",
 		vertical_alignment = "top",
 		size = {
-			380,
+			500,
 			40,
 		},
 		position = {
-			-128,
+			-28,
 			160,
 			3,
 		},
@@ -411,12 +473,12 @@ local scenegraph_definition = {
 		parent = "team_2",
 		vertical_alignment = "top",
 		size = {
-			380,
+			500,
 			40,
 		},
 		position = {
-			-128,
-			132,
+			-28,
+			40,
 			3,
 		},
 	},
@@ -438,10 +500,7 @@ local scenegraph_definition = {
 		horizontal_alignment = "right",
 		parent = "team_2",
 		vertical_alignment = "top",
-		size = {
-			480,
-			100,
-		},
+		size = PLAYER_PANEL_SIZE,
 		position = {
 			0,
 			0,
@@ -452,13 +511,10 @@ local scenegraph_definition = {
 		horizontal_alignment = "right",
 		parent = "team_2",
 		vertical_alignment = "top",
-		size = {
-			480,
-			100,
-		},
+		size = PLAYER_PANEL_SIZE,
 		position = {
 			0,
-			-150,
+			-170,
 			10,
 		},
 	},
@@ -466,13 +522,10 @@ local scenegraph_definition = {
 		horizontal_alignment = "right",
 		parent = "team_2",
 		vertical_alignment = "top",
-		size = {
-			480,
-			100,
-		},
+		size = PLAYER_PANEL_SIZE,
 		position = {
 			0,
-			-300,
+			-340,
 			10,
 		},
 	},
@@ -480,13 +533,10 @@ local scenegraph_definition = {
 		horizontal_alignment = "right",
 		parent = "team_2",
 		vertical_alignment = "top",
-		size = {
-			480,
-			100,
-		},
+		size = PLAYER_PANEL_SIZE,
 		position = {
 			0,
-			-450,
+			-510,
 			10,
 		},
 	},
@@ -638,7 +688,7 @@ local sub_title_style = {
 	},
 }
 local team_name_1_style = {
-	font_size = 48,
+	font_size = 98,
 	font_type = "hell_shark_header",
 	horizontal_alignment = "left",
 	localize = false,
@@ -646,7 +696,7 @@ local team_name_1_style = {
 	use_shadow = true,
 	vertical_alignment = "center",
 	word_wrap = true,
-	text_color = Colors.get_color_table_with_alpha("local_player_team", 255),
+	text_color = Colors.get_color_table_with_alpha("local_player_team_lighter", 255),
 	offset = {
 		0,
 		0,
@@ -656,7 +706,7 @@ local team_name_1_style = {
 local team_name_2_style = table.clone(team_name_1_style)
 
 team_name_2_style.horizontal_alignment = "right"
-team_name_2_style.text_color = Colors.get_color_table_with_alpha("opponent_team", 255)
+team_name_2_style.text_color = Colors.get_color_table_with_alpha("opponent_team_lighter", 255)
 
 local input_description_style = {
 	font_size = 24,
@@ -709,13 +759,14 @@ team_2_text_style.horizontal_alignment = "right"
 team_2_text_style.text_color = Colors.get_color_table_with_alpha("opponent_team", 255)
 
 local team_1_side_text_style = {
-	font_size = 26,
+	font_size = 38,
 	font_type = "hell_shark_header",
 	horizontal_alignment = "left",
 	localize = false,
+	upper_case = true,
 	use_shadow = true,
 	vertical_alignment = "center",
-	word_wrap = true,
+	word_wrap = false,
 	text_color = Colors.get_color_table_with_alpha("font_default", 255),
 	offset = {
 		0,
@@ -727,187 +778,148 @@ local team_2_side_text_style = table.clone(team_1_side_text_style)
 
 team_2_side_text_style.horizontal_alignment = "right"
 
-local function create_player_button_panel(scenegraph_id, num_buttons, left_aligned)
-	local button_size = {
-		30,
-		30,
-	}
-	local icon_size = {
-		30,
-		30,
-	}
-	local spacing = 10
-	local total_length = num_buttons * button_size[1] + spacing * (num_buttons - 1)
-	local passes = {}
-	local content = {}
-	local style = {}
-	local horizontal_alignment = left_aligned and "right" or "left"
-	local x_offset = 0
-	local y_offset = -button_size[2]
+function create_empty_frame_widget(scenegraph_id)
+	local shadow_frame_style = "shadow_frame_02"
+	local shadow_frame_settings = UIFrameSettings[shadow_frame_style]
+	local hover_frame_style = "frame_outer_glow_04"
+	local hover_frame_settings = UIFrameSettings[hover_frame_style]
+	local empty_hover_frame_style = "frame_outer_glow_01"
+	local empty_hover_frame_settings = UIFrameSettings[empty_hover_frame_style]
+	local empty_frame_style = "frame_bevel_01"
+	local empty_frame_settings = UIFrameSettings[empty_frame_style]
 
-	for i = 1, num_buttons do
-		local background_name = "background_" .. i
-
-		passes[#passes + 1] = {
-			pass_type = "rect",
-			style_id = background_name,
-		}
-		style[background_name] = {
-			vertical_alignment = "bottom",
-			area_size = button_size,
-			texture_size = button_size,
-			horizontal_alignment = horizontal_alignment,
-			color = {
-				0,
-				0,
-				0,
-				0,
-			},
-			offset = {
-				x_offset,
-				y_offset,
-				0,
-			},
-		}
-
-		local hotspot_name = "hotspot_" .. i
-
-		passes[#passes + 1] = {
-			pass_type = "hotspot",
-			content_id = hotspot_name,
-			style_id = background_name,
-		}
-		content[hotspot_name] = {}
-
-		local icon_name = "icon_" .. i
-
-		passes[#passes + 1] = {
-			pass_type = "texture",
-			texture_id = icon_name,
-			style_id = icon_name,
-			content_check_function = function (content)
-				return not content[hotspot_name].is_hover
-			end,
-		}
-		content[icon_name] = "icons_placeholder"
-		style[icon_name] = {
-			vertical_alignment = "bottom",
-			texture_size = button_size,
-			horizontal_alignment = horizontal_alignment,
-			color = {
-				255,
-				150,
-				150,
-				150,
-			},
-			offset = {
-				x_offset,
-				y_offset,
-				2,
-			},
-		}
-
-		local icon_hover_name = "icon_hover_" .. i
-
-		passes[#passes + 1] = {
-			pass_type = "texture",
-			texture_id = icon_name,
-			style_id = icon_hover_name,
-			content_check_function = function (content)
-				return content[hotspot_name].is_hover
-			end,
-		}
-		style[icon_hover_name] = {
-			vertical_alignment = "bottom",
-			texture_size = button_size,
-			horizontal_alignment = horizontal_alignment,
-			color = {
-				255,
-				255,
-				255,
-				255,
-			},
-			offset = {
-				x_offset,
-				y_offset,
-				2,
-			},
-		}
-
-		local shadow_icon_name = "shadow_icon_" .. i
-
-		passes[#passes + 1] = {
-			pass_type = "texture",
-			texture_id = icon_name,
-			style_id = shadow_icon_name,
-		}
-		style[shadow_icon_name] = {
-			vertical_alignment = "bottom",
-			texture_size = button_size,
-			horizontal_alignment = horizontal_alignment,
-			color = {
-				255,
-				0,
-				0,
-				0,
-			},
-			offset = {
-				x_offset + 1,
-				y_offset - 1,
-				1,
-			},
-		}
-
-		local disabled_icon_name = "disabled_icon_" .. i
-
-		passes[#passes + 1] = {
-			pass_type = "texture",
-			texture_id = disabled_icon_name,
-			style_id = disabled_icon_name,
-			content_check_function = function (content)
-				return content[hotspot_name].blocked
-			end,
-		}
-		content[disabled_icon_name] = "tab_menu_icon_03"
-		style[disabled_icon_name] = {
-			vertical_alignment = "bottom",
-			texture_size = button_size,
-			horizontal_alignment = horizontal_alignment,
-			color = {
-				200,
-				150,
-				0,
-				0,
-			},
-			offset = {
-				x_offset,
-				y_offset,
-				3,
-			},
-		}
-
-		if left_aligned then
-			x_offset = x_offset - (button_size[1] + spacing)
-		else
-			x_offset = x_offset + (button_size[1] + spacing)
-		end
-	end
-
-	local widget = {
+	return {
 		element = {
-			passes = passes,
+			passes = {
+				{
+					content_id = "hotspot",
+					pass_type = "hotspot",
+				},
+				{
+					pass_type = "texture_frame",
+					style_id = "shadow_frame",
+					texture_id = "shadow_frame",
+					content_check_function = function (content)
+						return content.empty
+					end,
+				},
+				{
+					pass_type = "texture_frame",
+					style_id = "hover_frame",
+					texture_id = "hover_frame",
+					content_check_function = function (content)
+						return not content.empty and content.hotspot.is_hover
+					end,
+				},
+				{
+					pass_type = "texture_frame",
+					style_id = "empty_hover",
+					texture_id = "empty_hover",
+					content_check_function = function (content)
+						return content.empty and content.hotspot.is_hover
+					end,
+				},
+				{
+					pass_type = "texture_frame",
+					style_id = "empty_frame",
+					texture_id = "empty_frame",
+					content_check_function = function (content)
+						return content.empty
+					end,
+				},
+			},
 		},
-		content = content,
-		style = style,
+		content = {
+			empty = false,
+			hotspot = {
+				allow_multi_hover = true,
+			},
+			shadow_frame = shadow_frame_settings.texture,
+			hover_frame = hover_frame_settings.texture,
+			empty_hover = empty_hover_frame_settings.texture,
+			empty_frame = empty_frame_settings.texture,
+		},
+		style = {
+			empty_frame = {
+				texture_size = empty_frame_settings.texture_size,
+				texture_sizes = empty_frame_settings.texture_sizes,
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					2,
+				},
+			},
+			shadow_frame = {
+				frame_margins = {
+					-14,
+					-14,
+				},
+				texture_size = shadow_frame_settings.texture_size,
+				texture_sizes = shadow_frame_settings.texture_sizes,
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					0,
+				},
+			},
+			hover_frame = {
+				frame_margins = {
+					-14,
+					-14,
+				},
+				texture_size = hover_frame_settings.texture_size,
+				texture_sizes = hover_frame_settings.texture_sizes,
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					2,
+				},
+			},
+			empty_hover = {
+				frame_margins = {
+					-14,
+					-14,
+				},
+				texture_size = empty_hover_frame_settings.texture_size,
+				texture_sizes = empty_hover_frame_settings.texture_sizes,
+				color = {
+					255,
+					151,
+					151,
+					151,
+				},
+				offset = {
+					0,
+					0,
+					3,
+				},
+			},
+		},
+		scenegraph_id = scenegraph_id,
 		offset = {
 			0,
 			0,
 			0,
 		},
-		scenegraph_id = scenegraph_id,
 	}
-
-	return widget
 end
 
 local widget_definitions = {
@@ -920,16 +932,16 @@ local widget_definitions = {
 		0,
 	}),
 	title_divider = UIWidgets.create_simple_texture("divider_01_top", "title_divider"),
+	objective_text = UIWidgets.create_mission_objective_text_widget_still("objective"),
+	score = UIWidgets.create_objective_score_widget("score", scenegraph_definition.score.size),
 	team_1_name = UIWidgets.create_simple_text("", "team_1_name", nil, nil, team_name_1_style),
-	team_1_icon = UIWidgets.create_team_banner_widget("team_1_icon", nil, nil, nil, nil, nil, Colors.get_color_table_with_alpha("local_player_team", 255)),
+	team_1_icon = UIWidgets.create_simple_texture("banner_hammers_local", "team_1_icon"),
 	team_1_text = UIWidgets.create_simple_text(Localize("vs_lobby_your_team"), "team_1_text", nil, nil, team_1_text_style),
 	team_1_side_text = UIWidgets.create_simple_text("", "team_1_side_text", nil, nil, team_1_side_text_style),
-	team_1_score = UIWidgets.create_score_widget("team_1_score", Colors.get_color_table_with_alpha("local_player_team", 255)),
 	team_2_name = UIWidgets.create_simple_text("", "team_2_name", nil, nil, team_name_2_style),
-	team_2_icon = UIWidgets.create_team_banner_widget("team_2_icon", nil, nil, nil, nil, nil, Colors.get_color_table_with_alpha("opponent_team", 255)),
+	team_2_icon = UIWidgets.create_simple_texture("banner_skulls_opponent", "team_2_icon"),
 	team_2_text = UIWidgets.create_simple_text(Localize("vs_lobby_enemy_team"), "team_2_text", nil, nil, team_2_text_style),
 	team_2_side_text = UIWidgets.create_simple_text("", "team_2_side_text", nil, nil, team_2_side_text_style),
-	team_2_score = UIWidgets.create_score_widget("team_2_score", Colors.get_color_table_with_alpha("opponent_team", 255)),
 	input_description_text = UIWidgets.create_simple_text("player_list_show_mouse_description", "player_list_input_description", nil, nil, input_description_style),
 }
 local animation_definitions = {
@@ -956,8 +968,10 @@ local animation_definitions = {
 }
 
 return {
-	create_player_button_panel = create_player_button_panel,
+	create_empty_frame_widget = create_empty_frame_widget,
 	animation_definitions = animation_definitions,
 	scenegraph_definition = scenegraph_definition,
 	widget_definitions = widget_definitions,
+	console_cursor_definition = UIWidgets.create_console_cursor("console_cursor"),
+	item_tooltip = UIWidgets.create_simple_item_presentation("item_tooltip", UISettings.console_tooltip_pass_definitions),
 }

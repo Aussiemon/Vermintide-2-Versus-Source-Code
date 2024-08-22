@@ -122,6 +122,7 @@ ConflictDirector.init = function (self, world, level_key, network_event_delegate
 	self.spawn_queue_size = 0
 	self.spawn_queue_id = 0
 	self.main_path_player_info = {}
+	self._spawn_queue_id_lut = Script.new_array(1024)
 
 	self:_setup_sides_to_update_recycler()
 
@@ -348,6 +349,20 @@ ConflictDirector.destroy = function (self)
 
 	if self.breed_freezer then
 		self.breed_freezer:destroy()
+	end
+
+	local main_path_player_info = self.main_path_player_info
+
+	if main_path_player_info then
+		for player_unit, data in pairs(main_path_player_info) do
+			local astar = data.astar
+
+			if astar then
+				GwNavAStar.destroy(astar)
+
+				data.astar = nil
+			end
+		end
 	end
 end
 
@@ -1773,6 +1788,14 @@ ConflictDirector.spawn_queued_unit = function (self, breed, boxed_spawn_pos, box
 	return self.spawn_queue_id
 end
 
+ConflictDirector.get_spawned_unit = function (self, spawn_queue_id)
+	return self._spawn_queue_id_lut[spawn_queue_id]
+end
+
+ConflictDirector._get_spawned_unit_id = function (self, spawned_unit)
+	return self._spawn_queue_id_lut[spawned_unit]
+end
+
 ConflictDirector.remove_queued_unit = function (self, queue_id)
 	local spawn_queue = self.spawn_queue
 	local first_spawn_index = self.first_spawn_index
@@ -1840,7 +1863,7 @@ ConflictDirector.update_spawn_queue = function (self, t)
 		local breed = BLACKBOARDS[unit].breed
 		local go_id = Managers.state.unit_storage:go_id(unit)
 
-		self:_post_spawn_unit(unit, go_id, breed, d[2]:unbox(), d[4], d[5], d[7], d[6])
+		self:_post_spawn_unit(unit, go_id, breed, d[2]:unbox(), d[4], d[5], d[7], d[6], d[10])
 	else
 		unit = self:_spawn_unit(d[1], d[2]:unbox(), d[3]:unbox(), d[4], d[5], d[6], d[7], d[8], d[10])
 	end
@@ -1866,6 +1889,12 @@ ConflictDirector.update_spawn_queue = function (self, t)
 	if self.spawn_queue_size == 0 then
 		self.first_spawn_index = 1
 	end
+end
+
+ConflictDirector.spawn_unit_immediate = function (self, breed, spawn_pos, spawn_rot, spawn_category, spawn_animation, spawn_type, optional_data, group_data)
+	self.spawn_queue_id = self.spawn_queue_id + 1
+
+	self:_spawn_unit(breed, spawn_pos, spawn_rot, spawn_category, spawn_animation, spawn_type, optional_data, group_data, self.spawn_queue_id)
 end
 
 local dialogue_system_init_data = {
@@ -1990,12 +2019,14 @@ ConflictDirector._spawn_unit = function (self, breed, spawn_pos, spawn_rot, spaw
 
 	local ai_unit, go_id = Managers.state.unit_spawner:spawn_network_unit(base_unit_name, unit_template, extension_init_data, spawn_pose)
 
-	self:_post_spawn_unit(ai_unit, go_id, breed, spawn_pos, spawn_category, spawn_animation, optional_data, spawn_type)
+	self:_post_spawn_unit(ai_unit, go_id, breed, spawn_pos, spawn_category, spawn_animation, optional_data, spawn_type, spawn_index)
 
 	return ai_unit, go_id
 end
 
-ConflictDirector._post_spawn_unit = function (self, ai_unit, go_id, breed, spawn_pos, spawn_category, spawn_animation, optional_data, spawn_type)
+ConflictDirector._post_spawn_unit = function (self, ai_unit, go_id, breed, spawn_pos, spawn_category, spawn_animation, optional_data, spawn_type, spawn_queue_id)
+	self._spawn_queue_id_lut[spawn_queue_id] = ai_unit
+	self._spawn_queue_id_lut[ai_unit] = spawn_queue_id
 	optional_data = optional_data or {}
 
 	Managers.state.game_mode:post_ai_spawned(ai_unit, breed, optional_data)
@@ -2076,6 +2107,12 @@ ConflictDirector._post_spawn_unit = function (self, ai_unit, go_id, breed, spawn
 	if USE_ENGINE_SLOID_SYSTEM then
 		EngineOptimized.add_static_unit_data(ai_unit, 2.2, optional_data.side_id)
 	end
+
+	if breed.boss then
+		local dialogue_system = Managers.state.entity:system("dialogue_system")
+
+		dialogue_system:trigger_mission_giver_event("vs_mg_new_spawn_monster")
+	end
 end
 
 ConflictDirector.set_disabled = function (self, state)
@@ -2154,6 +2191,13 @@ ConflictDirector._remove_unit_from_spawned = function (self, unit, blackboard, d
 
 	if not index then
 		return
+	end
+
+	local spawn_id = self._spawn_queue_id_lut[unit]
+
+	if spawn_id then
+		self._spawn_queue_id_lut[unit] = nil
+		self._spawn_queue_id_lut[spawn_id] = nil
 	end
 
 	local breed = blackboard.breed
@@ -2535,6 +2579,8 @@ ConflictDirector.debug_spawn_breed = function (self, breed_name, delayed, overri
 	return pos
 end
 
+local ALL_BREED_EQUAL_SPREAD = true
+
 ConflictDirector.debug_spawn_all_breeds = function (self, except_these_breeds, use_except_list_as_spawn_list)
 	local pos = self:aim_spawning(nil, true)
 
@@ -2556,35 +2602,62 @@ ConflictDirector.debug_spawn_all_breeds = function (self, except_these_breeds, u
 		end
 	end
 
-	except_these_breeds = except_these_breeds or {}
-
-	local num_attempts = 8
 	local amount = #breed_list
 	local grid_size = math.ceil(math.sqrt(amount))
 	local rot = Quaternion(Vector3.up(), math.degrees_to_radians(math.random(1, 360)))
 
-	for i = 1, amount do
-		local spawn_pos
+	if ALL_BREED_EQUAL_SPREAD then
+		local breed_idx = 1
+		local traverse_logic = Managers.state.entity:system("ai_slot_system"):traverse_logic()
 
-		for j = 1, num_attempts do
-			local offset = Vector3(4 * math.random() - 2, 4 * math.random() - 2, 0)
+		for i = 1, grid_size do
+			for j = 1, grid_size do
+				if amount < breed_idx then
+					break
+				end
 
-			if j == 1 then
-				offset = Vector3(-grid_size / 2 + i % grid_size, -grid_size / 2 + math.floor(i / grid_size), 0)
+				local offset = Vector3((i - grid_size * 0.5) * 4, (j - grid_size * 0.5) * 4, 0)
+				local success, spawn_pos = GwNavQueries.raycast(GLOBAL_AI_NAVWORLD, pos, pos + offset, traverse_logic)
+
+				if success then
+					local optional_data = {
+						ignore_breed_limits = true,
+						side_id = self.debug_spawn_side_id,
+					}
+					local breed = breed_list[breed_idx]
+
+					breed_idx = breed_idx + 1
+
+					self:spawn_queued_unit(breed, Vector3Box(spawn_pos), QuaternionBox(rot), "debug_spawn", nil, nil, optional_data)
+				end
 			end
+		end
+	else
+		local num_attempts = 8
 
-			spawn_pos = LocomotionUtils.pos_on_mesh(self.nav_world, pos + offset)
+		for i = 1, amount do
+			local spawn_pos
 
-			if spawn_pos then
-				local optional_data = {
-					ignore_breed_limits = true,
-					side_id = self.debug_spawn_side_id,
-				}
-				local breed = breed_list[i]
+			for j = 1, num_attempts do
+				local offset = Vector3(4 * math.random() - 2, 4 * math.random() - 2, 0)
 
-				self:spawn_queued_unit(breed, Vector3Box(spawn_pos), QuaternionBox(rot), "debug_spawn", nil, nil, optional_data)
+				if j == 1 then
+					offset = Vector3(-grid_size / 2 + i % grid_size, -grid_size / 2 + math.floor(i / grid_size), 0)
+				end
 
-				break
+				spawn_pos = LocomotionUtils.pos_on_mesh(self.nav_world, pos + offset)
+
+				if spawn_pos then
+					local optional_data = {
+						ignore_breed_limits = true,
+						side_id = self.debug_spawn_side_id,
+					}
+					local breed = breed_list[i]
+
+					self:spawn_queued_unit(breed, Vector3Box(spawn_pos), QuaternionBox(rot), "debug_spawn", nil, nil, optional_data)
+
+					break
+				end
 			end
 		end
 	end
@@ -2624,7 +2697,7 @@ end
 
 ConflictDirector.rpc_debug_conflict_director_command = function (self, channel_id, command_name, breed_name, position, enhancements_string, extra_data)
 	self._debug_spawn_breed_position = position
-	self._debug_spawn_breed_enhancements = table.set(string.split(enhancements_string, ","))
+	self._debug_spawn_breed_enhancements = table.set(string.split_deprecated(enhancements_string, ","))
 
 	if command_name == "debug_spawn_breed" then
 		self:debug_spawn_breed(breed_name, false, position, extra_data)
@@ -3372,8 +3445,9 @@ local function cb_spawn_at_raw_spawned(unit, breed, optional_data)
 
 	if play_go_tutorial_system then
 		local spawner_unit = optional_data.spawner_unit
+		local spawned_unit_id = Managers.state.conflict:_get_spawned_unit_id(unit)
 
-		play_go_tutorial_system:register_unit(spawner_unit, unit)
+		play_go_tutorial_system:register_unit(spawner_unit, unit, spawned_unit_id)
 	end
 end
 
@@ -4019,6 +4093,10 @@ ConflictDirector.debug_spawn_variant = function (self, breed_name, enhancement_s
 	end
 
 	return breed
+end
+
+ConflictDirector.world = function (self)
+	return self._world
 end
 
 ConflictDirector.debug_spawn_encampment = function (self, encampment_id)

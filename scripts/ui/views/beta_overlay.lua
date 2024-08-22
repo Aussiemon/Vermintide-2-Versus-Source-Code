@@ -1,15 +1,17 @@
 ﻿-- chunkname: @scripts/ui/views/beta_overlay.lua
 
 script_data.text_watermark = script_data.text_watermark or script_data.settings.text_watermark
-script_data.text_watermark_disclaimer = script_data.text_watermark_disclaimer or script_data.settings.text_watermark_disclaimer
 script_data.qr_watermark = script_data.qr_watermark or script_data.settings.qr_watermark
 
 local Vector3, Gui = Vector3, Gui
-local QR = dofile("scripts/ui/qr/qrencode")
 
 BetaOverlay = class(BetaOverlay)
 
+local DO_RELOAD = true
+
 BetaOverlay.init = function (self, world)
+	DO_RELOAD = true
+
 	local top_world = Managers.world:world("top_ingame_view")
 	local label = script_data.text_watermark
 
@@ -19,11 +21,19 @@ BetaOverlay.init = function (self, world)
 
 	self._world = world
 	self._label = label
-	self._data = self:_generate_qr()
+	self._watermark = script_data.watermark or "vs_goat"
+
+	if script_data.qr_watermark then
+		self._data = self:_generate_qr()
+	end
+
+	self._mechanism_key = Managers.mechanism:current_mechanism_name()
 
 	local disclaimer = script_data.text_watermark_disclaimer
 
 	self._disclaimer = type(disclaimer) ~= "string" and "May not be representative of final product." or disclaimer
+
+	print("beta overlay got watermark:", self._watermark, self._label, self._disclaimer)
 end
 
 BetaOverlay._destroy_gui = function (self)
@@ -79,7 +89,11 @@ BetaOverlay._render_watermark = function (self, screen, scale)
 	local _, _, car = Gui.text_extents(gui, label, font, font_size)
 	local pos = Vector3(screen[1] - car.x - scale * 35, screen[2] - scale * 116, 1000)
 
-	Gui.text(gui, label, font, font_size, nil, pos, Color(100, 255, 255, 255))
+	if self._label_id then
+		Gui.update_text(gui, self._label_id, label)
+	else
+		self._label_id = Gui.text(gui, label, font, font_size, nil, pos, Color(100, 255, 255, 255))
+	end
 end
 
 BetaOverlay._render_disclaimer = function (self, screen, scale)
@@ -89,11 +103,16 @@ BetaOverlay._render_disclaimer = function (self, screen, scale)
 	local _, _, car = Gui.text_extents(gui, label, font, font_size)
 	local pos = Vector3(screen[1] - car.x - scale * 35, screen[2] - scale * 150, 1000)
 
-	Gui.text(gui, label, font, font_size, nil, pos, Color(100, 255, 255, 255))
+	if self._disclaimer_id then
+		Gui.update_text(gui, self._disclaimer_id, label)
+	else
+		self._disclaimer_id = Gui.text(gui, label, font, font_size, nil, pos, Color(100, 255, 255, 255))
+	end
 end
 
 BetaOverlay._generate_qr = function (self)
 	local message = string.format("%16s:%8s:%12s:%08x", HAS_STEAM and Steam.user_id() or "", script_data.settings.content_revision or "", script_data.build_identifier or "", os.time()):gsub(" ", "0")
+	local QR = dofile("scripts/ui/qr/qrencode")
 	local ok, data_or_err = QR.qrcode(message)
 
 	if ok then
@@ -103,6 +122,17 @@ BetaOverlay._generate_qr = function (self)
 	error(data_or_err)
 end
 
+local watermarks = {
+	cat = function (parent)
+		parent:_create_gui()
+	end,
+	vs_goat = function (parent)
+		if parent._mechanism_key == "versus" then
+			parent:_create_gui()
+		end
+	end,
+}
+
 BetaOverlay._create_gui = function (self)
 	self._gui = World.create_screen_gui(self._world)
 
@@ -110,11 +140,11 @@ BetaOverlay._create_gui = function (self)
 	local scale = math.min(screen_width / 1920, screen_height / 1080, 1)
 	local screen = Vector2(screen_width, screen_height)
 
-	if script_data.text_watermark then
+	if self._label then
 		self:_render_watermark(screen, scale)
 	end
 
-	if script_data.text_watermark_disclaimer then
+	if self._disclaimer then
 		self:_render_disclaimer(screen, scale)
 	end
 
@@ -130,16 +160,33 @@ BetaOverlay._create_gui = function (self)
 end
 
 BetaOverlay._reload = function (self)
+	self._mechanism_key = Managers.mechanism:current_mechanism_name()
+
 	self:_destroy_gui()
-	self:_create_gui()
+
+	self._label_id = nil
+	self._disclaimer_id = nil
+
+	local watermark = self._watermark or script_data.watermark
+
+	if watermark then
+		local watermark_func = watermarks[watermark]
+
+		if watermark_func then
+			watermark_func(self)
+		end
+	end
 end
 
-local DO_RELOAD = true
+BetaOverlay.refresh = function (self)
+	self:_reload()
+end
 
 BetaOverlay.update = function (self)
+	local mechanism_switch = self._mechanism_key ~= Managers.mechanism:current_mechanism_name()
 	local width, height = Gui.resolution()
 
-	if DO_RELOAD or width ~= self._screen_width or height ~= self._screen_height then
+	if width ~= self._screen_width or height ~= self._screen_height or DO_RELOAD or mechanism_switch then
 		self._screen_width = width
 		self._screen_height = height
 		DO_RELOAD = false

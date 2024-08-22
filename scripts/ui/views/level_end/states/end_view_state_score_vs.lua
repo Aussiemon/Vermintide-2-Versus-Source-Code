@@ -9,6 +9,7 @@ require("scripts/ui/views/level_end/states/end_view_state_score_vs_tabs/end_view
 local widget_definitions = definitions.widgets
 local scenegraph_definition = definitions.scenegraph_definition
 local animation_definitions = definitions.animation_definitions
+local tab_size = definitions.tab_size
 local DO_RELOAD = false
 
 EndViewStateScoreVS = class(EndViewStateScoreVS)
@@ -21,6 +22,7 @@ EndViewStateScoreVS.on_enter = function (self, params)
 
 	local context = params.context
 
+	self._parent = params.parent
 	self._context = context
 	self._ui_renderer = context.ui_top_renderer
 	self._input_manager = context.input_manager
@@ -31,11 +33,15 @@ EndViewStateScoreVS.on_enter = function (self, params)
 	self._layout_settings = definitions.tab_layouts
 
 	self:create_ui_elements(params)
-	self:_setup_text_buttons_width_and_position()
+	self:_align_tabs()
+	self:_setup_level_widget()
 
 	self._ui_animator = UIAnimator:new(self._ui_scenegraph, animation_definitions)
 	self._animations = {}
-	self._selected_layout_name = "end_view_state_score_vs_tab_summary"
+
+	local initial_tab = self._layout_settings[1]
+
+	self._selected_layout_name = initial_tab.name
 
 	self:_set_initial_tab()
 	self:_play_animation("transition_enter")
@@ -55,6 +61,10 @@ EndViewStateScoreVS._play_animation = function (self, anim_name)
 	self._anim_id = self._ui_animator:start_animation(anim_name, self._widgets_by_name, scenegraph_definition, params)
 end
 
+EndViewStateScoreVS.play_sound = function (self, event_name)
+	self._parent:play_sound(event_name)
+end
+
 EndViewStateScoreVS.exit_done = function (self)
 	return self._exit_started and self._ui_animator:is_animation_completed(self._anim_id)
 end
@@ -65,17 +75,19 @@ EndViewStateScoreVS.create_ui_elements = function (self, params)
 
 	local title_button_widgets = {}
 	local tab_layouts = definitions.tab_layouts
-	local parent = self.parent
+	local offset = 0
 
 	for i = 1, #tab_layouts do
 		local settings = tab_layouts[i]
-		local scenegraph_id = "game_mode_option"
+		local scenegraph_id = "tab"
 		local size = scenegraph_definition[scenegraph_id].size
 		local display_name = settings.display_name or "n/a"
-		local font_size = 32
-		local horizontal_alignment = "center"
-		local widget_definition = definitions.create_panel_button(scenegraph_id, size, display_name, font_size, nil, horizontal_alignment)
+		local widget_definition = definitions.create_tab(scenegraph_id, size, display_name)
 		local widget = UIWidget.init(widget_definition)
+
+		widget.offset[1] = offset
+		offset = offset + size[1]
+
 		local layout_name = settings.name
 
 		widget.content.layout_name = layout_name
@@ -83,29 +95,78 @@ EndViewStateScoreVS.create_ui_elements = function (self, params)
 	end
 
 	self._title_button_widgets = title_button_widgets
+	self._ui_animations = {}
+
+	local create_team_score_func = definitions.create_team_score_func
+	local my_peer_id = Network.peer_id()
+	local local_player_id = 1
+	local local_player_party_id = self._context.party_composition[PlayerUtils.unique_player_id(my_peer_id, local_player_id)]
+	local opponent_party_id = local_player_party_id == 1 and 2 or 1
+	local local_team = GameModeSettings.versus.party_names_lookup_by_id[local_player_party_id]
+	local opponent_team = GameModeSettings.versus.party_names_lookup_by_id[opponent_party_id]
+	local scores = self._context.rewards.team_scores
+	local local_player_team_score = scores[local_player_party_id]
+	local opponent_team_score = scores[opponent_party_id]
+	local local_widget_definition = create_team_score_func("local_team", local_team, local_player_team_score)
+	local opponent_widget_definition = create_team_score_func("opponent_team", opponent_team, opponent_team_score)
+	local local_widget = UIWidget.init(local_widget_definition)
+	local opponent_widget = UIWidget.init(opponent_widget_definition)
+
+	self._widgets[#self._widgets + 1] = local_widget
+	self._widgets[#self._widgets + 1] = opponent_widget
+	self._widgets_by_name.local_score = local_widget
+	self._widgets_by_name.opponent_score = opponent_widget
+
+	local num_tabs = #tab_layouts
+
+	self._widgets_by_name.tab_selection.content.visible = num_tabs > 1
+	self._widgets_by_name.prev_tab.content.visible = num_tabs > 1
+	self._widgets_by_name.next_tab.content.visible = num_tabs > 1
 
 	UIRenderer.clear_scenegraph_queue(self._ui_renderer)
 end
 
-EndViewStateScoreVS._setup_text_buttons_width_and_position = function (self)
-	local ui_scenegraph = self._ui_scenegraph
-	local area_size = ui_scenegraph.panel_entry_area.size
-	local total_width = area_size[1]
-	local title_button_widgets = self._title_button_widgets
-	local num_title_button_widgets = #title_button_widgets
-	local entry_width = math.floor(total_width / num_title_button_widgets)
+EndViewStateScoreVS._align_tabs = function (self)
+	local num_tabs = #self._title_button_widgets
+	local offset = (num_tabs - 1) * tab_size[1] * 0.5
 
-	ui_scenegraph.game_mode_option.size[1] = entry_width
-
-	for i = 1, num_title_button_widgets do
-		local widget = title_button_widgets[i]
-
-		self:_set_text_button_size(widget, entry_width)
-
-		local position_x = entry_width * (i - 1)
-
-		widget.offset[1] = position_x
+	for _, widget in pairs(self._title_button_widgets) do
+		widget.offset[1] = widget.offset[1] - offset
 	end
+
+	local padding = 60
+	local first_tab_widget = self._title_button_widgets[1]
+	local text = first_tab_widget.content.text
+	local text_style = first_tab_widget.style.text
+	local text_width = UIUtils.get_text_width(self._ui_renderer, text_style, text)
+
+	self._widgets_by_name.prev_tab.offset[1] = -offset - text_width * 0.5 - padding
+
+	local last_tab_widget = self._title_button_widgets[#self._title_button_widgets]
+	local text = last_tab_widget.content.text
+	local text_style = last_tab_widget.style.text
+	local text_width = UIUtils.get_text_width(self._ui_renderer, text_style, text)
+
+	self._widgets_by_name.next_tab.offset[1] = offset + text_width * 0.5 + padding
+end
+
+EndViewStateScoreVS._setup_level_widget = function (self)
+	local content = self._widgets_by_name.level.content
+	local level_key = self._context.level_key
+	local level_settings = LevelSettings[level_key]
+	local level_image = level_settings and level_settings.level_image or "level_image_any"
+
+	content.icon = level_image
+
+	local difficulty_key = self._context.difficulty
+	local difficulty_settings = DifficultySettings[difficulty_key]
+	local frame_image = difficulty_settings and difficulty_settings.completed_frame_texture or "map_frame_00"
+
+	content.frame = frame_image
+
+	local content = self._widgets_by_name.level_text.content
+
+	content.text = Localize(level_settings.display_name)
 end
 
 EndViewStateScoreVS._set_text_button_size = function (self, widget, width)
@@ -167,6 +228,14 @@ end
 EndViewStateScoreVS._update_animations = function (self, dt, t)
 	self._ui_animator:update(dt)
 
+	for name, animation in pairs(self._ui_animations) do
+		UIAnimation.update(animation, dt)
+
+		if UIAnimation.completed(animation) then
+			self._ui_animations[name] = nil
+		end
+	end
+
 	local widget = self._widgets_by_name.continue_button
 
 	UIWidgetUtils.animate_default_button(widget, dt)
@@ -190,26 +259,55 @@ EndViewStateScoreVS._handle_input = function (self, dt, t)
 				if layout_name ~= self._selected_layout_name then
 					self:_change_tab(layout_name, i, self._selected_layout_name)
 					self:_set_selected_option(layout_name)
-
-					self._selected_layout_name = layout_name
 				end
 
+				self:play_sound("Play_hud_select")
+
 				break
+			elseif UIUtils.is_button_hover_enter(widget) then
+				self:play_sound("Play_hud_hover")
 			end
 		end
 	end
 
+	local tab_index
+
+	if UIUtils.is_button_pressed(self._widgets_by_name.prev_tab) or input_service:get("cycle_previous") then
+		tab_index = self._selected_tab_index
+		tab_index = math.clamp((tab_index or 1) - 1, 1, #self._title_button_widgets)
+	elseif UIUtils.is_button_pressed(self._widgets_by_name.next_tab) or input_service:get("cycle_next") then
+		tab_index = self._selected_tab_index
+		tab_index = math.clamp((tab_index or 1) + 1, 1, #self._title_button_widgets)
+	end
+
+	if tab_index then
+		local title_button_widget = self._title_button_widgets[tab_index]
+		local layout_name = title_button_widget.content.layout_name
+
+		if layout_name ~= self._selected_layout_name then
+			self:_change_tab(layout_name, tab_index, self._selected_layout_name)
+		end
+	end
+
+	local continue_input_pressed = input_service:get("refresh")
 	local continue_button_widget = self._widgets_by_name.continue_button
 
-	if UIUtils.is_button_pressed(continue_button_widget) then
+	if UIUtils.is_button_pressed(continue_button_widget) or continue_input_pressed then
 		self._done = true
 		continue_button_widget.content.disable_button = true
 
 		UIUtils.enable_button(continue_button_widget, false)
+		self:play_sound("play_gui_mission_summary_button_return_to_keep_click")
+	elseif UIUtils.is_button_hover_enter(continue_button_widget) then
+		self:play_sound("Play_hud_hover")
 	end
 end
 
-EndViewStateScoreVS._change_tab = function (self, new_layout_name, new_Layout_index, old_layout_name)
+EndViewStateScoreVS._change_tab = function (self, new_layout_name, new_layout_index, old_layout_name)
+	if new_layout_index < 0 or new_layout_index > #self._title_button_widgets then
+		return
+	end
+
 	local old_tab_settings = self:_get_tab_settings_by_layout_name(old_layout_name)
 
 	if self._active_tab and self._active_tab.NAME == old_tab_settings.class_name then
@@ -219,7 +317,7 @@ EndViewStateScoreVS._change_tab = function (self, new_layout_name, new_Layout_in
 	end
 
 	local layout_settings = self._layout_settings
-	local tab_settings = layout_settings[new_Layout_index]
+	local tab_settings = layout_settings[new_layout_index]
 	local new_tab_class_name = tab_settings.class_name
 	local tab_class = rawget(_G, new_tab_class_name)
 	local tab = tab_class:new()
@@ -229,6 +327,30 @@ EndViewStateScoreVS._change_tab = function (self, new_layout_name, new_Layout_in
 	end
 
 	self._active_tab = tab
+	self._selected_layout_name = new_layout_name
+
+	self:_update_tab_selection(new_layout_index)
+	self._parent:set_input_description(new_tab_class_name)
+end
+
+EndViewStateScoreVS._update_tab_selection = function (self, index)
+	self._selected_tab_index = index
+
+	for button_index, widget in ipairs(self._title_button_widgets) do
+		widget.content.hotspot.is_selected = button_index == index
+	end
+
+	local selected_tab_button_widget = self._title_button_widgets[index]
+	local text = selected_tab_button_widget.content.text
+	local text_style = selected_tab_button_widget.style.text
+	local offset_x = selected_tab_button_widget.offset[1]
+	local padding = 20
+	local text_width = UIUtils.get_text_width(self._ui_renderer, text_style, text)
+	local selection_widget = self._widgets_by_name.tab_selection
+	local rect_style = selection_widget.style.rect
+
+	self._ui_animations.tab_selection_position = UIAnimation.init(UIAnimation.function_by_time, selection_widget.offset, 1, selection_widget.offset[1], offset_x, 0.25, math.easeOutCubic)
+	self._ui_animations.tab_selection_size = UIAnimation.init(UIAnimation.function_by_time, rect_style.texture_size, 1, rect_style.texture_size[1], text_width + padding, 0.25, math.easeOutCubic)
 end
 
 EndViewStateScoreVS._set_selected_option = function (self, selected_layout_name)
@@ -239,7 +361,7 @@ EndViewStateScoreVS._set_selected_option = function (self, selected_layout_name)
 		local content = widget.content
 		local layout_name = content.layout_name
 
-		content.button_hotspot.is_selected = layout_name == selected_layout_name
+		content.hotspot.is_selected = layout_name == selected_layout_name
 	end
 end
 

@@ -8,7 +8,10 @@ local function hit_ai_func(unit, blackboard, hit_unit, action, attack)
 		local buff_extension = ScriptUnit.extension(unit, "buff_system")
 
 		buff_extension:trigger_procs("on_damage_dealt", hit_unit, unit, damage, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-		Managers.state.achievement:trigger_event("on_damage_dealt", hit_unit, unit, damage, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+		if not Managers.state.network:in_game_session() then
+			Managers.state.achievement:trigger_event("on_damage_dealt", hit_unit, unit, damage, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		end
 	end
 end
 
@@ -42,12 +45,14 @@ local breed_data = {
 	force_walk_while_tired = true,
 	has_inventory = true,
 	has_running_attack = true,
+	height = 1.75,
 	hesitation_timer = 5,
 	hit_effect = "fx/skull_shatter",
 	hit_effect_template = "HitEffectsChaosMarauder",
 	hit_mass_count = 8,
 	hit_reaction = "ai_default",
 	horde_behavior = "pet_skeleton",
+	ignore_activate_unit = true,
 	is_always_spawnable = true,
 	is_bot_threat = true,
 	leave_walk_distance = 5,
@@ -134,15 +139,15 @@ local breed_data = {
 		1,
 	},
 	max_health = {
-		20.8125,
-		20.8125,
-		30.9375,
-		36.5625,
-		56.25,
-		84.375,
-		84.375,
-		84.375,
-		20.8125,
+		37 * CareerConstants.bw_necromancer.pet_balance_health_modifier * CareerConstants.bw_necromancer.armored_pet_health_additional_modifier,
+		37 * CareerConstants.bw_necromancer.pet_balance_health_modifier * CareerConstants.bw_necromancer.armored_pet_health_additional_modifier,
+		55 * CareerConstants.bw_necromancer.pet_balance_health_modifier * CareerConstants.bw_necromancer.armored_pet_health_additional_modifier,
+		65 * CareerConstants.bw_necromancer.pet_balance_health_modifier * CareerConstants.bw_necromancer.armored_pet_health_additional_modifier,
+		100 * CareerConstants.bw_necromancer.pet_balance_health_modifier * CareerConstants.bw_necromancer.armored_pet_health_additional_modifier,
+		150 * CareerConstants.bw_necromancer.pet_balance_health_modifier * CareerConstants.bw_necromancer.armored_pet_health_additional_modifier,
+		150 * CareerConstants.bw_necromancer.pet_balance_health_modifier * CareerConstants.bw_necromancer.armored_pet_health_additional_modifier,
+		150 * CareerConstants.bw_necromancer.pet_balance_health_modifier * CareerConstants.bw_necromancer.armored_pet_health_additional_modifier,
+		37 * CareerConstants.bw_necromancer.pet_balance_health_modifier * CareerConstants.bw_necromancer.armored_pet_health_additional_modifier,
 	},
 	bloodlust_health = BreedTweaks.bloodlust_health.chaos_roamer,
 	hit_mass_counts = BreedTweaks.hit_mass_counts.raider,
@@ -162,7 +167,7 @@ local breed_data = {
 		40,
 		40,
 	},
-	stagger_modifier_function = function (stagger_type, duration, length, hit_zone_name, blackboard, breed, direction)
+	stagger_modifier_function = function (stagger_type, duration, length, hit_zone_name, blackboard, breed)
 		if blackboard.stagger_type == stagger_types.heavy then
 			if stagger_type == stagger_types.heavy and blackboard.heavy_stagger_immune_time then
 				stagger_type = stagger_types.none

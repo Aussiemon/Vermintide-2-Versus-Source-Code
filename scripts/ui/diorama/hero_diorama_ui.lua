@@ -718,7 +718,7 @@ HeroDioramaUI._set_portrait_frame = function (self, frame_settings_name, level_t
 	local scale = optional_scale or 1
 	local retained_mode = false
 	local widget_definition = UIWidgets.create_portrait_frame("portrait_pivot", frame_settings_name, level_text, scale, retained_mode, portrait_texture)
-	local widget = UIWidget.init(widget_definition)
+	local widget = UIWidget.init(widget_definition, self._ui_renderer)
 	local widget_content = widget.content
 
 	widget_content.frame_settings_name = frame_settings_name

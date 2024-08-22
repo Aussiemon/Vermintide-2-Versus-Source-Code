@@ -369,7 +369,7 @@ UIWidgets.create_simple_item_tooltip = function (scenegraph_id, tooltip_passes)
 	}
 end
 
-UIWidgets.create_simple_item_presentation = function (scenegraph_id, tooltip_passes, force_equipped, pass_styles)
+UIWidgets.create_simple_item_presentation = function (scenegraph_id, tooltip_passes, force_equipped, pass_styles, disable_unsupported)
 	return {
 		element = {
 			passes = {
@@ -378,6 +378,7 @@ UIWidgets.create_simple_item_presentation = function (scenegraph_id, tooltip_pas
 					pass_type = "item_presentation",
 					style_id = "item",
 					content_passes = tooltip_passes,
+					disable_unsupported = disable_unsupported,
 					content_check_function = function (content)
 						return content.item
 					end,
@@ -3530,7 +3531,7 @@ UIWidgets.create_weapon_statistics = function (scenegraph_id, size)
 	return widget
 end
 
-UIWidgets.create_background_with_frame = function (scenegraph_id, size, background_texture, frame_style, bottom_aligned)
+UIWidgets.create_background_with_frame = function (scenegraph_id, size, background_texture, frame_style, bottom_aligned, background_color)
 	background_texture = background_texture or "menu_frame_bg_01"
 
 	local background_texture_settings = UIAtlasHelper.get_atlas_settings_by_texture_name(background_texture)
@@ -3586,7 +3587,7 @@ UIWidgets.create_background_with_frame = function (scenegraph_id, size, backgrou
 	}
 	local style = {
 		background = {
-			color = {
+			color = background_color or {
 				255,
 				255,
 				255,
@@ -3901,7 +3902,7 @@ UIWidgets.create_frame = function (scenegraph_id, size, frame_style, layer, colo
 	return widget
 end
 
-UIWidgets.create_rect_with_outer_frame = function (scenegraph_id, size, frame_style, layer, color, frame_color)
+UIWidgets.create_rect_with_outer_frame = function (scenegraph_id, size, frame_style, layer, color, frame_color, frame_layer)
 	color = color or {
 		255,
 		255,
@@ -3941,7 +3942,7 @@ UIWidgets.create_rect_with_outer_frame = function (scenegraph_id, size, frame_st
 			offset = {
 				-edge_height,
 				-edge_height,
-				layer or 0,
+				frame_layer or layer or 0,
 			},
 		},
 		rect = {
@@ -7529,7 +7530,7 @@ UIWidgets.create_quest_bar = function (scenegraph_id, size)
 	}
 end
 
-UIWidgets.create_summary_experience_bar = function (scenegraph_id, size, masked)
+UIWidgets.create_summary_experience_bar = function (scenegraph_id, size, masked, bar_end_width)
 	return {
 		element = {
 			passes = {
@@ -7577,7 +7578,7 @@ UIWidgets.create_summary_experience_bar = function (scenegraph_id, size, masked)
 			experience_bar_end = {
 				color = Colors.get_color_table_with_alpha("white", 255),
 				size = {
-					132,
+					bar_end_width or 132,
 					size[2],
 				},
 				masked = masked,
@@ -7876,7 +7877,7 @@ UIWidgets.create_career_summary_window = function (scenegraph_id, size)
 	}
 end
 
-UIWidgets.create_default_button = function (scenegraph_id, size, frame_name, background_texture, text, font_size, optional_color_name, optional_detail_texture, optional_detail_offset, disable_with_gamepad, skip_side_detail, masked)
+UIWidgets.create_default_button = function (scenegraph_id, size, frame_name, background_texture, text, font_size, optional_color_name, optional_detail_texture, optional_detail_offset, disable_with_gamepad, skip_side_detail, masked, optional_offset, fit_background_texture, optional_area_size)
 	background_texture = background_texture or "button_bg_01"
 
 	local background_texture_settings = UIAtlasHelper.get_atlas_settings_by_texture_name(background_texture)
@@ -8020,10 +8021,10 @@ UIWidgets.create_default_button = function (scenegraph_id, size, frame_name, bac
 				uvs = {
 					{
 						0,
-						1 - size[2] / background_texture_settings.size[2],
+						1 - (fit_background_texture and 1 or size[2] / background_texture_settings.size[2]),
 					},
 					{
-						size[1] / background_texture_settings.size[1],
+						fit_background_texture and 1 or size[1] / background_texture_settings.size[1],
 						1,
 					},
 				},
@@ -8033,6 +8034,8 @@ UIWidgets.create_default_button = function (scenegraph_id, size, frame_name, bac
 		},
 		style = {
 			background = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
 				color = {
 					255,
 					150,
@@ -8045,6 +8048,10 @@ UIWidgets.create_default_button = function (scenegraph_id, size, frame_name, bac
 					0,
 				},
 				masked = masked,
+				texture_size = fit_background_texture and {
+					size[1] * 0.7,
+					size[2] * 0.7,
+				} or nil,
 			},
 			background_fade = {
 				color = {
@@ -8123,6 +8130,7 @@ UIWidgets.create_default_button = function (scenegraph_id, size, frame_name, bac
 					size[1] - 40,
 					size[2],
 				},
+				area_size = optional_area_size,
 				offset = {
 					20,
 					0,
@@ -8143,6 +8151,7 @@ UIWidgets.create_default_button = function (scenegraph_id, size, frame_name, bac
 					size[1] - 40,
 					size[2],
 				},
+				area_size = optional_area_size,
 				offset = {
 					20,
 					0,
@@ -8163,6 +8172,7 @@ UIWidgets.create_default_button = function (scenegraph_id, size, frame_name, bac
 					size[1] - 40,
 					size[2],
 				},
+				area_size = optional_area_size,
 				offset = {
 					22,
 					-2,
@@ -8259,7 +8269,7 @@ UIWidgets.create_default_button = function (scenegraph_id, size, frame_name, bac
 			},
 		},
 		scenegraph_id = scenegraph_id,
-		offset = {
+		offset = optional_offset or {
 			0,
 			0,
 			0,
@@ -9411,7 +9421,7 @@ UIWidgets.create_default_checkbox_button = function (scenegraph_id, size, text, 
 	return widget
 end
 
-UIWidgets.create_default_checkbox_button_console = function (scenegraph_id, size, text, font_size, tooltip_info, checkbox_frame_settings_name)
+UIWidgets.create_default_checkbox_button_console = function (scenegraph_id, size, text, font_size, tooltip_info, checkbox_frame_settings_name, disable_background_glow)
 	local background_texture = "button_bg_01"
 	local background_texture_settings = UIAtlasHelper.get_atlas_settings_by_texture_name(background_texture)
 	local widget = {
@@ -9441,12 +9451,15 @@ UIWidgets.create_default_checkbox_button_console = function (scenegraph_id, size
 	local hotspot_content = content[hotspot_name]
 	local hover_glow_name = "hover_glow"
 
-	passes[#passes + 1] = {
-		pass_type = "texture",
-		content_id = hotspot_name,
-		texture_id = hover_glow_name,
-		style_id = hover_glow_name,
-	}
+	if not disable_background_glow then
+		passes[#passes + 1] = {
+			pass_type = "texture",
+			content_id = hotspot_name,
+			texture_id = hover_glow_name,
+			style_id = hover_glow_name,
+		}
+	end
+
 	style[hover_glow_name] = {
 		size = {
 			size[1],
@@ -9513,12 +9526,12 @@ UIWidgets.create_default_checkbox_button_console = function (scenegraph_id, size
 		end,
 	}
 	style[text_name] = {
-		font_size = 24,
 		font_type = "hell_shark",
 		horizontal_alignment = "left",
 		upper_case = true,
 		vertical_alignment = "center",
 		word_wrap = true,
+		font_size = font_size or 24,
 		text_color = Colors.get_color_table_with_alpha("font_button_normal", 255),
 		default_text_color = Colors.get_color_table_with_alpha("font_button_normal", 255),
 		select_text_color = Colors.get_color_table_with_alpha("white", 255),
@@ -9543,12 +9556,12 @@ UIWidgets.create_default_checkbox_button_console = function (scenegraph_id, size
 		end,
 	}
 	style[text_disabled_name] = {
-		font_size = 24,
 		font_type = "hell_shark",
 		horizontal_alignment = "left",
 		upper_case = true,
 		vertical_alignment = "center",
 		word_wrap = true,
+		font_size = font_size or 24,
 		text_color = Colors.get_color_table_with_alpha("gray", 255),
 		default_text_color = Colors.get_color_table_with_alpha("gray", 255),
 		offset = {
@@ -9568,12 +9581,12 @@ UIWidgets.create_default_checkbox_button_console = function (scenegraph_id, size
 		style_id = text_shadow_name,
 	}
 	style[text_shadow_name] = {
-		font_size = 24,
 		font_type = "hell_shark",
 		horizontal_alignment = "left",
 		upper_case = true,
 		vertical_alignment = "center",
 		word_wrap = true,
+		font_size = font_size or 24,
 		text_color = Colors.get_color_table_with_alpha("black", 255),
 		offset = {
 			text_base_offset[1] + 2,
@@ -10355,10 +10368,6 @@ UIWidgets.create_window_category_button = function (scenegraph_id, size, button_
 						if not button_hotspot.disable_button and not button_hotspot.is_selected then
 							-- Nothing
 						end
-
-						if false then
-							-- Nothing
-						end
 					end,
 				},
 				{
@@ -10932,10 +10941,6 @@ UIWidgets.create_window_category_button_mirrored = function (scenegraph_id, size
 						local button_hotspot = parent_content.button_hotspot
 
 						if not button_hotspot.disable_button and not button_hotspot.is_selected then
-							-- Nothing
-						end
-
-						if false then
 							-- Nothing
 						end
 					end,
@@ -13871,6 +13876,9 @@ UIWidgets.create_portrait_frame = function (scenegraph_id, frame_settings_name, 
 		frame_settings_name = frame_settings_name,
 	}
 	local style = {}
+	local context = {
+		level = level_text,
+	}
 
 	for index, data in ipairs(frame_settings) do
 		local name = "texture_" .. index
@@ -13902,6 +13910,9 @@ UIWidgets.create_portrait_frame = function (scenegraph_id, frame_settings_name, 
 			texture_id = name,
 			style_id = name,
 			retained_mode = retained_mode,
+			context = context,
+			clone = data.clone,
+			material_func = data.material_func,
 		}
 		content[name] = texture_name
 		style[name] = {
@@ -21186,4 +21197,2787 @@ UIWidgets.create_level_widget = function (scenegraph_id)
 			},
 		},
 	}
+end
+
+UIWidgets.create_bot_cusomization_button = function (ui_renderer)
+	local OFFSET_SIZE = 350
+	local gui = ui_renderer.gui
+	local base_offset = 50
+	local font_style = {
+		font_size = 22,
+		font_type = "hell_shark_masked",
+	}
+	local font, size_of_font = UIFontByResolution(font_style)
+	local font_name = font[1]
+	local font_size = font[2]
+	local font_material = font[3]
+	local managing_text = "MANAGING: "
+	local min, max = Gui.text_extents(gui, managing_text, font_name, font_size)
+	local managing_text_width = max.x - min.x
+	local playing_text = string.upper(Localize("lb_playing")) .. ": "
+	local min, max = Gui.text_extents(gui, playing_text, font_name, font_size)
+	local playing_text_width = max.x - min.x
+	local career_name_offset = base_offset + (playing_text_width < managing_text_width and managing_text_width or playing_text_width)
+	local managing_header_offset = base_offset + math.max(playing_text_width - managing_text_width, 0)
+	local playing_header_offset = base_offset + math.max(managing_text_width - playing_text_width, 0)
+	local widget = {
+		scenegraph_id = "bot_customization_button",
+		element = {
+			passes = {
+				{
+					content_id = "button_hotspot",
+					pass_type = "hotspot",
+					style_id = "button_hotspot",
+					content_change_function = function (content, style)
+						local parent_content = content.parent
+
+						style.area_size[1] = 250 + parent_content.progress * OFFSET_SIZE
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "left_texture_id",
+					texture_id = "left_texture_id",
+					content_change_function = function (content, style)
+						style.offset[1] = content.progress * -OFFSET_SIZE
+					end,
+				},
+				{
+					content_id = "right_texture_id",
+					pass_type = "texture_uv",
+					style_id = "right_texture_id",
+				},
+				{
+					pass_type = "texture",
+					style_id = "middle_texture_id",
+					texture_id = "middle_texture_id",
+					content_change_function = function (content, style)
+						style.texture_size[1] = 100 + content.progress * OFFSET_SIZE
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "left_texture_id",
+					texture_id = "mask_id",
+					content_change_function = function (content, style)
+						style.offset[1] = content.progress * -OFFSET_SIZE
+					end,
+					content_change_function = function (content, style)
+						style.offset[1] = content.progress * -OFFSET_SIZE
+					end,
+				},
+				{
+					content_id = "right_mask",
+					pass_type = "texture_uv",
+					style_id = "right_texture_id",
+				},
+				{
+					pass_type = "texture",
+					style_id = "middle_mask",
+					texture_id = "middle_mask_id",
+					content_change_function = function (content, style)
+						style.texture_size[1] = 100 + content.progress * OFFSET_SIZE
+					end,
+				},
+				{
+					pass_type = "tiled_texture",
+					style_id = "background",
+					texture_id = "background_id",
+				},
+				{
+					pass_type = "texture",
+					style_id = "icon",
+					texture_id = "icon_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+						local hover_progress = button_hotspot.hover_progress
+
+						style.color = Colors.lerp_color_tables(style.unselected_color, style.selected_color, hover_progress)
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "icon_unselected",
+					texture_id = "icon_selected_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+
+						style.color[1] = 128 * (1 - button_hotspot.hover_progress)
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "icon_selected",
+					texture_id = "icon_selected_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+
+						style.color[1] = 255 * button_hotspot.hover_progress
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "left_side_unselected",
+					texture_id = "left_side_selected_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+
+						style.color[1] = 128 * (1 - button_hotspot.hover_progress)
+						style.offset[1] = content.progress * -OFFSET_SIZE
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "left_side_selected",
+					texture_id = "left_side_selected_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+
+						style.color[1] = 255 * button_hotspot.hover_progress
+						style.offset[1] = content.progress * -OFFSET_SIZE
+					end,
+				},
+				{
+					content_id = "right_side_selected_id",
+					pass_type = "texture_uv",
+					style_id = "right_side_unselected",
+					content_change_function = function (content, style)
+						local button_hotspot = content.parent.button_hotspot
+
+						style.color[1] = 128 * (1 - button_hotspot.hover_progress)
+					end,
+				},
+				{
+					content_id = "right_side_selected_id",
+					pass_type = "texture_uv",
+					style_id = "right_side_selected",
+					content_change_function = function (content, style)
+						local button_hotspot = content.parent.button_hotspot
+
+						style.color[1] = 255 * button_hotspot.hover_progress
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "middle_unselected",
+					texture_id = "middle_selected_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+
+						style.color[1] = 128 * (1 - button_hotspot.hover_progress)
+						style.texture_size[1] = 100 + content.progress * OFFSET_SIZE
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "middle_selected",
+					texture_id = "middle_selected_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+
+						style.color[1] = 255 * button_hotspot.hover_progress
+						style.texture_size[1] = 100 + content.progress * OFFSET_SIZE
+					end,
+				},
+				{
+					pass_type = "text",
+					style_id = "managing_header",
+					text_id = "managing_header",
+				},
+				{
+					pass_type = "text",
+					style_id = "managing_header_shadow",
+					text_id = "managing_header",
+				},
+				{
+					pass_type = "text",
+					style_id = "playing_header",
+					text_id = "playing_header",
+				},
+				{
+					pass_type = "text",
+					style_id = "playing_header_shadow",
+					text_id = "playing_header",
+				},
+				{
+					pass_type = "text",
+					style_id = "managing_career",
+					text_id = "managing_career_name",
+				},
+				{
+					pass_type = "text",
+					style_id = "managing_career_shadow",
+					text_id = "managing_career_name",
+				},
+				{
+					pass_type = "text",
+					style_id = "playing_career",
+					text_id = "playing_career_name",
+				},
+				{
+					pass_type = "text",
+					style_id = "playing_career_shadow",
+					text_id = "playing_career_name",
+				},
+			},
+		},
+		content = {
+			background_id = "character_customization_bg",
+			icon_id = "character_customization_bag_icon_unselected",
+			icon_selected_id = "character_customization_bag_icon_selected",
+			left_side_selected_id = "character_customization_side_decoration_selected",
+			left_texture_id = "character_customization_side_decoration",
+			managing_career_name = "",
+			mask_id = "character_customization_side_decoration_mask",
+			middle_mask_id = "mask_rect",
+			middle_selected_id = "character_customization_expandable_border_selected",
+			middle_texture_id = "character_customization_expandable_border",
+			playing_career_name = "",
+			progress = 0,
+			selected_texture = "console_menu_bot_cusomization_highlight",
+			texture_id = "console_menu_bot_cusomization",
+			visible = true,
+			button_hotspot = {},
+			right_texture_id = {
+				texture_id = "character_customization_side_decoration",
+				uvs = {
+					{
+						1,
+						0,
+					},
+					{
+						0,
+						1,
+					},
+				},
+			},
+			right_mask = {
+				texture_id = "character_customization_side_decoration_mask",
+				uvs = {
+					{
+						1,
+						0,
+					},
+					{
+						0,
+						1,
+					},
+				},
+			},
+			right_side_selected_id = {
+				texture_id = "character_customization_side_decoration_selected",
+				uvs = {
+					{
+						1,
+						0,
+					},
+					{
+						0,
+						1,
+					},
+				},
+			},
+			managing_header = managing_text,
+			playing_header = playing_text,
+		},
+		style = {
+			icon = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = {
+					76.8,
+					76.8,
+				},
+				color = Colors.get_color_table_with_alpha("font_button_normal", 255),
+				selected_color = Colors.get_color_table_with_alpha("white", 255),
+				unselected_color = Colors.get_color_table_with_alpha("font_button_normal", 255),
+				offset = {
+					0,
+					5,
+					1,
+				},
+			},
+			icon_selected = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = {
+					76.8,
+					76.8,
+				},
+				color = Colors.get_color_table_with_alpha("font_title", 255),
+				offset = {
+					0,
+					5,
+					0,
+				},
+			},
+			icon_unselected = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = {
+					76.8,
+					76.8,
+				},
+				color = Colors.get_color_table_with_alpha("black", 128),
+				offset = {
+					0,
+					5,
+					0,
+				},
+			},
+			button_hotspot = {
+				horizontal_alignment = "right",
+				area_size = {
+					250,
+					90,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					17,
+					24,
+					0,
+				},
+			},
+			left_texture_id = {
+				horizontal_alignment = "left",
+				texture_size = {
+					103,
+					105,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					5,
+				},
+			},
+			left_side_unselected = {
+				horizontal_alignment = "left",
+				texture_size = {
+					103,
+					105,
+				},
+				color = Colors.get_color_table_with_alpha("black", 128),
+				offset = {
+					0,
+					0,
+					0,
+				},
+			},
+			left_side_selected = {
+				horizontal_alignment = "left",
+				texture_size = {
+					103,
+					105,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					0,
+				},
+			},
+			right_texture_id = {
+				horizontal_alignment = "right",
+				texture_size = {
+					103,
+					105,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					5,
+				},
+			},
+			right_side_unselected = {
+				horizontal_alignment = "right",
+				texture_size = {
+					103,
+					105,
+				},
+				color = Colors.get_color_table_with_alpha("black", 128),
+				offset = {
+					0,
+					0,
+					0,
+				},
+			},
+			right_side_selected = {
+				horizontal_alignment = "right",
+				texture_size = {
+					103,
+					105,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					0,
+				},
+			},
+			middle_mask = {
+				horizontal_alignment = "right",
+				texture_size = {
+					50,
+					105,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					-103,
+					21,
+					0,
+				},
+			},
+			middle_texture_id = {
+				horizontal_alignment = "right",
+				point_sample = true,
+				texture_size = {
+					125,
+					18,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					-75,
+					13,
+					3,
+				},
+			},
+			middle_unselected = {
+				horizontal_alignment = "right",
+				point_sample = true,
+				texture_size = {
+					125,
+					18,
+				},
+				color = {
+					255,
+					0,
+					0,
+					0,
+				},
+				offset = {
+					-75,
+					13,
+					4,
+				},
+			},
+			middle_selected = {
+				horizontal_alignment = "right",
+				point_sample = true,
+				texture_size = {
+					125,
+					18,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					-75,
+					13,
+					4,
+				},
+			},
+			background = {
+				horizontal_alignment = "right",
+				masked = true,
+				texture_size = {
+					OFFSET_SIZE + 250,
+					105,
+				},
+				texture_tiling_size = {
+					68,
+					105,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					-2,
+					-10,
+				},
+			},
+			selected_texture = {
+				color = {
+					0,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					1,
+				},
+			},
+			managing_header = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("font_button_normal", 255),
+				offset = {
+					managing_header_offset - OFFSET_SIZE,
+					-17,
+					4,
+				},
+			},
+			managing_header_shadow = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("black", 255),
+				offset = {
+					managing_header_offset + 2 - OFFSET_SIZE,
+					-19,
+					3,
+				},
+			},
+			playing_header = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("white", 255),
+				offset = {
+					playing_header_offset - OFFSET_SIZE,
+					-47,
+					4,
+				},
+			},
+			playing_header_shadow = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("black", 255),
+				offset = {
+					playing_header_offset + 2 - OFFSET_SIZE,
+					-49,
+					3,
+				},
+			},
+			managing_career = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("font_button_normal", 255),
+				offset = {
+					career_name_offset + 5 - OFFSET_SIZE,
+					-17,
+					4,
+				},
+			},
+			managing_career_shadow = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("black", 255),
+				offset = {
+					career_name_offset + 5 + 2 - OFFSET_SIZE,
+					-19,
+					3,
+				},
+			},
+			playing_career = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("white", 255),
+				offset = {
+					career_name_offset + 5 - OFFSET_SIZE,
+					-47,
+					4,
+				},
+			},
+			playing_career_shadow = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("black", 255),
+				offset = {
+					career_name_offset + 5 + 2 - OFFSET_SIZE,
+					-49,
+					3,
+				},
+			},
+		},
+		offset = {
+			0,
+			3,
+			1,
+		},
+	}
+
+	return widget
+end
+
+UIWidgets.create_system_button = function (scenegraph_id)
+	local widget = {
+		element = {
+			passes = {
+				{
+					content_id = "button_hotspot",
+					pass_type = "hotspot",
+					style_id = "button_hotspot",
+				},
+				{
+					pass_type = "texture",
+					style_id = "texture_id",
+					texture_id = "texture_id",
+				},
+				{
+					pass_type = "texture",
+					style_id = "selected_texture",
+					texture_id = "selected_texture",
+				},
+			},
+		},
+		content = {
+			selected_texture = "console_menu_system_highlight",
+			texture_id = "console_menu_system",
+			button_hotspot = {},
+		},
+		style = {
+			button_hotspot = {
+				size = {
+					220,
+					90,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					17,
+					24,
+					0,
+				},
+			},
+			texture_id = {
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					0,
+				},
+			},
+			selected_texture = {
+				color = {
+					0,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					1,
+				},
+			},
+		},
+		offset = {
+			0,
+			0,
+			0,
+		},
+		scenegraph_id = scenegraph_id,
+	}
+
+	return widget
+end
+
+UIWidgets.create_hero_icon_widget = function (scenegraph_id, size)
+	local icon_size = {
+		80,
+		80,
+	}
+
+	return {
+		element = {
+			passes = {
+				{
+					pass_type = "hover",
+					style_id = "hourglass_icon",
+				},
+				{
+					pass_type = "texture",
+					style_id = "bg",
+					texture_id = "bg",
+					content_check_function = function (content, style)
+						return content.use_empty_icon
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "hourglass_icon",
+					texture_id = "hourglass_icon",
+					content_check_function = function (content, style)
+						return content.use_empty_icon
+					end,
+					content_change_function = function (content, style)
+						local target = content.is_hover and 255 or 184
+
+						style.color[1] = math.ceil(style.color[1] + 0.1 * (target - style.color[1]))
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "bot_order_texture",
+					texture_id = "bot_order_texture_id",
+					content_check_function = function (content, style)
+						return content.bot_selection_active
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "bot_order_bg",
+					texture_id = "bot_order_bg_id",
+					content_check_function = function (content, style)
+						return content.bot_selection_active
+					end,
+				},
+				{
+					content_id = "bot_order_hotspot",
+					pass_type = "hotspot",
+					style_id = "bot_order_hotspot",
+					content_check_function = function (content, style)
+						return not Managers.input:is_device_active("gamepad")
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "bot_order_button",
+					texture_id = "bot_order_button",
+					content_check_function = function (content, style)
+						local hotspot = content.bot_change_order_hotspot
+
+						return not Managers.input:is_device_active("gamepad") and not hotspot.is_hover and not content.bot_change_order_active and content.bot_selection_active
+					end,
+					content_change_function = function (content, style)
+						style.color[1] = 128
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "bot_order_button",
+					texture_id = "bot_order_highlight_button",
+					content_check_function = function (content, style)
+						local hotspot = content.bot_change_order_hotspot
+
+						return not Managers.input:is_device_active("gamepad") and hotspot.is_hover and not content.bot_change_order_active and content.bot_selection_active
+					end,
+					content_change_function = function (content, style)
+						style.color[1] = 255
+					end,
+				},
+				{
+					content_id = "bot_change_order_hotspot",
+					pass_type = "hotspot",
+					style_id = "bot_change_order_hotspot",
+					content_check_function = function (content, style)
+						return not Managers.input:is_device_active("gamepad")
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "bot_change_order_button",
+					texture_id = "bot_change_order_button",
+					content_check_function = function (content, style)
+						return not Managers.input:is_device_active("gamepad") and content.bot_change_order_active and content.bot_selection_active and not content.bot_change_order_hotspot.is_hover
+					end,
+					content_change_function = function (content, style)
+						local hotspot = content.bot_change_order_hotspot
+
+						style.color[1] = hotspot.is_hover and 255 or 128
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "icon",
+					texture_id = "icon",
+					content_check_function = function (content)
+						return not content.selected and not content.bot_selection_active
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "icon_selected",
+					texture_id = "icon_selected",
+					content_check_function = function (content)
+						return content.selected and not content.bot_selection_active
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "holder",
+					texture_id = "holder",
+					content_check_function = function (content)
+						return not content.bot_selection_active
+					end,
+				},
+			},
+		},
+		content = {
+			bg = "character_slot_empty",
+			bot_change_order_active = false,
+			bot_change_order_button = "athanor_icon_loading",
+			bot_order_bg_id = "bot_order_base",
+			bot_order_button = "cog_icon",
+			bot_order_highlight_button = "cog_icon_selected",
+			bot_order_texture_id = "bot_order_1",
+			bot_selection_active = false,
+			holder = "divider_vertical_hero_decoration",
+			hourglass_icon = "icon_hourglass",
+			icon = "hero_icon_large_bright_wizard",
+			icon_selected = "hero_icon_large_bright_wizard",
+			use_empty_icon = false,
+			bot_order_hotspot = {},
+			bot_change_order_hotspot = {},
+		},
+		style = {
+			bg = {
+				size = {
+					110,
+					130,
+				},
+				offset = {
+					58,
+					7,
+					0,
+				},
+			},
+			hourglass_icon = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				size = {
+					110,
+					130,
+				},
+				texture_size = UIAtlasHelper.get_atlas_settings_by_texture_name("icon_hourglass").size,
+				color = {
+					184,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					58,
+					7,
+					0,
+				},
+			},
+			bot_order_texture = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = {
+					110,
+					130,
+				},
+				offset = {
+					0,
+					0,
+					1,
+				},
+			},
+			bot_order_bg = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = {
+					110,
+					130,
+				},
+			},
+			bot_order_hotspot = {
+				horizontal_alignment = "right",
+				vertical_alignment = "center",
+				area_size = {
+					58,
+					58,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					550,
+					0,
+					100,
+				},
+			},
+			bot_order_button = {
+				horizontal_alignment = "right",
+				vertical_alignment = "center",
+				texture_size = {
+					58,
+					58,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					550,
+					0,
+					0,
+				},
+			},
+			bot_change_order_button = {
+				horizontal_alignment = "right",
+				vertical_alignment = "center",
+				texture_size = {
+					29,
+					30.16,
+				},
+				color = {
+					255,
+					249,
+					239,
+					222,
+				},
+				offset = {
+					536.25,
+					0,
+					0,
+				},
+			},
+			bot_change_order_hotspot = {
+				horizontal_alignment = "left",
+				vertical_alignment = "center",
+				area_size = {
+					1920,
+					144,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					100,
+				},
+			},
+			icon = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = icon_size,
+				color = {
+					200,
+					80,
+					80,
+					80,
+				},
+				offset = {
+					-40,
+					0,
+					1,
+				},
+			},
+			icon_selected = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = icon_size,
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					-40,
+					0,
+					1,
+				},
+			},
+			holder = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = size,
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					1,
+				},
+			},
+		},
+		offset = {
+			0,
+			0,
+			0,
+		},
+		scenegraph_id = scenegraph_id,
+	}
+end
+
+UIWidgets.create_hero_widget = function (scenegraph_id, size)
+	local frame_settings = UIFrameSettings.menu_frame_12
+	local frame_premium_settings = UIFrameSettings.frame_corner_detail_01_gold
+	local hover_frame_settings = UIFrameSettings.frame_outer_glow_01
+	local hover_frame_width = hover_frame_settings.texture_sizes.horizontal[2]
+	local bot_frame_style = "frame_inner_glow_03"
+	local bot_frame_settings = UIFrameSettings[bot_frame_style]
+
+	return {
+		element = {
+			passes = {
+				{
+					content_id = "button_hotspot",
+					pass_type = "hotspot",
+				},
+				{
+					pass_type = "texture",
+					style_id = "portrait",
+					texture_id = "portrait",
+				},
+				{
+					pass_type = "rect",
+					style_id = "rect",
+				},
+				{
+					pass_type = "texture",
+					style_id = "lock_texture",
+					texture_id = "lock_texture",
+					content_check_function = function (content)
+						return content.locked
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "taken_texture",
+					texture_id = "taken_texture",
+					content_check_function = function (content)
+						return content.taken and not content.locked
+					end,
+				},
+				{
+					pass_type = "texture_frame",
+					style_id = "bot_frame",
+					texture_id = "bot_frame",
+					content_check_function = function (content)
+						return content.bot_selected
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "bot_texture",
+					texture_id = "bot_texture",
+					content_check_function = function (content)
+						return content.bot_selected
+					end,
+				},
+				{
+					pass_type = "texture_frame",
+					style_id = "frame",
+					texture_id = "frame",
+				},
+				{
+					pass_type = "texture_frame",
+					style_id = "frame_premium",
+					texture_id = "frame_premium",
+					content_check_function = function (content)
+						return content.is_premium
+					end,
+				},
+				{
+					pass_type = "rect",
+					style_id = "overlay",
+					content_check_function = function (content)
+						local button_hotspot = content.button_hotspot
+
+						return not button_hotspot.is_hover and not button_hotspot.is_selected and not content.locked
+					end,
+				},
+				{
+					pass_type = "rect",
+					style_id = "overlay_locked",
+					content_check_function = function (content)
+						local button_hotspot = content.button_hotspot
+
+						return content.locked
+					end,
+				},
+				{
+					pass_type = "texture_frame",
+					style_id = "hover_frame",
+					texture_id = "hover_frame",
+					content_check_function = function (content)
+						local mouse_active = Managers.input:is_device_active("mouse")
+
+						return content.button_hotspot.is_selected and (not content.bot_selection_active or not mouse_active)
+					end,
+				},
+			},
+		},
+		content = {
+			bot_selection_active = false,
+			bot_texture = "bot_selected_icon",
+			lock_texture = "hero_icon_locked",
+			locked = false,
+			portrait = "icons_placeholder",
+			taken = false,
+			taken_texture = "hero_icon_unavailable",
+			button_hotspot = {},
+			bot_frame = bot_frame_settings.texture,
+			frame = frame_settings.texture,
+			frame_premium = frame_premium_settings.texture,
+			hover_frame = hover_frame_settings.texture,
+		},
+		style = {
+			rect = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = size,
+				color = {
+					200,
+					0,
+					0,
+					0,
+				},
+				offset = {
+					0,
+					0,
+					0,
+				},
+			},
+			portrait = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = size,
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					1,
+				},
+			},
+			lock_texture = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = {
+					76,
+					87,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					5,
+				},
+			},
+			taken_texture = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = {
+					112,
+					112,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					6,
+				},
+			},
+			bot_frame = {
+				texture_size = bot_frame_settings.texture_size,
+				texture_sizes = bot_frame_settings.texture_sizes,
+				color = {
+					255,
+					244,
+					171,
+					135,
+				},
+				offset = {
+					0,
+					0,
+					3,
+				},
+			},
+			bot_texture = {
+				texture_size = {
+					20,
+					20,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					10,
+					10,
+					6,
+				},
+			},
+			bot_text = {
+				font_size = 24,
+				font_type = "hell_shark_header",
+				horizontal_alignment = "left",
+				localize = false,
+				vertical_alignment = "bottom",
+				text_color = {
+					255,
+					200,
+					255,
+					255,
+				},
+				offset = {
+					35,
+					0,
+					6,
+				},
+			},
+			overlay = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = size,
+				color = {
+					80,
+					0,
+					0,
+					0,
+				},
+				offset = {
+					0,
+					0,
+					2,
+				},
+			},
+			overlay_locked = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = size,
+				color = {
+					200,
+					0,
+					0,
+					0,
+				},
+				offset = {
+					0,
+					0,
+					2,
+				},
+			},
+			frame = {
+				texture_size = frame_settings.texture_size,
+				texture_sizes = frame_settings.texture_sizes,
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					4,
+				},
+			},
+			frame_premium = {
+				texture_size = frame_premium_settings.texture_size,
+				texture_sizes = frame_premium_settings.texture_sizes,
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					4,
+				},
+			},
+			hover_frame = {
+				size = {
+					size[1] + hover_frame_width * 2,
+					size[2] + hover_frame_width * 2,
+				},
+				texture_size = hover_frame_settings.texture_size,
+				texture_sizes = hover_frame_settings.texture_sizes,
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					-hover_frame_width,
+					-hover_frame_width,
+					0,
+				},
+			},
+		},
+		offset = {
+			0,
+			0,
+			0,
+		},
+		scenegraph_id = scenegraph_id,
+	}
+end
+
+UIWidgets.create_career_perk_text = function (scenegraph_id)
+	return {
+		element = {
+			passes = {
+				{
+					pass_type = "text",
+					style_id = "title_text",
+					text_id = "title_text",
+				},
+				{
+					pass_type = "text",
+					style_id = "title_text_shadow",
+					text_id = "title_text",
+				},
+				{
+					pass_type = "text",
+					style_id = "description_text",
+					text_id = "description_text",
+				},
+				{
+					pass_type = "text",
+					style_id = "description_text_shadow",
+					text_id = "description_text",
+				},
+				{
+					pass_type = "texture",
+					style_id = "icon",
+					texture_id = "icon",
+				},
+			},
+		},
+		content = {
+			description_text = "n/a",
+			icon = "tooltip_marker",
+			title_text = "n/a",
+		},
+		style = {
+			icon = {
+				horizontal_alignment = "left",
+				masked = true,
+				vertical_alignment = "bottom",
+				texture_size = {
+					13,
+					13,
+				},
+				offset = {
+					0,
+					6,
+					2,
+				},
+			},
+			title_text = {
+				dynamic_font_size = true,
+				font_size = 22,
+				font_type = "hell_shark_masked",
+				horizontal_alignment = "left",
+				localize = false,
+				upper_case = false,
+				vertical_alignment = "bottom",
+				word_wrap = true,
+				text_color = Colors.get_color_table_with_alpha("font_title", 255),
+				offset = {
+					20,
+					-5,
+					2,
+				},
+			},
+			title_text_shadow = {
+				dynamic_font_size = true,
+				font_size = 22,
+				font_type = "hell_shark_masked",
+				horizontal_alignment = "left",
+				localize = false,
+				upper_case = false,
+				vertical_alignment = "bottom",
+				word_wrap = true,
+				text_color = Colors.get_color_table_with_alpha("black", 255),
+				offset = {
+					22,
+					-7,
+					0,
+				},
+			},
+			description_text = {
+				font_size = 18,
+				font_type = "hell_shark_masked",
+				horizontal_alignment = "left",
+				localize = false,
+				upper_case = false,
+				vertical_alignment = "bottom",
+				word_wrap = true,
+				text_color = Colors.get_color_table_with_alpha("font_default", 255),
+				offset = {
+					20,
+					0,
+					2,
+				},
+			},
+			description_text_shadow = {
+				font_size = 18,
+				font_type = "hell_shark_masked",
+				horizontal_alignment = "left",
+				localize = false,
+				upper_case = false,
+				vertical_alignment = "bottom",
+				word_wrap = true,
+				text_color = Colors.get_color_table_with_alpha("black", 255),
+				offset = {
+					22,
+					-2,
+					0,
+				},
+			},
+		},
+		offset = {
+			0,
+			0,
+			0,
+		},
+		scenegraph_id = scenegraph_id,
+	}
+end
+
+UIWidgets.create_bot_cusomization_button = function (ui_renderer)
+	local OFFSET_SIZE = 350
+	local gui = ui_renderer.gui
+	local base_offset = 50
+	local font_style = {
+		font_size = 22,
+		font_type = "hell_shark_masked",
+	}
+	local font, size_of_font = UIFontByResolution(font_style)
+	local font_name = font[1]
+	local font_size = font[2]
+	local font_material = font[3]
+	local managing_text = "MANAGING: "
+	local min, max = Gui.text_extents(gui, managing_text, font_name, font_size)
+	local managing_text_width = max.x - min.x
+	local playing_text = string.upper(Localize("lb_playing")) .. ": "
+	local min, max = Gui.text_extents(gui, playing_text, font_name, font_size)
+	local playing_text_width = max.x - min.x
+	local career_name_offset = base_offset + (playing_text_width < managing_text_width and managing_text_width or playing_text_width)
+	local managing_header_offset = base_offset + math.max(playing_text_width - managing_text_width, 0)
+	local playing_header_offset = base_offset + math.max(managing_text_width - playing_text_width, 0)
+	local widget = {
+		scenegraph_id = "bot_customization_button",
+		element = {
+			passes = {
+				{
+					content_id = "button_hotspot",
+					pass_type = "hotspot",
+					style_id = "button_hotspot",
+					content_change_function = function (content, style)
+						local parent_content = content.parent
+
+						style.area_size[1] = 250 + parent_content.progress * OFFSET_SIZE
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "left_texture_id",
+					texture_id = "left_texture_id",
+					content_change_function = function (content, style)
+						style.offset[1] = content.progress * -OFFSET_SIZE
+					end,
+				},
+				{
+					content_id = "right_texture_id",
+					pass_type = "texture_uv",
+					style_id = "right_texture_id",
+				},
+				{
+					pass_type = "texture",
+					style_id = "middle_texture_id",
+					texture_id = "middle_texture_id",
+					content_change_function = function (content, style)
+						style.texture_size[1] = 100 + content.progress * OFFSET_SIZE
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "left_texture_id",
+					texture_id = "mask_id",
+					content_change_function = function (content, style)
+						style.offset[1] = content.progress * -OFFSET_SIZE
+					end,
+					content_change_function = function (content, style)
+						style.offset[1] = content.progress * -OFFSET_SIZE
+					end,
+				},
+				{
+					content_id = "right_mask",
+					pass_type = "texture_uv",
+					style_id = "right_texture_id",
+				},
+				{
+					pass_type = "texture",
+					style_id = "middle_mask",
+					texture_id = "middle_mask_id",
+					content_change_function = function (content, style)
+						style.texture_size[1] = 100 + content.progress * OFFSET_SIZE
+					end,
+				},
+				{
+					pass_type = "tiled_texture",
+					style_id = "background",
+					texture_id = "background_id",
+				},
+				{
+					pass_type = "texture",
+					style_id = "icon",
+					texture_id = "icon_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+						local hover_progress = button_hotspot.hover_progress
+
+						style.color = Colors.lerp_color_tables(style.unselected_color, style.selected_color, hover_progress)
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "icon_unselected",
+					texture_id = "icon_selected_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+
+						style.color[1] = 128 * (1 - button_hotspot.hover_progress)
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "icon_selected",
+					texture_id = "icon_selected_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+
+						style.color[1] = 255 * button_hotspot.hover_progress
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "left_side_unselected",
+					texture_id = "left_side_selected_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+
+						style.color[1] = 128 * (1 - button_hotspot.hover_progress)
+						style.offset[1] = content.progress * -OFFSET_SIZE
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "left_side_selected",
+					texture_id = "left_side_selected_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+
+						style.color[1] = 255 * button_hotspot.hover_progress
+						style.offset[1] = content.progress * -OFFSET_SIZE
+					end,
+				},
+				{
+					content_id = "right_side_selected_id",
+					pass_type = "texture_uv",
+					style_id = "right_side_unselected",
+					content_change_function = function (content, style)
+						local button_hotspot = content.parent.button_hotspot
+
+						style.color[1] = 128 * (1 - button_hotspot.hover_progress)
+					end,
+				},
+				{
+					content_id = "right_side_selected_id",
+					pass_type = "texture_uv",
+					style_id = "right_side_selected",
+					content_change_function = function (content, style)
+						local button_hotspot = content.parent.button_hotspot
+
+						style.color[1] = 255 * button_hotspot.hover_progress
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "middle_unselected",
+					texture_id = "middle_selected_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+
+						style.color[1] = 128 * (1 - button_hotspot.hover_progress)
+						style.texture_size[1] = 100 + content.progress * OFFSET_SIZE
+					end,
+				},
+				{
+					pass_type = "texture",
+					style_id = "middle_selected",
+					texture_id = "middle_selected_id",
+					content_change_function = function (content, style)
+						local button_hotspot = content.button_hotspot
+
+						style.color[1] = 255 * button_hotspot.hover_progress
+						style.texture_size[1] = 100 + content.progress * OFFSET_SIZE
+					end,
+				},
+				{
+					pass_type = "text",
+					style_id = "managing_header",
+					text_id = "managing_header",
+				},
+				{
+					pass_type = "text",
+					style_id = "managing_header_shadow",
+					text_id = "managing_header",
+				},
+				{
+					pass_type = "text",
+					style_id = "playing_header",
+					text_id = "playing_header",
+				},
+				{
+					pass_type = "text",
+					style_id = "playing_header_shadow",
+					text_id = "playing_header",
+				},
+				{
+					pass_type = "text",
+					style_id = "managing_career",
+					text_id = "managing_career_name",
+				},
+				{
+					pass_type = "text",
+					style_id = "managing_career_shadow",
+					text_id = "managing_career_name",
+				},
+				{
+					pass_type = "text",
+					style_id = "playing_career",
+					text_id = "playing_career_name",
+				},
+				{
+					pass_type = "text",
+					style_id = "playing_career_shadow",
+					text_id = "playing_career_name",
+				},
+			},
+		},
+		content = {
+			background_id = "character_customization_bg",
+			icon_id = "character_customization_bag_icon_unselected",
+			icon_selected_id = "character_customization_bag_icon_selected",
+			left_side_selected_id = "character_customization_side_decoration_selected",
+			left_texture_id = "character_customization_side_decoration",
+			managing_career_name = "",
+			mask_id = "character_customization_side_decoration_mask",
+			middle_mask_id = "mask_rect",
+			middle_selected_id = "character_customization_expandable_border_selected",
+			middle_texture_id = "character_customization_expandable_border",
+			playing_career_name = "",
+			progress = 0,
+			selected_texture = "console_menu_bot_cusomization_highlight",
+			texture_id = "console_menu_bot_cusomization",
+			visible = true,
+			button_hotspot = {},
+			right_texture_id = {
+				texture_id = "character_customization_side_decoration",
+				uvs = {
+					{
+						1,
+						0,
+					},
+					{
+						0,
+						1,
+					},
+				},
+			},
+			right_mask = {
+				texture_id = "character_customization_side_decoration_mask",
+				uvs = {
+					{
+						1,
+						0,
+					},
+					{
+						0,
+						1,
+					},
+				},
+			},
+			right_side_selected_id = {
+				texture_id = "character_customization_side_decoration_selected",
+				uvs = {
+					{
+						1,
+						0,
+					},
+					{
+						0,
+						1,
+					},
+				},
+			},
+			managing_header = managing_text,
+			playing_header = playing_text,
+		},
+		style = {
+			icon = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = {
+					76.8,
+					76.8,
+				},
+				color = Colors.get_color_table_with_alpha("font_button_normal", 255),
+				selected_color = Colors.get_color_table_with_alpha("white", 255),
+				unselected_color = Colors.get_color_table_with_alpha("font_button_normal", 255),
+				offset = {
+					0,
+					5,
+					1,
+				},
+			},
+			icon_selected = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = {
+					76.8,
+					76.8,
+				},
+				color = Colors.get_color_table_with_alpha("font_title", 255),
+				offset = {
+					0,
+					5,
+					0,
+				},
+			},
+			icon_unselected = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				texture_size = {
+					76.8,
+					76.8,
+				},
+				color = Colors.get_color_table_with_alpha("black", 128),
+				offset = {
+					0,
+					5,
+					0,
+				},
+			},
+			button_hotspot = {
+				horizontal_alignment = "right",
+				area_size = {
+					250,
+					90,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					17,
+					24,
+					0,
+				},
+			},
+			left_texture_id = {
+				horizontal_alignment = "left",
+				texture_size = {
+					103,
+					105,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					5,
+				},
+			},
+			left_side_unselected = {
+				horizontal_alignment = "left",
+				texture_size = {
+					103,
+					105,
+				},
+				color = Colors.get_color_table_with_alpha("black", 128),
+				offset = {
+					0,
+					0,
+					0,
+				},
+			},
+			left_side_selected = {
+				horizontal_alignment = "left",
+				texture_size = {
+					103,
+					105,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					0,
+				},
+			},
+			right_texture_id = {
+				horizontal_alignment = "right",
+				texture_size = {
+					103,
+					105,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					5,
+				},
+			},
+			right_side_unselected = {
+				horizontal_alignment = "right",
+				texture_size = {
+					103,
+					105,
+				},
+				color = Colors.get_color_table_with_alpha("black", 128),
+				offset = {
+					0,
+					0,
+					0,
+				},
+			},
+			right_side_selected = {
+				horizontal_alignment = "right",
+				texture_size = {
+					103,
+					105,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					0,
+				},
+			},
+			middle_mask = {
+				horizontal_alignment = "right",
+				texture_size = {
+					50,
+					105,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					-103,
+					21,
+					0,
+				},
+			},
+			middle_texture_id = {
+				horizontal_alignment = "right",
+				point_sample = true,
+				texture_size = {
+					125,
+					18,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					-75,
+					13,
+					3,
+				},
+			},
+			middle_unselected = {
+				horizontal_alignment = "right",
+				point_sample = true,
+				texture_size = {
+					125,
+					18,
+				},
+				color = {
+					255,
+					0,
+					0,
+					0,
+				},
+				offset = {
+					-75,
+					13,
+					4,
+				},
+			},
+			middle_selected = {
+				horizontal_alignment = "right",
+				point_sample = true,
+				texture_size = {
+					125,
+					18,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					-75,
+					13,
+					4,
+				},
+			},
+			background = {
+				horizontal_alignment = "right",
+				masked = true,
+				texture_size = {
+					OFFSET_SIZE + 250,
+					105,
+				},
+				texture_tiling_size = {
+					68,
+					105,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					-2,
+					-10,
+				},
+			},
+			selected_texture = {
+				color = {
+					0,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					1,
+				},
+			},
+			managing_header = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("font_button_normal", 255),
+				offset = {
+					managing_header_offset - OFFSET_SIZE,
+					-17,
+					4,
+				},
+			},
+			managing_header_shadow = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("black", 255),
+				offset = {
+					managing_header_offset + 2 - OFFSET_SIZE,
+					-19,
+					3,
+				},
+			},
+			playing_header = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("white", 255),
+				offset = {
+					playing_header_offset - OFFSET_SIZE,
+					-47,
+					4,
+				},
+			},
+			playing_header_shadow = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("black", 255),
+				offset = {
+					playing_header_offset + 2 - OFFSET_SIZE,
+					-49,
+					3,
+				},
+			},
+			managing_career = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("font_button_normal", 255),
+				offset = {
+					career_name_offset + 5 - OFFSET_SIZE,
+					-17,
+					4,
+				},
+			},
+			managing_career_shadow = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("black", 255),
+				offset = {
+					career_name_offset + 5 + 2 - OFFSET_SIZE,
+					-19,
+					3,
+				},
+			},
+			playing_career = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("white", 255),
+				offset = {
+					career_name_offset + 5 - OFFSET_SIZE,
+					-47,
+					4,
+				},
+			},
+			playing_career_shadow = {
+				horizontal_alignment = "left",
+				vertical_alignment = "top",
+				font_size = font_style.font_size,
+				font_type = font_style.font_type,
+				text_color = Colors.get_color_table_with_alpha("black", 255),
+				offset = {
+					career_name_offset + 5 + 2 - OFFSET_SIZE,
+					-49,
+					3,
+				},
+			},
+		},
+		offset = {
+			0,
+			3,
+			1,
+		},
+	}
+
+	return widget
+end
+
+UIWidgets.create_system_button = function (scenegraph_id)
+	local widget = {
+		element = {
+			passes = {
+				{
+					content_id = "button_hotspot",
+					pass_type = "hotspot",
+					style_id = "button_hotspot",
+				},
+				{
+					pass_type = "texture",
+					style_id = "texture_id",
+					texture_id = "texture_id",
+				},
+				{
+					pass_type = "texture",
+					style_id = "selected_texture",
+					texture_id = "selected_texture",
+				},
+			},
+		},
+		content = {
+			selected_texture = "console_menu_system_highlight",
+			texture_id = "console_menu_system",
+			button_hotspot = {},
+		},
+		style = {
+			button_hotspot = {
+				size = {
+					220,
+					90,
+				},
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					17,
+					24,
+					0,
+				},
+			},
+			texture_id = {
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					0,
+				},
+			},
+			selected_texture = {
+				color = {
+					0,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					1,
+				},
+			},
+		},
+		offset = {
+			0,
+			0,
+			0,
+		},
+		scenegraph_id = scenegraph_id,
+	}
+
+	return widget
+end
+
+UIWidgets.create_rounded_rect_with_text = function (scenegraph_id, text, text_style, background_color, offset, optional_fixed_size)
+	text_style = text_style or {
+		font_size = 22,
+		font_type = "hell_shark",
+		horizontal_alignment = "center",
+		localize = false,
+		use_shadow = false,
+		vertical_alignment = "center",
+		word_wrap = false,
+		text_color = Colors.get_color_table_with_alpha("font_default", 255),
+		offset = {
+			0,
+			0,
+			2,
+		},
+	}
+
+	local shadow_text_style = table.clone(text_style)
+
+	shadow_text_style.text_color = {
+		255,
+		0,
+		0,
+		0,
+	}
+	shadow_text_style.offset = {
+		2,
+		-2,
+		1,
+	}
+
+	local ingame_ui = Managers.ui:ingame_ui()
+	local ui_renderer = ingame_ui.ui_renderer
+	local font, scaled_font_size = UIFontByResolution(text_style)
+	local width, height, min = UIRenderer.text_size(ui_renderer, text, font[1], scaled_font_size)
+	local widget_def = {}
+	local element = {
+		passes = {},
+	}
+	local passes = element.passes
+	local content = {}
+	local style = {}
+
+	passes[#passes + 1] = {
+		pass_type = "rounded_background",
+		style_id = "background",
+	}
+	passes[#passes + 1] = {
+		pass_type = "text",
+		style_id = "text",
+		text_id = "text",
+	}
+	passes[#passes + 1] = {
+		pass_type = "text",
+		style_id = "text_shadow",
+		text_id = "text",
+		content_check_function = function (content, style)
+			return style.use_shadow
+		end,
+	}
+	content.text = text
+	content.size = {
+		optional_fixed_size[1] or width + scaled_font_size * 0.5,
+		optional_fixed_size[2] or height + scaled_font_size * 0.5,
+	}
+	style.background = {
+		corner_radius = 10,
+		horizontal_alignment = "center",
+		vertical_alignment = "center",
+		color = background_color or {
+			255,
+			71,
+			71,
+			71,
+		},
+		rect_size = {
+			optional_fixed_size[1] or width + scaled_font_size * 0.5,
+			optional_fixed_size[2] or height + scaled_font_size * 0.5,
+		},
+		offset = {
+			0,
+			scaled_font_size * 0.05,
+			0,
+		},
+	}
+	style.text = text_style
+	style.text_shadow = shadow_text_style
+	widget_def.element = element
+	widget_def.content = content
+	widget_def.style = style
+	widget_def.scenegraph_id = scenegraph_id
+	widget_def.offset = {
+		0,
+		0,
+		0,
+	}
+
+	return widget_def
+end
+
+UIWidgets.create_simple_triangle = function (scenegraph_id, color, triangle_alignment, size, disable_with_gamepad)
+	local widget_def = {}
+	local element = {
+		passes = {},
+	}
+	local passes = element.passes
+	local content = {}
+	local style = {}
+
+	passes[#passes + 1] = {
+		pass_type = "triangle",
+		style_id = "triangle",
+	}
+	style.triangle = {
+		horizontal_alignment = "center",
+		vertical_alignment = "center",
+		triangle_alignment = triangle_alignment,
+		texture_size = size,
+		color = color,
+	}
+	content.disable_with_gamepad = disable_with_gamepad
+	widget_def.element = element
+	widget_def.content = content
+	widget_def.style = style
+	widget_def.scenegraph_id = scenegraph_id
+	widget_def.offset = {
+		0,
+		0,
+		0,
+	}
+
+	return widget_def
+end
+
+UIWidgets.create_overcharge_bar_widget = function (scenegraph_id, overcharge_bar, bar_foreground, glow_frame, hazard_icon, size, offset)
+	local size = size or {
+		250,
+		16,
+	}
+	local frame_settings = glow_frame and UIFrameSettings[glow_frame] or UIFrameSettings.frame_outer_glow_01
+	local frame_corner = frame_settings.texture_sizes.corner
+	local frame_width = frame_corner[1]
+	local widget = {
+		element = {
+			passes = {
+				{
+					pass_type = "texture_frame",
+					style_id = "frame",
+					texture_id = "frame",
+				},
+				{
+					pass_type = "texture",
+					style_id = "icon",
+					texture_id = "icon",
+				},
+				{
+					pass_type = "texture",
+					style_id = "icon_shadow",
+					texture_id = "icon",
+				},
+				{
+					pass_type = "texture",
+					style_id = "bar_fg",
+					texture_id = "bar_fg",
+				},
+				{
+					pass_type = "rect",
+					style_id = "bar_bg",
+				},
+				{
+					pass_type = "gradient_mask_texture",
+					style_id = "bar_1",
+					texture_id = "bar_1",
+				},
+				{
+					pass_type = "rect",
+					style_id = "min_threshold",
+				},
+				{
+					pass_type = "rect",
+					style_id = "max_threshold",
+				},
+			},
+		},
+		content = {
+			icon = hazard_icon or "tabs_icon_all_selected",
+			bar_1 = overcharge_bar or "overcharge_bar",
+			bar_fg = bar_foreground or "overcharge_frame",
+			size = {
+				size[1] - 6,
+				size[2],
+			},
+			frame = frame_settings.texture,
+		},
+		style = {
+			frame = {
+				frame_margins = {
+					-(frame_width - 1),
+					-(frame_width - 1),
+				},
+				texture_size = frame_settings.texture_size,
+				texture_sizes = frame_settings.texture_sizes,
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					0,
+					0,
+					0,
+				},
+				size = size,
+			},
+			bar_1 = {
+				gradient_threshold = 0,
+				color = {
+					255,
+					255,
+					255,
+					255,
+				},
+				offset = {
+					3,
+					3,
+					3,
+				},
+				size = {
+					size[1] - 6,
+					size[2] - 6,
+				},
+			},
+			icon = {
+				size = {
+					34,
+					34,
+				},
+				offset = {
+					size[1],
+					size[2] / 2 - 17,
+					5,
+				},
+				color = {
+					100,
+					0,
+					0,
+					1,
+				},
+			},
+			icon_shadow = {
+				size = {
+					34,
+					34,
+				},
+				offset = {
+					size[1] + 2,
+					size[2] / 2 - 17 - 2,
+					5,
+				},
+				color = {
+					0,
+					0,
+					0,
+					0,
+				},
+			},
+			bar_fg = {
+				offset = {
+					0,
+					0,
+					5,
+				},
+				color = {
+					204,
+					255,
+					255,
+					255,
+				},
+				size = size,
+			},
+			bar_bg = {
+				size = {
+					size[1] - 6,
+					size[2] - 5,
+				},
+				offset = {
+					3,
+					3,
+					0,
+				},
+				color = {
+					100,
+					0,
+					0,
+					0,
+				},
+			},
+			min_threshold = {
+				pivot = {
+					0,
+					0,
+				},
+				offset = {
+					0,
+					3,
+					4,
+				},
+				color = {
+					204,
+					0,
+					0,
+					0,
+				},
+				size = {
+					2,
+					size[2] - 6,
+				},
+			},
+			max_threshold = {
+				pivot = {
+					0,
+					0,
+				},
+				offset = {
+					0,
+					3,
+					4,
+				},
+				color = {
+					204,
+					0,
+					0,
+					0,
+				},
+				size = {
+					2,
+					size[2] - 6,
+				},
+			},
+		},
+		offset = offset or {
+			0,
+			0,
+			0,
+		},
+		scenegraph_id = scenegraph_id,
+	}
+
+	return widget
+end
+
+UIWidgets.create_tag = function (scenegraph_id, text, optional_fixed_size)
+	local text_style = {
+		font_size = 22,
+		font_type = "hell_shark",
+		horizontal_alignment = "center",
+		localize = false,
+		use_shadow = false,
+		vertical_alignment = "center",
+		word_wrap = false,
+		text_color = Colors.get_color_table_with_alpha("font_default", 255),
+		offset = {
+			0,
+			0,
+			2,
+		},
+	}
+	local shadow_text_style = table.clone(text_style)
+
+	shadow_text_style.text_color = {
+		255,
+		0,
+		0,
+		0,
+	}
+	shadow_text_style.offset = {
+		2,
+		-2,
+		1,
+	}
+
+	local ingame_ui = Managers.ui:ingame_ui()
+	local ui_renderer = ingame_ui.ui_renderer
+	local font, scaled_font_size = UIFontByResolution(text_style)
+	local width, height, min = UIRenderer.text_size(ui_renderer, text, font[1], scaled_font_size)
+	local widget_def = {}
+	local element = {
+		passes = {},
+	}
+	local passes = element.passes
+	local content = {}
+	local style = {}
+
+	passes[#passes + 1] = {
+		pass_type = "rect",
+		style_id = "background",
+		content_check_function = function (content, style)
+			return true
+		end,
+	}
+	passes[#passes + 1] = {
+		pass_type = "texture",
+		style_id = "fade",
+		texture_id = "fade",
+	}
+	passes[#passes + 1] = {
+		pass_type = "texture",
+		style_id = "vignette",
+		texture_id = "vignette",
+	}
+	passes[#passes + 1] = {
+		pass_type = "texture",
+		style_id = "frame",
+		texture_id = "frame",
+	}
+	passes[#passes + 1] = {
+		pass_type = "text",
+		style_id = "text",
+		text_id = "text",
+	}
+	passes[#passes + 1] = {
+		pass_type = "text",
+		style_id = "text_shadow",
+		text_id = "text",
+		content_check_function = function (content, style)
+			return style.use_shadow
+		end,
+	}
+	content.text = text
+	content.size = {
+		optional_fixed_size[1] or width + scaled_font_size * 0.5,
+		optional_fixed_size[2] or height + scaled_font_size * 0.5,
+	}
+	content.fade = "button_state_default"
+	content.vignette = "button_bg_fade"
+	content.frame = "menu_frame_glass_01"
+	style.background = {
+		horizontal_alignment = "center",
+		vertical_alignment = "center",
+		color = {
+			255,
+			30,
+			30,
+			30,
+		},
+		texture_size = {
+			optional_fixed_size[1] or width + scaled_font_size * 0.5,
+			optional_fixed_size[2] or height + scaled_font_size * 0.5,
+		},
+		offset = {
+			0,
+			scaled_font_size * 0.05,
+			0,
+		},
+	}
+	style.vignette = {
+		horizontal_alignment = "center",
+		vertical_alignment = "center",
+		color = {
+			100,
+			255,
+			255,
+			255,
+		},
+		texture_size = {
+			optional_fixed_size[1] or width + scaled_font_size * 0.5,
+			optional_fixed_size[2] or height + scaled_font_size * 0.5,
+		},
+		offset = {
+			0,
+			scaled_font_size * 0.05,
+			1,
+		},
+	}
+	style.fade = {
+		horizontal_alignment = "center",
+		vertical_alignment = "center",
+		texture_size = {
+			optional_fixed_size[1] or width + scaled_font_size * 0.5,
+			optional_fixed_size[2] or height + scaled_font_size * 0.5,
+		},
+		offset = {
+			0,
+			scaled_font_size * 0.05,
+			2,
+		},
+	}
+	style.frame = {
+		horizontal_alignment = "center",
+		vertical_alignment = "center",
+		texture_size = {
+			optional_fixed_size[1] or width + scaled_font_size * 0.5,
+			optional_fixed_size[2] or height + scaled_font_size * 0.5,
+		},
+		offset = {
+			0,
+			scaled_font_size * 0.05,
+			3,
+		},
+	}
+	style.text = text_style
+	style.text_shadow = shadow_text_style
+	widget_def.element = element
+	widget_def.content = content
+	widget_def.style = style
+	widget_def.scenegraph_id = scenegraph_id
+	widget_def.offset = {
+		0,
+		0,
+		0,
+	}
+
+	return widget_def
 end

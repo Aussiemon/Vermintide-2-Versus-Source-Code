@@ -75,6 +75,20 @@ local function is_husk(unit)
 end
 
 BuffFunctionTemplates.functions = {
+	heal_owner = function (unit, buff, params)
+		local heal_amount = buff.template.heal_amount
+		local heal_type = buff.template.heal_type
+
+		if is_server() then
+			DamageUtils.heal_network(unit, unit, heal_amount, heal_type)
+		else
+			local network_manager = Managers.state.network
+			local owner_unit_id = network_manager:unit_game_object_id(unit)
+			local heal_type_id = NetworkLookup.heal_types[heal_type]
+
+			network_manager.network_transmit:send_rpc_server("rpc_request_heal", owner_unit_id, heal_amount, heal_type_id)
+		end
+	end,
 	apply_action_lerp_movement_buff = function (unit, buff, params)
 		local bonus = params.bonus
 		local multiplier = params.multiplier
@@ -1673,95 +1687,6 @@ BuffFunctionTemplates.functions = {
 			end
 		end
 	end,
-	apply_warpfirethrower_in_face_versus = function (unit, buff, params, world)
-		local difficulty_name = Managers.state.difficulty:get_difficulty()
-		local buff_template = buff.template
-		local attacker_unit = params.attacker_unit
-
-		if Unit.alive(attacker_unit) then
-			local warpfire_unit_breed = Unit.get_data(attacker_unit, "breed")
-			local damage = warpfire_unit_breed.shoot_warpfire_long_attack_damage
-
-			buff.damage = damage
-			buff.damage_source = warpfire_unit_breed and warpfire_unit_breed.name or "dot_debuff"
-		end
-
-		local breed = Unit.get_data(unit, "breed")
-
-		buff.armor_type = breed.armor_category or 1
-
-		local first_person_extension = ScriptUnit.has_extension(unit, "first_person_system")
-
-		if first_person_extension then
-			buff.warpfire_particle_id = first_person_extension:create_screen_particles("fx/screenspace_warpfire_flamethrower_01")
-			buff.warpfire_particle_id_2 = first_person_extension:create_screen_particles("fx/screenspace_warpfire_hit_inface")
-
-			first_person_extension:play_hud_sound_event("Play_player_hit_warpfire_thrower")
-		end
-
-		local pushed_direction
-		local attacker_unit = params.attacker_unit
-		local distance = 0
-
-		if ALIVE[attacker_unit] then
-			local source_breed = Unit.get_data(attacker_unit, "breed")
-
-			buff.damage_source = source_breed and source_breed.name or "dot_debuff"
-
-			local victim_position = POSITION_LOOKUP[unit]
-			local attacker_position = POSITION_LOOKUP[attacker_unit]
-			local to_victim = victim_position - attacker_position
-
-			pushed_direction = Vector3.normalize(to_victim)
-			distance = Vector3.length(to_victim)
-		else
-			pushed_direction = Vector3.backward()
-		end
-
-		if breed.is_hero and first_person_extension then
-			local buff_extension = ScriptUnit.has_extension(unit, "buff_system")
-			local status_extension = ScriptUnit.has_extension(unit, "status_system")
-			local no_ranged_knockback = buff_extension and buff_extension:has_buff_perk("no_ranged_knockback")
-			local is_valid_push_target = not no_ranged_knockback and not status_extension:is_disabled()
-
-			if is_valid_push_target then
-				local locomotion_extension = ScriptUnit.extension(unit, "locomotion_system")
-				local push_speed = buff_template.push_speed
-				local pushed_velocity = pushed_direction * push_speed
-
-				locomotion_extension:add_external_velocity(pushed_velocity)
-			end
-		end
-	end,
-	update_warpfirethrower_in_face_versus = function (unit, buff, params, world)
-		local t = params.t
-		local buff_template = buff.template
-
-		if Managers.state.network.is_server then
-			local attacker_unit_is_alive = ALIVE[params.attacker_unit]
-			local attacker_unit = attacker_unit_is_alive and params.attacker_unit or unit
-
-			if HEALTH_ALIVE[unit] then
-				local armor_type = buff.armor_type
-				local damage_type = buff_template.damage_type
-				local damage = buff.damage[armor_type]
-				local damage_source = buff.damage_source
-
-				DamageUtils.add_damage_network(unit, attacker_unit, damage, "torso", damage_type, nil, Vector3(1, 0, 0), damage_source, nil, attacker_unit)
-			end
-
-			local is_friendly_target = not DamageUtils.is_enemy(attacker_unit, unit)
-			local target_dead = HEALTH_ALIVE[unit]
-
-			if attacker_unit_is_alive and is_friendly_target and target_dead then
-				QuestSettings.check_num_enemies_killed_by_warpfire(unit, attacker_unit)
-			end
-		end
-
-		local warpfire_next_t = t + buff_template.time_between_dot_damages
-
-		return warpfire_next_t
-	end,
 	update_warpfirethrower_in_face = function (unit, buff, params, world)
 		local t = params.t
 		local buff_template = buff.template
@@ -1988,6 +1913,14 @@ BuffFunctionTemplates.functions = {
 			return
 		end
 
+		if template.ignore_if_not_local then
+			local player = Managers.player:owner(unit)
+
+			if not player or player:network_id() ~= Network.peer_id() then
+				return
+			end
+		end
+
 		local sync_type = template.sync_type
 		local peer_id
 
@@ -2045,7 +1978,7 @@ BuffFunctionTemplates.functions = {
 			local buff_name = template.buff_to_add
 			local buff_extension = ScriptUnit.has_extension(unit, "buff_system")
 			local current_stacks = buff_extension:num_buff_type(buff_name)
-			local max_stacks = BuffTemplates[buff_name].buffs[1].max_stacks
+			local max_stacks = BuffUtils.get_buff_template(buff_name).buffs[1].max_stacks
 
 			if current_stacks < max_stacks then
 				local buff_system = Managers.state.entity:system("buff_system")
@@ -2096,20 +2029,11 @@ BuffFunctionTemplates.functions = {
 
 				if buffs_to_add then
 					local buff_system = Managers.state.entity:system("buff_system")
-					local link_buffs = add_buffs_data.link_buffs
-					local params
-
-					if link_buffs then
-						params = {
-							parent_id = buff.id,
-						}
-					end
-
 					local sync_buffs = add_buffs_data.sync_buffs
 					local sync_type = sync_buffs and BuffSyncType.LocalAndServer or BuffSyncType.Local
 
 					for i = 1, #buffs_to_add do
-						buff_system:add_buff_synced(unit, buffs_to_add[i], sync_type, params)
+						buff_system:add_buff_synced(unit, buffs_to_add[i], sync_type)
 					end
 				end
 			end
@@ -2833,28 +2757,27 @@ BuffFunctionTemplates.functions = {
 		end
 
 		if template.ai_buff_name then
+			local broadphase_categories = side.ally_broadphase_categories
 			local nearby_units = FrameTable.alloc_table()
-			local num_units = AiUtils.broadphase_query(owner_position, range, nearby_units)
+			local num_units = AiUtils.broadphase_query(owner_position, range, nearby_units, broadphase_categories)
 
 			for i = 1, num_units do
 				local other_unit = nearby_units[i]
-				local other_side = side_by_unit[other_unit]
+				local buff_id = buffed_units[other_unit]
 
-				if not side_manager:is_enemy_by_side(side, other_side) then
-					local buff_id = buffed_units[other_unit]
-
-					if not buff_id then
-						buffed_units[other_unit] = buff_system:add_buff_synced(other_unit, template.ai_buff_name, buff_sync_type, buff_params)
-					end
-
-					inside_this_frame[other_unit] = true
+				if not buff_id then
+					buffed_units[other_unit] = buff_system:add_buff_synced(other_unit, template.ai_buff_name, buff_sync_type, buff_params)
 				end
+
+				inside_this_frame[other_unit] = true
 			end
 		end
 
 		for unit, buff_id in pairs(buffed_units) do
 			if not inside_this_frame[unit] then
 				buff_system:remove_buff_synced(unit, buff_id)
+
+				buffed_units[unit] = nil
 			end
 		end
 	end,
@@ -5352,7 +5275,7 @@ BuffFunctionTemplates.functions = {
 
 			if t > buff.next_pulse_t then
 				local damage_source = "grenade_frag_01"
-				local explosion_template = ExplosionTemplates.twitch_pulse_explosion
+				local explosion_template = ExplosionUtils.get_template("twitch_pulse_explosion")
 				local explosion_position = POSITION_LOOKUP[unit]
 
 				DamageUtils.create_explosion(world, unit, explosion_position, Quaternion.identity(), explosion_template, 1, damage_source, true, false, unit, false)
@@ -5415,6 +5338,31 @@ BuffFunctionTemplates.functions = {
 		local skip_buff_removal = true
 
 		commander_extension:remove_controlled_unit(unit, skip_sync, skip_buff_removal)
+	end,
+	sienna_scholar_vent_zone_update = function (owner_unit, buff, params)
+		local template = buff.template
+		local buff_to_add = template.buff_to_add
+		local buff_extension = ScriptUnit.extension(owner_unit, "buff_system")
+		local buff_stacks = buff_extension:get_stacking_buff(buff_to_add)
+		local num_buffs = buff_stacks and #buff_stacks or 0
+		local sienna_side = Managers.state.side.side_by_unit[owner_unit]
+		local ally_categories = sienna_side.enemy_broadphase_categories
+		local position = POSITION_LOOKUP[owner_unit]
+		local radius = template.radius
+		local result_table = FrameTable.alloc_table()
+		local num_hits = AiUtils.broadphase_query(position, radius, result_table, ally_categories)
+
+		if num_buffs < num_hits then
+			for i = num_buffs + 1, num_hits do
+				buff_extension:add_buff(buff_to_add)
+			end
+		elseif num_hits < num_buffs then
+			for i = 1, num_buffs - num_hits do
+				local last_buff = buff_stacks[num_buffs - i + 1]
+
+				buff_extension:remove_buff(last_buff.id)
+			end
+		end
 	end,
 }
 

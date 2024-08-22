@@ -16,6 +16,7 @@ CameraStateObserver.on_enter = function (self, unit, input, dt, context, t, prev
 	self._is_server = context.network_transmit.is_server
 	self._default_observed_node_name = "camera_attach"
 	self._input_service_name = params.input_service_name or "Player"
+	self._has_read_camera_input = false
 
 	local override_observed_node = params.override_observed_node
 
@@ -70,7 +71,11 @@ CameraStateObserver.update = function (self, unit, input, dt, context, t)
 		end
 	end
 
-	CameraStateHelper.set_camera_rotation(unit, camera_extension)
+	local manually_moved_camera = CameraStateHelper.set_camera_rotation(unit, camera_extension)
+
+	if manually_moved_camera then
+		self._has_read_camera_input = true
+	end
 
 	local observed_unit = self._observed_unit
 
@@ -78,6 +83,10 @@ CameraStateObserver.update = function (self, unit, input, dt, context, t)
 		self._observed_unit = nil
 
 		return
+	end
+
+	if not self._has_read_camera_input and not Managers.player:owner(observed_unit) then
+		CameraStateHelper.set_camera_rotation_observe_static(unit, observed_unit)
 	end
 
 	local observed_node = self._observed_node
@@ -147,15 +156,16 @@ CameraStateObserver._set_observed_unit = function (self, observed_unit, observed
 	player:set_observed_unit(observed_unit)
 
 	if not self._is_server then
-		local local_player = Managers.player:local_player()
-		local local_player_go_id = local_player.game_object_id
+		local local_player_id = player:local_player_id()
 		local observed_unit_id, is_level_unit = Managers.state.network:game_object_or_level_id(observed_unit)
 
 		observed_unit_id = observed_unit_id or NetworkConstants.invalid_game_object_id
 		is_level_unit = not not is_level_unit
 
-		self._network_transmit:send_rpc_server("rpc_set_observed_unit", local_player_go_id, observed_unit_id, is_level_unit)
+		self._network_transmit:send_rpc_server("rpc_set_observed_unit", local_player_id, observed_unit_id, is_level_unit)
 	end
+
+	self._has_read_camera_input = false
 
 	return true
 end

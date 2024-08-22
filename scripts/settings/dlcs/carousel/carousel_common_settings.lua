@@ -6,12 +6,14 @@ require("scripts/unit_extensions/weapons/area_damage/area_damage_templates_vs")
 
 settings.mechanism_settings = {
 	versus = {
+		always_spawn_a_boss = true,
+		check_matchmaking_hero_availability = true,
 		class_name = "VersusMechanism",
 		disadvantaged_team_starts = true,
 		display_name = "area_selection_carousel_name",
 		file = "scripts/managers/game_mode/mechanisms/versus_mechanism",
 		hero_respawn_time = 1800,
-		keep_leaving_players_grace_period = 90,
+		keep_leaving_players_grace_period = 120,
 		loading_screen_override = "loading_screen_carousel",
 		playfab_mirror = "PlayFabMirrorAdventure",
 		query_port = 27016,
@@ -19,6 +21,7 @@ settings.mechanism_settings = {
 		server_port = 27017,
 		server_universe = "carousel",
 		social_wheel = "VersusSocialWheelUI",
+		spawn_boss_every_section = true,
 		steam_port = 8766,
 		sync_backend_id = true,
 		use_gamepad_layout = true,
@@ -37,35 +40,11 @@ settings.mechanism_settings = {
 		deny_outline_color_change_for_party = {
 			dark_pact = true,
 		},
-		override_career_availability = {
-			bw_adept = true,
-			bw_necromancer = false,
-			bw_scholar = true,
-			bw_unchained = true,
-			dr_engineer = false,
-			dr_ironbreaker = true,
-			dr_ranger = true,
-			dr_slayer = true,
-			es_huntsman = true,
-			es_knight = true,
-			es_mercenary = true,
-			es_questingknight = false,
-			vs_chaos_spawn = false,
-			vs_gutter_runner = true,
-			vs_packmaster = true,
-			vs_poison_wind_globadier = true,
-			vs_rat_ogre = false,
-			vs_ratling_gunner = true,
-			vs_stormfiend = false,
-			vs_warpfire_thrower = true,
-			we_maidenguard = true,
-			we_shade = true,
-			we_thornsister = false,
-			we_waywatcher = true,
-			wh_bountyhunter = true,
-			wh_captain = true,
-			wh_priest = false,
-			wh_zealot = true,
+		override_career_availability = {},
+		playable_boss_terror_events = {
+			vs_chaos_troll = {
+				"playable_boss_chaos_troll",
+			},
 		},
 		override_item_availability = {},
 		override_career_talents = {},
@@ -158,6 +137,7 @@ settings.matchmaking_state_files = {
 	"scripts/managers/matchmaking/matchmaking_state_reserve_slots_player_hosted",
 	"scripts/managers/matchmaking/matchmaking_state_wait_join_player_hosted",
 	"scripts/managers/matchmaking/matchmaking_state_player_hosted_game",
+	"scripts/managers/matchmaking/matchmaking_state_flexmatch_host",
 }
 settings.career_setting_files = {
 	"scripts/settings/profiles/career_settings_vs",
@@ -204,6 +184,7 @@ settings.systems = {
 	"scripts/entity_system/systems/ghost_mode/ghost_mode_system",
 	"scripts/entity_system/systems/versus/versus_objective_system",
 	"scripts/entity_system/systems/versus/versus_item_spawner_system",
+	"scripts/entity_system/systems/versus/versus_horde_ability_system",
 }
 settings.vote_template_filenames = {
 	"scripts/settings/dlcs/carousel/carousel_vote_templates",
@@ -224,7 +205,6 @@ settings.player_breeds = {
 settings.career_help_ui = {
 	"scripts/ui/hud_ui/career_help_ui_vs_definitions",
 }
-settings.social_wheel_settings = "scripts/ui/social_wheel/versus_social_wheel_ui_settings"
 settings.weapon_template_file_names = {
 	"scripts/settings/equipment/weapon_templates/vs_packmaster_claw",
 }
@@ -249,8 +229,12 @@ settings.anim_lookup = {
 	"equip",
 	"cooldown_ready",
 	"to_armed",
+	"swing_left",
+	"slam",
+	"attack_cleave_charge",
 	"death_dissolve",
 	"death_crawl",
+	"attack_vomit_into",
 }
 settings.inventory_package_list = {
 	"units/beings/player/dark_pact_first_person_base/chaos_sorcerer/chr_first_person_base",
@@ -360,7 +344,6 @@ settings.network_go_types = {
 	"versus_volume_objective_unit",
 	"versus_capture_point_objective_unit",
 	"versus_mission_objective_unit",
-	"versus_dark_pact_climbing_interaction_unit",
 }
 settings.material_effect_mappings_file_names = {
 	"scripts/settings/material_effect_mappings_player_enemies",
@@ -390,6 +373,8 @@ settings.dialogue_events = {
 	"vw_wait",
 	"vw_cover_me",
 	"vw_answer_ping",
+	"hook_success",
+	"hook_fail",
 }
 settings.social_wheel_sfx_events = {
 	dark_pact = {

@@ -564,10 +564,10 @@ local function trigger_unit_dialogue_death_event(killed_unit, killer_unit, hit_z
 		local weapon_slot = inventory_extension:get_wielded_slot_name()
 
 		if weapon_slot == "slot_melee" or weapon_slot == "slot_ranged" then
-			local dot_type = false
 			local event_data = FrameTable.alloc_table()
 
 			event_data.killed_type = killed_unit_name
+			event_data.enemy_tag = killed_unit_name
 			event_data.hit_zone = hit_zone
 			event_data.weapon_slot = weapon_slot
 
@@ -575,12 +575,6 @@ local function trigger_unit_dialogue_death_event(killed_unit, killer_unit, hit_z
 
 			if weapon_data then
 				event_data.weapon_type = weapon_data.item_data.item_type
-
-				local attack_template = AttackTemplates[damage_type]
-
-				if attack_template and attack_template.dot_type then
-					dot_type = attack_template.dot_type
-				end
 			end
 
 			local killer_name = killer_dialogue_extension.context.player_profile
@@ -588,7 +582,7 @@ local function trigger_unit_dialogue_death_event(killed_unit, killer_unit, hit_z
 			local optional_spawn_data = blackboard and blackboard.optional_spawn_data
 
 			if optional_spawn_data and not optional_spawn_data.prevent_killed_enemy_dialogue then
-				SurroundingAwareSystem.add_event(killer_unit, "killed_enemy", DialogueSettings.default_view_distance, "killer_name", killer_name, "hit_zone", hit_zone, "enemy_tag", killed_unit_name, "weapon_slot", weapon_slot, "dot_type", dot_type)
+				SurroundingAwareSystem.add_event(killer_unit, "killed_enemy", DialogueSettings.default_view_distance, "killer_name", killer_name, "hit_zone", hit_zone, "enemy_tag", killed_unit_name, "weapon_slot", weapon_slot)
 			end
 
 			local event_name = "enemy_kill"
@@ -618,6 +612,34 @@ local function vs_trigger_player_killing_blow_player(killed_unit, killing_blow, 
 			WwiseWorld.trigger_event(wwise_world, "versus_hud_hero_player_special_kill")
 		elseif side_manager:versus_is_dark_pact(source_attacker) then
 			WwiseWorld.trigger_event(wwise_world, "generic_pactsworn_death")
+		end
+	end
+end
+
+local function check_trigger_team_wipe_vo(killed_unit)
+	if not Managers.state.network.is_server then
+		return
+	end
+
+	local side_manager = Managers.state.side
+
+	if side_manager:versus_is_dark_pact(killed_unit) then
+		local any_player_alive = false
+		local owner_side = side_manager.side_by_unit[killed_unit]
+		local side_players = owner_side.PLAYER_UNITS
+
+		for i = 1, #side_players do
+			if HEALTH_ALIVE[side_players[i]] then
+				any_player_alive = true
+
+				break
+			end
+		end
+
+		if not any_player_alive then
+			local dialogue_system = Managers.state.entity:system("dialogue_system")
+
+			dialogue_system:trigger_mission_giver_event("vs_mg_pactsworn_wipe")
 		end
 	end
 end
@@ -707,7 +729,7 @@ local function trigger_player_killing_blow_ai_buffs(ai_unit, killing_blow)
 			local buff_extension = ScriptUnit.has_extension(unit, "buff_system")
 
 			if buff_extension then
-				buff_extension:trigger_procs("on_ping_target_killed", killing_blow, breed_killed)
+				buff_extension:trigger_procs("on_pingable_target_killed", killing_blow, breed_killed)
 			end
 		end
 	end
@@ -1386,7 +1408,7 @@ DeathReactions.templates = {
 
 				trigger_unit_dialogue_death_event(unit, killing_blow[DamageDataIndex.ATTACKER], killing_blow[DamageDataIndex.HIT_ZONE], killing_blow[DamageDataIndex.DAMAGE_TYPE])
 				trigger_player_killing_blow_ai_buffs(unit, killing_blow)
-				AiUtils.loot_rat_explosion(unit, unit, BLACKBOARDS[unit], nil, ExplosionTemplates.loot_rat_explosion)
+				AiUtils.loot_rat_explosion(unit, unit, BLACKBOARDS[unit], nil, ExplosionUtils.get_template("loot_rat_explosion"))
 
 				if unit ~= killing_blow[DamageDataIndex.ATTACKER] and ScriptUnit.has_extension(unit, "ai_system") then
 					ScriptUnit.extension(unit, "ai_system"):attacked(killing_blow[DamageDataIndex.ATTACKER], t, killing_blow)
@@ -1486,6 +1508,7 @@ DeathReactions.templates = {
 				Managers.telemetry_events:player_died(player, damage_type, damage_source, position)
 			end,
 			start = function (unit, context, t, killing_blow, is_server)
+				check_trigger_team_wipe_vo(unit)
 				trigger_player_killing_blow_ai_buffs(unit, killing_blow, true)
 				StatisticsUtil.register_kill(unit, killing_blow, context.statistics_db, true)
 				Unit.flow_event(unit, "lua_on_death")
@@ -1504,7 +1527,12 @@ DeathReactions.templates = {
 			end,
 			start = function (unit, context, t, killing_blow, is_server)
 				if not is_hot_join_sync(killing_blow) then
-					vs_trigger_player_killing_blow_player(unit, killing_blow, context.world)
+					local is_versus = Managers.mechanism:current_mechanism_name() == "versus"
+
+					if is_versus then
+						vs_trigger_player_killing_blow_player(unit, killing_blow, context.world)
+					end
+
 					trigger_player_killing_blow_ai_buffs(unit, killing_blow, true)
 					StatisticsUtil.register_kill(unit, killing_blow, context.statistics_db)
 					Unit.flow_event(unit, "lua_on_death")
@@ -1539,6 +1567,47 @@ DeathReactions.templates = {
 			start = function (unit, context, t, killing_blow, is_server)
 				Managers.state.game_mode:level_object_killed(unit, killing_blow)
 				Unit.flow_event(unit, "lua_on_death")
+			end,
+			update = function (unit, dt, context, t, data)
+				return
+			end,
+		},
+	},
+	level_object_hit_context = {
+		unit = {
+			pre_start = function (unit, context, t, killing_blow)
+				return
+			end,
+			start = function (unit, context, t, killing_blow, is_server)
+				Managers.state.game_mode:level_object_killed(unit, killing_blow)
+				Unit.set_flow_variable(unit, "current_health", 0)
+				Unit.flow_event(unit, "lua_on_death")
+
+				local local_player = Managers.player:local_player()
+				local player_unit = local_player and local_player.player_unit
+
+				if player_unit and player_unit == killing_blow[DamageDataIndex.SOURCE_ATTACKER_UNIT] then
+					Unit.flow_event(unit, "lua_local_player_killing_blow")
+				end
+			end,
+			update = function (unit, dt, context, t, data)
+				return
+			end,
+		},
+		husk = {
+			pre_start = function (unit, context, t, killing_blow)
+				return
+			end,
+			start = function (unit, context, t, killing_blow, is_server)
+				Managers.state.game_mode:level_object_killed(unit, killing_blow)
+				Unit.flow_event(unit, "lua_on_death")
+
+				local local_player = Managers.player:local_player()
+				local player_unit = local_player and local_player.player_unit
+
+				if player_unit and player_unit == killing_blow[DamageDataIndex.SOURCE_ATTACKER_UNIT] then
+					Unit.flow_event(unit, "lua_local_player_killing_blow")
+				end
 			end,
 			update = function (unit, dt, context, t, data)
 				return
@@ -1844,6 +1913,13 @@ DeathReactions.templates = {
 				Unit.set_flow_variable(unit, "current_health", 0)
 				Unit.flow_event(unit, "lua_on_death")
 
+				local local_player = Managers.player:local_player()
+				local player_unit = local_player and local_player.player_unit
+
+				if player_unit and player_unit == killing_blow[DamageDataIndex.ATTACKER] then
+					Unit.flow_event(unit, "lua_local_player_killing_blow")
+				end
+
 				death_extension.death_has_started = true
 
 				return data, DeathReactions.IS_NOT_DONE
@@ -1958,6 +2034,13 @@ DeathReactions.templates = {
 					local buff = buff_extension:get_buff_type("bubonic_blob_buff")
 
 					buff_extension:remove_buff(buff.id)
+				end
+
+				local local_player = Managers.player:local_player()
+				local player_unit = local_player and local_player.player_unit
+
+				if player_unit and player_unit == killing_blow[DamageDataIndex.ATTACKER] then
+					Unit.flow_event(unit, "lua_local_player_killing_blow")
 				end
 
 				return data, DeathReactions.IS_NOT_DONE

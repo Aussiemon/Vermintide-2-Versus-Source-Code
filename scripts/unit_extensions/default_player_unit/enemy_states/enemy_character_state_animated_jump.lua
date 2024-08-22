@@ -59,6 +59,7 @@ EnemyCharacterStateAnimatedJump.on_enter = function (self, unit, input, dt, cont
 	end
 
 	status_extension:set_should_climb(false)
+	status_extension:set_is_climbing(true)
 
 	local swap_entrance_exit = jump_data.swap_entrance_exit
 	local jump_object_data = jump_data.jump_object_data
@@ -95,6 +96,7 @@ EnemyCharacterStateAnimatedJump.on_enter = function (self, unit, input, dt, cont
 		local blackboard = BLACKBOARDS[unit]
 
 		blackboard.jump_start_finished = nil
+		blackboard.jump_climb_finished = nil
 	end
 
 	CharacterStateHelper.look(input_extension, self._player.viewport_name, first_person_extension, status_extension, inventory_extension)
@@ -112,6 +114,8 @@ EnemyCharacterStateAnimatedJump.on_exit = function (self, unit, input, dt, conte
 	end
 
 	local status_extension = self._status_extension
+
+	status_extension:set_is_climbing(false)
 
 	if status_extension:get_unarmed() then
 		CharacterStateHelper.play_animation_event(unit, "to_unarmed")
@@ -144,6 +148,10 @@ EnemyCharacterStateAnimatedJump.update = function (self, unit, input, dt, contex
 	if locomotion_extension:is_on_ground() then
 		ScriptUnit.extension(unit, "whereabouts_system"):set_is_onground()
 	end
+
+	local health_extension = self._health_extension
+
+	CharacterStateHelper.update_weapon_actions(t, unit, input_extension, inventory_extension, health_extension)
 
 	if CharacterStateHelper.do_common_state_transitions(status_extension, csm) then
 		return

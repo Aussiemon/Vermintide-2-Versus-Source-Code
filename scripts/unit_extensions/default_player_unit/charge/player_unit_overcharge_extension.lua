@@ -3,7 +3,6 @@
 require("scripts/unit_extensions/default_player_unit/charge/overcharge_data")
 
 PlayerUnitOverchargeExtension = class(PlayerUnitOverchargeExtension)
-script_data.disable_overcharge = script_data.disable_overcharge or Development.parameter("disable_overcharge")
 
 local OVERCHARGE_LEVELS = table.enum("none", "low", "medium", "high", "critical", "exploding")
 
@@ -19,13 +18,15 @@ PlayerUnitOverchargeExtension.init = function (self, extension_init_context, uni
 	self.overcharge_crit_interval = 1
 	self.venting_overcharge = false
 	self.vent_damage_pool = 0
-	self.no_damage = global_is_inside_inn
+	self.no_damage = global_is_inside_inn or overcharge_data.no_damage
 	self.lockout = false
 	self.prev_lockout = false
 	self.overcharge_threshold = overcharge_data.overcharge_threshold or 0
 	self.overcharge_value_decrease_rate = overcharge_data.overcharge_value_decrease_rate or 0
 	self.time_until_overcharge_decreases = overcharge_data.time_until_overcharge_decreases or 0
 	self.hit_overcharge_threshold_sound = overcharge_data.hit_overcharge_threshold_sound or "ui_special_attack_ready"
+	self.critical_overcharge_margin = overcharge_data.critical_overcharge_margin or 1.2
+	self.overcharge_depleted_func = overcharge_data.overcharge_depleted_func
 	self.screen_space_particle = overcharge_data.onscreen_particles_id or "fx/screenspace_overheat_indicator"
 	self.screen_space_particle_critical = overcharge_data.critical_onscreen_particles_id or not overcharge_data.no_critical_onscreen_particles and "fx/screenspace_overheat_critical"
 	self._lerped_overcharge_fraction = 0
@@ -257,7 +258,7 @@ PlayerUnitOverchargeExtension.update = function (self, unit, input, dt, context,
 	local buff_extension = self._buff_extension
 	local owner_player = Managers.player:owner(self.unit)
 
-	if self.overcharge_value > 0 or buff_extension:has_buff_type("sienna_unchained_activated_ability") or buff_extension:has_buff_type("vs_warpfire_thrower_no_charge_explotion") then
+	if self.overcharge_value > 0 or buff_extension:has_buff_type("sienna_unchained_activated_ability") then
 		self._had_overcharge = true
 
 		if not self.is_exploding and t > self.time_when_overcharge_start_decreasing or self.lockout == true then
@@ -311,13 +312,13 @@ PlayerUnitOverchargeExtension.update = function (self, unit, input, dt, context,
 	if post_amount < pre_amount then
 		self._buff_extension:trigger_procs("on_overcharge_lost", pre_amount - post_amount, self.max_value)
 	end
+
+	if self.overcharge_value <= 0 and pre_amount ~= 0 and self.overcharge_depleted_func then
+		self.overcharge_depleted_func(self.world, self.unit, self.first_person_extension)
+	end
 end
 
 PlayerUnitOverchargeExtension.add_charge = function (self, overcharge_amount, charge_level, overcharge_type)
-	if script_data.disable_overcharge then
-		return
-	end
-
 	local buff_extension = self._buff_extension
 	local max_value = self.max_value
 	local current_overcharge_value = self.overcharge_value
@@ -330,6 +331,8 @@ PlayerUnitOverchargeExtension.add_charge = function (self, overcharge_amount, ch
 	overcharge_amount = self._buff_extension:apply_buffs_to_value(overcharge_amount, "reduced_overcharge")
 
 	if buff_extension and not self._ignored_overcharge_types[overcharge_type] then
+		overcharge_amount = overcharge_amount * buff_extension:apply_buffs_to_value(1, "ammo_used_multiplier")
+
 		buff_extension:trigger_procs("on_ammo_used", self, 0)
 		buff_extension:trigger_procs("on_overcharge_used", overcharge_amount)
 		Managers.state.achievement:trigger_event("ammo_used", self.owner_unit)
@@ -353,7 +356,9 @@ PlayerUnitOverchargeExtension.add_charge = function (self, overcharge_amount, ch
 		return
 	end
 
-	if current_overcharge_value <= max_value * 0.97 and max_value < current_overcharge_value + overcharge_amount then
+	local critical_overcharge_margin = self.critical_overcharge_margin
+
+	if current_overcharge_value <= max_value - critical_overcharge_margin and max_value <= current_overcharge_value + overcharge_amount then
 		local state_settings = self._overcharge_states[OVERCHARGE_LEVELS.critical]
 
 		self:_trigger_hud_sound(state_settings.sound_event, self.first_person_extension)

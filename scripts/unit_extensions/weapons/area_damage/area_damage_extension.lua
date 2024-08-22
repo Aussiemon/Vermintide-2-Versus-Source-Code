@@ -70,7 +70,7 @@ AreaDamageExtension.destroy = function (self)
 	local world = self.world
 
 	if self.explosion_template_name then
-		local explosion_template = ExplosionTemplates[self.explosion_template_name]
+		local explosion_template = ExplosionUtils.get_template(self.explosion_template_name)
 		local stop_aoe_sound_event_name = explosion_template.aoe.stop_aoe_sound_event_name
 
 		if stop_aoe_sound_event_name then
@@ -258,7 +258,7 @@ AreaDamageExtension.start_area_damage = function (self)
 	if self.explosion_template_name then
 		local unit = self.unit
 		local world = self.world
-		local explosion_template = ExplosionTemplates[self.explosion_template_name]
+		local explosion_template = ExplosionUtils.get_template(self.explosion_template_name)
 		local sound_event_name = explosion_template.aoe.sound_event_name
 
 		if sound_event_name then

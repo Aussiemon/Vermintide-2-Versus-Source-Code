@@ -139,10 +139,6 @@ AIInterestPointSystem.destroy = function (self)
 
 	local astar = self.astar
 
-	if not GwNavAStar.processing_finished(astar) then
-		GwNavAStar.cancel(astar)
-	end
-
 	GwNavAStar.destroy(astar)
 	table.for_each(self.reachable_interest_points, clear_table)
 	self.network_event_delegate:unregister(self)
@@ -375,6 +371,11 @@ AIInterestPointSystem.spawn_interest_points = function (self)
 
 			if point.is_position_on_navmesh then
 				local breed = members[i]
+
+				if not breed.name then
+					breed = breed[math.random(1, #breed)]
+				end
+
 				local optional_data = {
 					ignore_event_counter = true,
 				}

@@ -13,7 +13,19 @@ end
 
 local indicator_offset = 0
 
+local function is_server()
+	return Managers.state.network and Managers.state.network.is_server
+end
+
 local function update_option(cs, option_index, dont_save)
+	if cs.propagate_to_server and not is_server() then
+		if Managers.state.debug then
+			Managers.state.debug:propagate_debug_option(DebugScreen.hash_options(), cs.setting_id, option_index, dont_save)
+		else
+			Debug.sticky_text("[DebugScreen] DebugManager not available. Can't propagate option '%s' to host", cs.title)
+		end
+	end
+
 	local option = cs.options[option_index]
 
 	cs.selected_id = option_index
@@ -55,6 +67,28 @@ local function update_option(cs, option_index, dont_save)
 	end
 
 	Profiler.event("%s = %s", cs.title, tostring(cs.options[option_index]))
+end
+
+local function exec_func(cs)
+	if cs.propagate_to_server and not is_server() then
+		if Managers.state.debug then
+			Managers.state.debug:propagate_debug_option(DebugScreen.hash_options(), cs.setting_id, 0, true)
+		else
+			Debug.sticky_text("[DebugScreen] DebugManager not available. Can't propagate action '%s' to host", cs.title)
+		end
+	end
+
+	cs.func(cs.options, cs.hot_id)
+
+	if cs.clear_setting then
+		cs.selected_id = nil
+
+		Development.set_setting(cs.title, nil)
+
+		script_data[cs.title] = nil
+
+		Development.clear_param_cache(cs.title)
+	end
 end
 
 local function activate_preset(cs)
@@ -146,6 +180,7 @@ DebugScreen.setup = function (world, settings, callbacks)
 			cs.preset = setting.preset
 		end
 
+		cs.propagate_to_server = setting.propagate_to_server
 		cs.item_display_func = setting.item_display_func
 
 		if setting.bitmap then
@@ -162,6 +197,7 @@ DebugScreen.setup = function (world, settings, callbacks)
 		cs.category = setting.category
 		cs.close_when_selected = setting.close_when_selected
 		cs.clear_when_selected = setting.clear_when_selected
+		cs.setting_id = i
 
 		for j = 1, #cs.options do
 			local option = cs.options[j]
@@ -286,7 +322,7 @@ DebugScreen.update = function (dt, t, input_service, input_manager)
 	local console_width = DebugScreen.console_width
 	local mod_key_down = input_service:get("console_mod_key")
 
-	if input_service:get("console_open_key") then
+	if input_service:get("console_open_key") or DebugScreen.active and input_service:is_blocked() then
 		DebugScreen.active = not DebugScreen.active
 
 		if DebugScreen.active then
@@ -314,7 +350,7 @@ DebugScreen.update = function (dt, t, input_service, input_manager)
 				end
 
 				if cs.func then
-					cs.func(cs, cs.hot_id)
+					exec_func(cs)
 				else
 					update_option(cs, cs.hot_id)
 				end
@@ -759,17 +795,7 @@ DebugScreen.update = function (dt, t, input_service, input_manager)
 			end
 
 			if cs.func and (input_service:get("right_key") or input_service:has("exclusive_right_key") and input_service:get("exclusive_right_key")) and not opened_this_frame then
-				cs.func(cs.options, cs.hot_id)
-
-				if cs.clear_setting then
-					cs.selected_id = nil
-
-					Development.set_setting(cs.title, nil)
-
-					script_data[cs.title] = nil
-
-					Development.clear_param_cache(cs.title)
-				end
+				exec_func(cs)
 
 				if cs.close_when_selected then
 					DebugScreen.active = false
@@ -972,10 +998,6 @@ DebugScreen.reset_settings = function ()
 		elseif cs.func then
 			-- Nothing
 		end
-
-		if false then
-			-- Nothing
-		end
 	end
 
 	if all_false then
@@ -1119,4 +1141,30 @@ DebugScreen.update_search = function (input_manager, input_service, gui, t, dt)
 	local width = max.x - min.x
 
 	Gui.rect(gui, search_text_pos + Vector3(width + 1, -2, 0), Vector2(10, 20), Colors.get_color_with_alpha("white", -50 + math.cos(hot_anim_t) * 250))
+end
+
+DebugScreen.hash_options = function ()
+	return HashUtils.fnv32_hash(table.concat(table.select_array(DebugScreen.console_settings, function (idx, cs)
+		return cs.title or idx
+	end), ","))
+end
+
+DebugScreen.handle_propagated_option = function (option_hash, cs_index, option_index, dont_save)
+	local own_hash = DebugScreen.hash_options()
+
+	if own_hash ~= option_hash then
+		return string.format("Debug option mismatch (%s ~= %s)", own_hash, option_hash)
+	end
+
+	local cs = DebugScreen.console_settings[cs_index]
+
+	if not cs then
+		return "Missing debug option at index " .. tostring(cs_index)
+	end
+
+	if cs.func then
+		exec_func(cs)
+	else
+		update_option(cs, option_index, dont_save)
+	end
 end

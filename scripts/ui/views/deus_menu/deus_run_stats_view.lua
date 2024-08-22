@@ -76,7 +76,9 @@ DeusRunStatsView._handle_input = function (self, dt, t)
 		end
 	end
 
-	self._ui:set_active(self._ui:locked() or new_active)
+	local is_locked = self._ui:locked() and not Managers.ui:end_screen_active() and not self:_is_in_deus_map_view()
+
+	self._ui:set_active(is_locked or new_active)
 end
 
 DeusRunStatsView.destroy = function (self)
@@ -108,6 +110,25 @@ DeusRunStatsView._update_inventory = function (self)
 	local own_peer_id = run_controller:get_own_peer_id()
 	local healing_slot = run_controller:get_player_consumable_healthkit_slot(own_peer_id, REAL_PLAYER_LOCAL_ID)
 	local potion_slot = run_controller:get_player_consumable_potion_slot(own_peer_id, REAL_PLAYER_LOCAL_ID)
+	local potion_item = rawget(ItemMasterList, potion_slot)
+
+	if not potion_item or potion_item.hide_in_frame_ui then
+		local additional_items = run_controller:get_player_additional_items(own_peer_id, REAL_PLAYER_LOCAL_ID)
+		local additional_potions = additional_items.slot_potion and additional_items.slot_potion.items
+
+		if additional_potions then
+			for i = 1, #additional_potions do
+				local additional_item_data = additional_potions[i]
+
+				if not additional_item_data.hide_in_frame_ui then
+					potion_slot = additional_item_data.key
+
+					break
+				end
+			end
+		end
+	end
+
 	local grenade_slot = run_controller:get_player_consumable_grenade_slot(own_peer_id, REAL_PLAYER_LOCAL_ID)
 
 	if self._melee ~= melee or self._ranged ~= ranged or self._potion_slot ~= potion_slot or self._grenade_slot ~= grenade_slot or self._healing_slot ~= healing_slot then
@@ -119,4 +140,16 @@ DeusRunStatsView._update_inventory = function (self)
 		self._grenade_slot = grenade_slot
 		self._healing_slot = healing_slot
 	end
+end
+
+DeusRunStatsView._is_in_deus_map_view = function (self)
+	local mechanism_name = Managers.mechanism:current_mechanism_name()
+
+	if mechanism_name ~= "deus" then
+		return false
+	end
+
+	local current_mechanism_state = Managers.mechanism:get_state()
+
+	return current_mechanism_state == "map_deus"
 end

@@ -28,6 +28,13 @@ ChaosTrollStateWalking.update = function (self, unit, input, dt, context, t)
 
 	local ghost_mode_extension = self._ghost_mode_extension
 	local in_ghost_mode = ghost_mode_extension:is_in_ghost_mode()
+	local input_extension = self._input_extension
+	local status_extension = self._status_extension
+	local first_person_extension = self._first_person_extension
+	local is_crouching = status_extension:is_crouching()
+	local toggle_crouch = input_extension.toggle_crouch
+
+	CharacterStateHelper.check_crouch(unit, input_extension, status_extension, toggle_crouch, first_person_extension, t)
 
 	handled = self:common_movement(in_ghost_mode, dt)
 

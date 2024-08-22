@@ -466,7 +466,7 @@ local function lobby_level_display_name(lobby_data)
 
 	if mechanism == "weave" then
 		if mission_id ~= "false" and lobby_data.quick_game == "false" then
-			local weave_name_data = string.split(mission_id, "_")
+			local weave_name_data = string.split_deprecated(mission_id, "_")
 			local weave_name = "Weave " .. weave_name_data[2]
 
 			return weave_name
@@ -524,13 +524,13 @@ local function lobby_country_text(lobby_data)
 	return country_text
 end
 
-function level_is_locked(lobby_data)
+local function level_is_locked(lobby_data)
 	local player_manager = Managers.player
 	local player = player_manager:local_player()
 	local statistics_db = player_manager:statistics_db()
 	local player_stats_id = player:stats_id()
 	local quick_game = lobby_data.quick_game == "true"
-	local private_game = lobby_data.is_private == "true"
+	local private_game = MatchmakingManager.is_lobby_private(lobby_data)
 	local mechanism = lobby_data.mechanism
 	local mechanism_settings = mechanism and MechanismSettings[mechanism]
 
@@ -586,7 +586,7 @@ function level_is_locked(lobby_data)
 	end
 end
 
-function difficulty_is_locked(lobby_data)
+local function difficulty_is_locked(lobby_data)
 	local matchmaking_type_index = tonumber(lobby_data.matchmaking_type)
 	local matchmaking_type_names = table.clone(NetworkLookup.matchmaking_types, true)
 	local matchmaking_type = matchmaking_type_names[matchmaking_type_index]
@@ -630,9 +630,11 @@ function difficulty_is_locked(lobby_data)
 	if not has_required_power_level then
 		return true
 	end
+
+	return false
 end
 
-function status_is_locked(lobby_data)
+local function status_is_locked(lobby_data)
 	local num_players = lobby_data.num_players
 	local matchmaking = lobby_data.matchmaking
 

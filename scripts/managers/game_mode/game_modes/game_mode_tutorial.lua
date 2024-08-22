@@ -22,8 +22,6 @@ GameModeTutorial.init = function (self, settings, world, ...)
 
 	event_manager:register(self, "level_start_local_player_spawned", "event_local_player_spawned")
 
-	self.about_to_lose = false
-	self.lost_condition_timer = nil
 	self._hud_disabled = false
 	self._bot_players = {}
 end
@@ -73,8 +71,8 @@ GameModeTutorial.unregister_rpcs = function (self)
 	GameModeTutorial.super.unregister_rpcs(self)
 end
 
-GameModeTutorial.player_entered_game_session = function (self, peer_id, local_player_id, wanted_party_index)
-	GameModeTutorial.super.player_entered_game_session(self, peer_id, local_player_id, wanted_party_index)
+GameModeTutorial.player_entered_game_session = function (self, peer_id, local_player_id, requested_party_index)
+	GameModeTutorial.super.player_entered_game_session(self, peer_id, local_player_id, requested_party_index)
 
 	local _, current_party_id = Managers.party:get_party_from_player_id(peer_id, local_player_id)
 
@@ -103,7 +101,7 @@ GameModeTutorial._clear_bots = function (self)
 	local num_bot_players = #bot_players
 
 	for i = num_bot_players, 1, -1 do
-		self:_remove_bot(bot_players, i)
+		self:_remove_bot(bot_players[i])
 	end
 end
 
@@ -115,10 +113,10 @@ GameModeTutorial.add_bot = function (self, profile_index, career_index)
 	bot_players[#bot_players + 1] = bot_player
 end
 
-GameModeTutorial._remove_bot = function (self, bot_players, index)
-	local bot_player = bot_players[index]
+GameModeTutorial._remove_bot = function (self, bot_player)
+	local bot_players = self._bot_players
+	local index = table.index_of(bot_players, bot_player)
 
-	fassert(bot_player, "No bot player at index (%s)", tostring(index))
 	self:_remove_bot_instant(bot_player)
 
 	local last = #bot_players

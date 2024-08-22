@@ -509,6 +509,48 @@ UIPlayerPortraitFrameSettings = {
 			},
 		},
 	},
+	frame_karak_04 = {
+		{
+			layer = 10,
+			texture = "portrait_frame_whaling_01",
+			color = {
+				255,
+				255,
+				255,
+				255,
+			},
+			size = {
+				128,
+				140,
+			},
+			offset = {
+				0,
+				-61,
+				0,
+			},
+		},
+	},
+	frame_karak_05 = {
+		{
+			layer = 10,
+			texture = "portrait_frame_whaling_02",
+			color = {
+				255,
+				255,
+				255,
+				255,
+			},
+			size = {
+				128,
+				140,
+			},
+			offset = {
+				0,
+				-61,
+				0,
+			},
+		},
+	},
 	frame_necromancer_01 = {
 		{
 			layer = 10,
@@ -2244,6 +2286,42 @@ UIPlayerPortraitFrameSettings = {
 			},
 		},
 	},
+	frame_beta_2024 = {
+		{
+			layer = 10,
+			texture = "portrait_frame_beta_2024",
+			color = {
+				255,
+				255,
+				255,
+				255,
+			},
+		},
+	},
+	frame_streamer = {
+		{
+			layer = 10,
+			texture = "portrait_frame_streamer",
+			color = {
+				255,
+				255,
+				255,
+				255,
+			},
+		},
+	},
+	frame_celebration_06 = {
+		{
+			layer = 10,
+			texture = "portrait_frame_celebration_6",
+			color = {
+				255,
+				255,
+				255,
+				255,
+			},
+		},
+	},
 	frame_scorpion_complete_all_helmgart_levels_cataclysm = {
 		{
 			layer = 10,
@@ -2620,6 +2698,18 @@ UIPlayerPortraitFrameSettings = {
 		{
 			layer = 10,
 			texture = "portrait_frame_skulls_2023",
+			color = {
+				255,
+				255,
+				255,
+				255,
+			},
+		},
+	},
+	frame_skulls_2024 = {
+		{
+			layer = 10,
+			texture = "portrait_frame_skulls_2024",
 			color = {
 				255,
 				255,

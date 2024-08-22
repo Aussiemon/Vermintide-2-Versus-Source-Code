@@ -123,7 +123,6 @@ local unit_templates = {
 			"PlayerUnitVisualEffectsExtension",
 			"PlayerUnitWeaveLoadoutExtension",
 			"DialogueActorExtension",
-			"HealthTriggerExtension",
 			"GenericDialogueContextExtension",
 			"PlayerProximityExtension",
 			"SurroundingObserverExtension",
@@ -152,7 +151,6 @@ local unit_templates = {
 			"PlayerHuskVisualEffectsExtension",
 			"PlayerHuskWeaveLoadoutExtension",
 			"DialogueActorExtension",
-			"HealthTriggerExtension",
 			"GenericDialogueContextExtension",
 			"PlayerProximityExtension",
 			"SurroundingObserverHuskExtension",
@@ -202,7 +200,6 @@ local unit_templates = {
 			"SurroundingObserverExtension",
 			"PlayerWhereaboutsExtension",
 			"PlayerProximityExtension",
-			"HealthTriggerExtension",
 			"GenericDialogueContextExtension",
 			"PlayerOutlineExtension",
 			"PlayerTutorialExtension",
@@ -279,7 +276,6 @@ local unit_templates = {
 			"SurroundingObserverHuskExtension",
 			"PlayerHuskOutlineExtension",
 			"PlayerProximityExtension",
-			"HealthTriggerExtension",
 			"GenericDialogueContextExtension",
 			"PlayerHuskAttachmentExtension",
 			"StatisticsExtension",
@@ -388,7 +384,6 @@ local unit_templates = {
 			"SurroundingObserverHuskExtension",
 			"PlayerHuskOutlineExtension",
 			"PlayerProximityExtension",
-			"HealthTriggerExtension",
 			"GenericDialogueContextExtension",
 			"StatisticsExtension",
 			"PingTargetExtension",
@@ -633,6 +628,34 @@ local unit_templates = {
 		husk_extensions = {
 			"AIInventoryExtension",
 			"PingTargetExtension",
+			"GenericUnitAimExtension",
+		},
+		remove_when_killed = {
+			self_owned_extensions = {
+				"AILineOfSightExtension",
+				"AIEnemySlotExtension",
+				"GenericUnitAimExtension",
+			},
+			husk_extensions = {
+				"GenericUnitAimExtension",
+			},
+		},
+	},
+	ai_unit_chaos_bulwark = {
+		base_template = "ai_unit_base",
+		go_type = "ai_unit_with_inventory_and_shield",
+		self_owned_extensions = {
+			"AILineOfSightExtension",
+			"AIInventoryExtension",
+			"AIEnemySlotExtension",
+			"PingTargetExtension",
+			"BulwarkShieldExtension",
+			"GenericUnitAimExtension",
+		},
+		husk_extensions = {
+			"AIInventoryExtension",
+			"PingTargetExtension",
+			"BulwarkHuskShieldExtension",
 			"GenericUnitAimExtension",
 		},
 		remove_when_killed = {
@@ -1864,19 +1887,6 @@ local unit_templates = {
 			"LiquidAreaDamageHuskExtension",
 		},
 	},
-	carousel_inn_door = {
-		go_type = "carousel_inn_door",
-		self_owned_extensions = {
-			"DoorOutlineExtension",
-			"GenericUnitInteractableExtension",
-			"UnitSynchronizationExtension",
-		},
-		husk_extensions = {
-			"DoorOutlineExtension",
-			"GenericUnitInteractableExtension",
-			"UnitSynchronizationExtension",
-		},
-	},
 	player_projectile_unit = {
 		go_type = "player_projectile_unit",
 		self_owned_extensions = {
@@ -2364,7 +2374,9 @@ local unit_templates = {
 		self_owned_extensions = {
 			"BuffAreaExtension",
 		},
-		husk_extensions = {},
+		husk_extensions = {
+			"BuffAreaExtension",
+		},
 	},
 	buff_unit = {
 		go_type = "buff_unit",
@@ -2471,7 +2483,9 @@ local unit_templates = {
 		},
 	},
 	weapon_unit_3p = {
-		self_owned_extensions = {},
+		self_owned_extensions = {
+			"HuskWeaponUnitExtension",
+		},
 	},
 	torch_unit_3p = {
 		self_owned_extensions = {

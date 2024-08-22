@@ -29,7 +29,7 @@ DedicatedServerCommands.init = function (self)
 end
 
 DedicatedServerCommands.execute_command = function (self, input)
-	local args = string.split(input, " ")
+	local args = string.split_deprecated(input, " ")
 
 	if #args == 0 then
 		local reason = "No command"
@@ -185,10 +185,12 @@ Commands = {
 			local mechanism = Managers.mechanism:game_mechanism()
 			local reservation_handler = mechanism:get_slot_reservation_handler()
 			local network_manager = Managers.state.network
-			local reserved_peer_ids = reservation_handler:reservers()
+			local reserved_peer_ids = reservation_handler:peers()
 
 			for _, peer_id in pairs(reserved_peer_ids) do
-				network_manager.network_server:kick_peer(peer_id)
+				if PEER_ID_TO_CHANNEL[peer_id] then
+					network_manager.network_server:kick_peer(peer_id)
+				end
 			end
 
 			local game_server_manager = Managers.game_server
@@ -261,10 +263,10 @@ Commands = {
 			local response = ""
 
 			if Managers.level_transition_handler:in_hub_level() then
-				local reservers = Managers.mechanism:game_mechanism()._slot_reservation_handler:reservers()
+				local peers = Managers.mechanism:game_mechanism()._slot_reservation_handler:peers()
 
-				for i = 1, #reservers do
-					local peer_id = reservers[i]
+				for i = 1, #peers do
+					local peer_id = peers[i]
 
 					response = string.format("%s%s - %s\n", response, peer_id or "-", Managers.game_server:peer_name(peer_id) or "-")
 				end
@@ -347,6 +349,17 @@ Commands = {
 			script_data[key] = value
 
 			return true, "Script data changed!"
+		end,
+	},
+	set_disable_gamemode_end = {
+		description = "Set disable game mode end setting",
+		example = "disable_gamemode_end <bool>",
+		max_args = 1,
+		min_args = 1,
+		func = function (bool)
+			script_data.disable_gamemode_end = bool
+
+			return true, "Game mode end has changed"
 		end,
 	},
 	set_time = {
@@ -453,6 +466,24 @@ Commands = {
 			win_conditions:set_time(0)
 
 			return true, "Round ended!"
+		end,
+	},
+	end_match = {
+		description = "End the match",
+		example = "end_round",
+		max_args = 0,
+		min_args = 0,
+		func = function ()
+			if Managers.level_transition_handler:in_hub_level() then
+				return false, "Failed to end match - Match not started"
+			end
+
+			local game_mode_manager = Managers.state.game_mode
+
+			game_mode_manager:round_started()
+			Managers.mechanism:game_mechanism():win_conditions():debug_end_match()
+
+			return true, "Match ended!"
 		end,
 	},
 	skip_to_set = {
@@ -708,26 +739,88 @@ Commands = {
 		max_args = 1,
 		min_args = 1,
 		func = function (peer_id)
-			local mechanism = Managers.mechanism:game_mechanism()
-			local reservation_handler = mechanism:get_slot_reservation_handler()
-			local reserved_peer_ids = reservation_handler:reservers()
-
-			for _, current_peer_id in pairs(reserved_peer_ids) do
-				if peer_id == current_peer_id then
-					Managers.state.network.network_server:kick_peer(peer_id)
-
-					return true, "Player kicked from server"
-				end
+			if not PEER_ID_TO_CHANNEL[peer_id] then
+				return false, "Failed to kick player - Player not found"
 			end
 
-			return false, "Failed to kick player - Player not found"
+			Managers.state.network.network_server:kick_peer(peer_id)
+
+			return true, "Player kicked from server"
+		end,
+	},
+	spawn_horde = {
+		description = "spawns a horde",
+		max_args = 0,
+		min_args = 0,
+		func = function ()
+			Managers.state.conflict:debug_spawn_horde()
+
+			return true, "Spawning horde"
+		end,
+	},
+	trigger_playable_boss = {
+		description = "lets pactsworn pick playable boss",
+		max_args = 0,
+		min_args = 0,
+		func = function ()
+			cprint("[DEBUG] Triggered Playable boss")
+
+			local game_mode = Managers.state.game_mode:game_mode()
+
+			game_mode:set_playable_boss_can_be_picked(true)
+
+			return true, "trigger_playable_boss"
+		end,
+	},
+	enable_ai_and_bots = {
+		description = "disables ai and bots",
+		max_args = 0,
+		min_args = 0,
+		func = function ()
+			cprint("[DEBUG] disabling ai and bots")
+
+			script_data.ai_pacing_disabled = false
+			script_data.ai_roaming_spawning_disabled = false
+			script_data.ai_specials_spawning_disabled = false
+			script_data.ai_boss_spawning_disabled = false
+			script_data.ai_horde_spawning_disabled = false
+			script_data.ai_bots_disabled = false
+			script_data.ai_critter_spawning_disabled = false
+			script_data.ai_mini_patrol_disabled = false
+			script_data.ai_rush_intervention_disabled = false
+			script_data.ai_speed_run_intervention_disabled = false
+			script_data.ai_terror_events_disabled = false
+
+			return true, "disabling_ai_and_bots"
+		end,
+	},
+	disable_ai_and_bots = {
+		description = "enables ai and bots",
+		max_args = 0,
+		min_args = 0,
+		func = function ()
+			cprint("[DEBUG] enabling ai and bots")
+
+			script_data.ai_pacing_disabled = true
+			script_data.ai_roaming_spawning_disabled = true
+			script_data.ai_boss_spawning_disabled = true
+			script_data.ai_specials_spawning_disabled = true
+			script_data.ai_horde_spawning_disabled = true
+			script_data.ai_bots_disabled = true
+			script_data.ai_critter_spawning_disabled = true
+			script_data.ai_mini_patrol_disabled = true
+			script_data.ai_rush_intervention_disabled = true
+			script_data.ai_speed_run_intervention_disabled = true
+			script_data.ai_terror_events_disabled = true
+
+			return true, "enabling_ai_and_bots"
 		end,
 	},
 }
 MetaCommands = {
 	_num_players = function ()
 		local dedicated_server_reservation_slots = script_data.dedicated_server_reservation_slots
-		local slots_per_party = string.split(dedicated_server_reservation_slots, ",")
+		local slots_per_party = string.split_deprecated(dedicated_server_reservation_slots, ",")
 		local num_players
 		local max_players = 0
 

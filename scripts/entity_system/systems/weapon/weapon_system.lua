@@ -1,6 +1,7 @@
 ﻿-- chunkname: @scripts/entity_system/systems/weapon/weapon_system.lua
 
 require("scripts/unit_extensions/weapons/weapon_unit_extension")
+require("scripts/unit_extensions/weapons/husk_weapon_unit_extension")
 require("scripts/unit_extensions/weapons/ai_weapon_unit_extension")
 require("scripts/unit_extensions/weapons/single_weapon_unit_extension")
 
@@ -23,6 +24,7 @@ local RPCS = {
 	"rpc_weapon_blood",
 	"rpc_play_fx",
 	"rpc_change_single_weapon_state",
+	"rpc_change_synced_weapon_state",
 	"rpc_summon_vortex",
 	"rpc_start_soul_rip",
 	"rpc_stop_soul_rip",
@@ -30,6 +32,7 @@ local RPCS = {
 }
 local extensions = {
 	"WeaponUnitExtension",
+	"HuskWeaponUnitExtension",
 	"AiWeaponUnitExtension",
 	"SingleWeaponUnitExtension",
 }
@@ -190,7 +193,7 @@ WeaponSystem.send_rpc_attack_hit = function (self, damage_source_id, attacker_un
 			local ai_system = Managers.state.entity:system("ai_system")
 			local attributes = ai_system:get_attributes(hit_unit)
 
-			if breed and breed.boss or attributes.grudge_marked then
+			if breed and breed.show_health_bar or attributes.grudge_marked then
 				Managers.state.event:trigger("boss_health_bar_set_prioritized_unit", hit_unit, "damage_done")
 			end
 		end
@@ -207,12 +210,11 @@ WeaponSystem.rpc_attack_hit = function (self, channel_id, damage_source_id, atta
 		return
 	end
 
-	if self._player_damage_forbidden then
-		local player_manager = Managers.player
+	local player_manager = Managers.player
+	local player_hitting_player = player_manager:is_player_unit(hit_unit) and player_manager:is_player_unit(attacker_unit)
 
-		if player_manager:is_player_unit(hit_unit) and player_manager:is_player_unit(attacker_unit) then
-			return
-		end
+	if self._player_damage_forbidden and player_hitting_player then
+		return
 	end
 
 	local damage_source = NetworkLookup.damage_sources[damage_source_id]
@@ -235,9 +237,34 @@ WeaponSystem.rpc_attack_hit = function (self, channel_id, damage_source_id, atta
 		target_index = nil
 	end
 
+	if player_hitting_player and blocking then
+		local fatigue_type = damage_profile.fatigue_type
+		local fatigue_point_costs_multiplier = 1
+		local improved_block = true
+		local enemy_weapon_direction = "left"
+		local network_manager = Managers.state.network
+
+		if self.is_server then
+			local fatigue_type_id = NetworkLookup.fatigue_types[fatigue_type]
+
+			network_manager.network_transmit:send_rpc_server("rpc_player_blocked_attack", hit_unit_id, fatigue_type_id, attacker_unit_id, fatigue_point_costs_multiplier, improved_block, enemy_weapon_direction, attacker_is_level_unit)
+		end
+	end
+
+	local optional_predicted_damage
 	local shield_breaking_hit = false
 
 	if blackboard and blackboard.breed and blackboard.breed.is_ai then
+		if blackboard.breed.use_predicted_damage_in_stagger_calculation then
+			local target_settings = damage_profile.targets and damage_profile.targets[target_index] or damage_profile.default_target
+
+			if target_settings then
+				local boost_curve = BoostCurves[target_settings.boost_curve_type]
+
+				optional_predicted_damage = DamageUtils.calculate_damage(DamageOutput, hit_unit, attacker_unit, hit_zone_name, power_level, boost_curve, boost_curve_multiplier, is_critical_strike, damage_profile, target_index, backstab_multiplier, damage_source)
+			end
+		end
+
 		if hit_unit_is_enemy and uses_slot_system and target_override_extension and attacker_not_incapacitated then
 			local has_override_targets = next(blackboard.override_targets)
 
@@ -255,7 +282,7 @@ WeaponSystem.rpc_attack_hit = function (self, channel_id, damage_source_id, atta
 
 	local t = self.t
 
-	DamageUtils.server_apply_hit(t, attacker_unit, hit_unit, hit_zone_name or "full", hit_position, attack_direction, hit_ragdoll_actor, damage_source, power_level, damage_profile, target_index, boost_curve_multiplier, is_critical_strike, can_damage, can_stagger, blocking, shield_breaking_hit, backstab_multiplier, first_hit, total_hits)
+	DamageUtils.server_apply_hit(t, attacker_unit, hit_unit, hit_zone_name or "full", hit_position, attack_direction, hit_ragdoll_actor, damage_source, power_level, damage_profile, target_index, boost_curve_multiplier, is_critical_strike, can_damage, can_stagger, blocking, shield_breaking_hit, backstab_multiplier, first_hit, total_hits, nil, optional_predicted_damage)
 end
 
 WeaponSystem.destroy = function (self)
@@ -396,7 +423,7 @@ WeaponSystem.update_synced_geiser_particle_effects = function (self, context, t)
 					World.destroy_particles(world, data.geiser_effect)
 				end
 
-				self._geiser_particle_effects[unit] = nil
+				self._geiser_particle_effects[unit_id] = nil
 
 				break
 			end
@@ -514,9 +541,12 @@ WeaponSystem.change_single_weapon_state = function (self, owner_unit, state, exc
 
 	if blackboard then
 		local weapon_unit = blackboard.weapon_unit
-		local single_weapon_extension = ScriptUnit.extension(weapon_unit, "weapon_system")
 
-		single_weapon_extension:change_state(state)
+		if weapon_unit then
+			local single_weapon_extension = ScriptUnit.extension(weapon_unit, "weapon_system")
+
+			single_weapon_extension:change_state(state)
+		end
 	end
 
 	local owner_unit_id = Managers.state.unit_storage:go_id(owner_unit)
@@ -527,6 +557,71 @@ WeaponSystem.change_single_weapon_state = function (self, owner_unit, state, exc
 	elseif not received_via_network then
 		self.network_transmit:send_rpc_server("rpc_change_single_weapon_state", owner_unit_id, state_id)
 	end
+end
+
+WeaponSystem.rpc_change_synced_weapon_state = function (self, channel_id, owner_unit_id, state_id)
+	local owner_unit = Managers.state.unit_storage:unit(owner_unit_id)
+
+	if not owner_unit then
+		return
+	end
+
+	local skip_sync = true
+	local state_name = NetworkLookup.weapon_synced_states[state_id]
+
+	if state_name == "n/a" then
+		state_name = nil
+	end
+
+	self:change_synced_weapon_state(owner_unit, state_name, skip_sync)
+
+	if self.is_server then
+		local peer_id = CHANNEL_TO_PEER_ID[channel_id]
+
+		self.network_transmit:send_rpc_clients_except("rpc_change_synced_weapon_state", peer_id, owner_unit_id, state_id)
+	end
+end
+
+WeaponSystem.change_synced_weapon_state = function (self, owner_unit, state_name, skip_sync)
+	local weapon_unit = self:_first_wielded_weapon_unit(owner_unit)
+	local weapon_extension = ScriptUnit.extension(weapon_unit, "weapon_system")
+
+	weapon_extension:change_synced_state(state_name)
+
+	if not skip_sync then
+		local owner_unit_id = Managers.state.unit_storage:go_id(owner_unit)
+		local state_id = NetworkLookup.weapon_synced_states[state_name or "n/a"]
+
+		if self.is_server then
+			self.network_transmit:send_rpc_clients("rpc_change_synced_weapon_state", owner_unit_id, state_id)
+		else
+			self.network_transmit:send_rpc_server("rpc_change_synced_weapon_state", owner_unit_id, state_id)
+		end
+	end
+end
+
+WeaponSystem.get_synced_weapon_state = function (self, owner_unit)
+	local weapon_unit = self:_first_wielded_weapon_unit(owner_unit)
+
+	if not weapon_unit then
+		return nil
+	end
+
+	local weapon_extension = ScriptUnit.extension(weapon_unit, "weapon_system")
+
+	if not weapon_extension.current_synced_state then
+		return nil
+	end
+
+	return weapon_extension:current_synced_state()
+end
+
+WeaponSystem._first_wielded_weapon_unit = function (self, owner_unit)
+	local inventory_extension = ScriptUnit.extension(owner_unit, "inventory_system")
+	local equipment = inventory_extension:equipment()
+	local weapon_unit = equipment.left_hand_wielded_unit or equipment.right_hand_wielded_unit or equipment.left_hand_wielded_unit_3p or equipment.right_hand_wielded_unit_3p
+
+	return weapon_unit
 end
 
 WeaponSystem.rpc_start_beam = function (self, channel_id, unit_id, beam_effect_id, beam_end_effect_id, range)
@@ -699,7 +794,6 @@ end
 
 WeaponSystem.rpc_summon_vortex = function (self, channel_id, owner_unit_id, target_unit_id)
 	if not LEVEL_EDITOR_TEST then
-		local world = self.world
 		local unit = self.unit_storage:unit(owner_unit_id)
 		local target_unit = self.unit_storage:unit(target_unit_id)
 		local bb = BLACKBOARDS[target_unit]
@@ -713,11 +807,28 @@ WeaponSystem.rpc_summon_vortex = function (self, channel_id, owner_unit_id, targ
 				local storm_spawn_position = POSITION_LOOKUP[target_unit]
 
 				if storm_spawn_position then
-					Managers.state.unit_spawner:request_spawn_network_unit("vortex_unit", storm_spawn_position, Quaternion.identity(), unit, 0)
+					self:_summon_vortex(storm_spawn_position, target_unit, unit)
 				end
 			end
 		end
 	end
+end
+
+WeaponSystem._summon_vortex = function (self, position, target_unit, owner_unit)
+	local unit_name = "units/weapons/enemy/wpn_chaos_plague_vortex/wpn_chaos_plague_vortex"
+	local vortex_template_name = "spirit_storm"
+	local side_id = Managers.state.side.side_by_unit[owner_unit].side_id
+	local UNIT_TEMPLATE_NAME = "vortex_unit"
+	local extension_init_data = {
+		area_damage_system = {
+			vortex_template_name = vortex_template_name,
+			owner_unit = owner_unit,
+			side_id = side_id,
+			target_unit = target_unit,
+		},
+	}
+
+	Managers.state.unit_spawner:spawn_network_unit(unit_name, UNIT_TEMPLATE_NAME, extension_init_data, position, Quaternion.identity())
 end
 
 WeaponSystem.rpc_set_stormfiend_beam = function (self, channel_id, unit_id, arm_id, active)

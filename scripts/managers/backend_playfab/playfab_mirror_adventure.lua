@@ -14,6 +14,9 @@ PlayFabMirrorAdventure.init = function (self, signin_result)
 end
 
 PlayFabMirrorAdventure.set_mechanism = function (self, mechanism_key)
+	printf("[PlayFabMirrorAdventure] Setting mechanism %s", mechanism_key)
+	rawset(_G, "debug_characters_data_unsafe_write", self._mechanism_key and self._mechanism_key ~= mechanism_key or nil)
+
 	self._mechanism_key = mechanism_key
 
 	if mechanism_key == "versus" then
@@ -74,6 +77,20 @@ PlayFabMirrorAdventure.request_characters = function (self, mechanism_key)
 					break
 				end
 			end
+
+			if not setup then
+				local pactsworn_profiles = PROFILES_BY_AFFILIATION.dark_pact
+
+				for i = 1, #pactsworn_profiles do
+					local profile_name = pactsworn_profiles[i]
+
+					if profile_name ~= "vs_undecided" and not characters_data[profile_name] then
+						setup = true
+
+						break
+					end
+				end
+			end
 		end
 
 		if setup then
@@ -83,18 +100,48 @@ PlayFabMirrorAdventure.request_characters = function (self, mechanism_key)
 				FunctionName = "versusPlayerSetup",
 				FunctionParameter = {},
 			}
-			local player_setup_cb = callback(self, "player_setup_cb")
+			local versus_player_setup_cb = callback(self, "versus_player_setup_cb")
 
-			self._request_queue:enqueue(request, player_setup_cb)
+			self._request_queue:enqueue(request, versus_player_setup_cb)
 		else
-			self:_verify_dlc_careers()
+			self:_verify_career_loadouts()
 		end
 	else
-		self:_verify_dlc_careers()
+		self:_verify_career_loadouts()
 	end
 end
 
-PlayFabMirrorAdventure.player_setup_cb = function (self, result)
+PlayFabMirrorAdventure._verify_career_loadouts = function (self)
+	self._num_items_to_load = self._num_items_to_load + 1
+
+	local request = {
+		FunctionName = "verifyCareerLoadouts",
+		FunctionParameter = {},
+	}
+	local verify_career_loadouts_cb = callback(self, "verify_career_loadouts_cb")
+
+	self._request_queue:enqueue(request, verify_career_loadouts_cb)
+end
+
+PlayFabMirrorAdventure.verify_career_loadouts_cb = function (self, result)
+	local function_result = result.FunctionResult
+	local characters_data = function_result.characters_data
+	local vs_characters_data = function_result.vs_characters_data
+
+	if characters_data then
+		self:set_read_only_data("characters_data", characters_data, true)
+	end
+
+	if vs_characters_data then
+		self:set_read_only_data("vs_characters_data", vs_characters_data, true)
+	end
+
+	self._num_items_to_load = self._num_items_to_load - 1
+
+	self:_verify_dlc_careers()
+end
+
+PlayFabMirrorAdventure.versus_player_setup_cb = function (self, result)
 	local function_result = result.FunctionResult
 	local vs_characters_data = function_result.vs_characters_data
 	local vs_profile_data = function_result.vs_profile_data
@@ -108,7 +155,7 @@ PlayFabMirrorAdventure.player_setup_cb = function (self, result)
 	if num_items_granted > 0 then
 		self:_request_user_inventory()
 	else
-		self:_verify_dlc_careers()
+		self:_verify_career_loadouts()
 	end
 end
 

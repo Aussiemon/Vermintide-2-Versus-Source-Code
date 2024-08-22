@@ -16,6 +16,7 @@ local breed_data = {
 	exchange_order = 2,
 	flingable = true,
 	headshot_coop_stamina_fatigue_type = "headshot_special",
+	height = 1.6,
 	hit_effect_template = "HitEffectsPoisonWind",
 	hit_reaction = "ai_default",
 	is_always_spawnable = true,
@@ -288,7 +289,7 @@ local action_data = {
 			10,
 			10,
 			10,
-			0,
+			4,
 		},
 		aoe_dot_damage = {
 			2,
@@ -299,7 +300,7 @@ local action_data = {
 			15,
 			15,
 			15,
-			0,
+			3,
 		},
 		radius = GLOBE_RADIUS,
 		time_between_throws = {

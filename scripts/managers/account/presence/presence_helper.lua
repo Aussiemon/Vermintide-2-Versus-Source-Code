@@ -26,9 +26,9 @@ PresenceHelper.get_hub_presence = function ()
 end
 
 PresenceHelper.lobby_gamemode = function (lobby_data)
-	local mechanism = lobby_data.mechanism
-	local is_in_prologue = lobby_data.mission_id == "prologue"
-	local is_in_plaza = lobby_data.mission_id == "plaza"
+	local mechanism = Managers.mechanism:current_mechanism_name()
+	local is_in_prologue = Managers.level_transition_handler:get_current_level_key() == "prologue"
+	local is_in_plaza = Managers.level_transition_handler:get_current_level_key() == "plaza"
 	local matchmakin_type = lobby_data.matchmaking_type
 	local quick_game = to_boolean(lobby_data.quick_game)
 	local is_weekly_event = tonumber(matchmakin_type) == NetworkLookup.matchmaking_types.event
@@ -40,6 +40,7 @@ PresenceHelper.lobby_gamemode = function (lobby_data)
 	local local_quick_game = matchmaking_manager:is_local_quick_game()
 	local is_in_inn_level = Managers.level_transition_handler:in_hub_level()
 	local is_quick_game = (local_quick_game or quick_game) and not is_in_inn_level
+	local match_state = Managers.mechanism:get_state()
 
 	if is_in_prologue then
 		return "gamemode_prologue"
@@ -60,12 +61,12 @@ PresenceHelper.lobby_gamemode = function (lobby_data)
 			return "gamemode_deus_none"
 		end
 	elseif mechanism == "versus" then
-		local state = Managers.mechanism:get_state()
+		if is_in_inn_level then
+			return "versus_hub"
+		end
 
-		if state == "round_1" then
-			return "gamemode_versus_round_1"
-		elseif state == "round_2" then
-			return "gamemode_versus_round_2"
+		if match_state == "round_1" or match_state == "round_2" then
+			return "gamemode_versus_quick_play"
 		end
 
 		return "gamemode_versus_none"
@@ -96,4 +97,40 @@ PresenceHelper.lobby_num_players = function ()
 	local ok, num = pcall(dangerous_num_players)
 
 	return ok and num or 1
+end
+
+PresenceHelper.get_side = function ()
+	local peer_id = Network.peer_id()
+	local party_manager = Managers.party
+	local party = party_manager and party_manager:get_party_from_player_id(peer_id, 1)
+	local side_manager = Managers.state.side
+	local side = side_manager and side_manager.side_by_party[party]
+
+	return side and side:name() or "heroes"
+end
+
+PresenceHelper.get_game_score = function ()
+	local peer_id = Network.peer_id()
+	local game_mechanism = Managers.mechanism:game_mechanism()
+	local win_conditions = game_mechanism and game_mechanism:win_conditions()
+	local party_manager = Managers.party
+	local _, party_id = party_manager and party_manager:get_party_from_player_id(peer_id, 1)
+	local opponent_party_id = party_id == 1 and 2 or 1
+	local local_player_team_score = win_conditions and win_conditions:get_total_score(party_id)
+	local opponent_team_score = win_conditions and win_conditions:get_total_score(opponent_party_id)
+	local score_string = "[%d]-[%d]"
+
+	if opponent_team_score and local_player_team_score then
+		return string.format(score_string, local_player_team_score, opponent_team_score)
+	else
+		return "[?]-[?]"
+	end
+end
+
+PresenceHelper.get_current_set = function ()
+	local game_mechanism = Managers.mechanism:game_mechanism()
+	local win_conditions = game_mechanism and game_mechanism:win_conditions()
+	local rounds_played = win_conditions and win_conditions:num_rounds_played()
+
+	return rounds_played and math.round(rounds_played / 2) or 0
 end

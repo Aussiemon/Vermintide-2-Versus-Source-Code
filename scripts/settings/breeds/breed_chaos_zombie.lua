@@ -20,6 +20,7 @@ local breed_data = {
 	follow_reach = 1,
 	has_inventory = true,
 	has_running_attack = true,
+	height = 1.5,
 	hesitation_timer = 7,
 	hit_effect_template = "HitEffectsChaosZombie",
 	hit_mass_count = 3,

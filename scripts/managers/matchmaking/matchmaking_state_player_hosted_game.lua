@@ -54,11 +54,12 @@ MatchmakingStatePlayerHostedGame._start_hosting_game = function (self)
 	local quick_game = search_config.quick_game
 	local private_game = search_config.private_game
 	local mechanism = search_config.mechanism
-	local lobby_members = self._lobby:members()
-	local members = lobby_members:get_members()
 	local game_mechanism = Managers.mechanism:game_mechanism()
 	local slot_reservation_handler = game_mechanism:get_slot_reservation_handler()
-	local _, slot_id = slot_reservation_handler:try_reserve_slots(Network.peer_id(), members)
+
+	slot_reservation_handler:update_slot_settings(Managers.party:parties())
+
+	local party_id = slot_reservation_handler:reserved_party_id_by_peer(Network.peer_id())
 	local eac_authorized = false
 
 	if IS_WINDOWS then

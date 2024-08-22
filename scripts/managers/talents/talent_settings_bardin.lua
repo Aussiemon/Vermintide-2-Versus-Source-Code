@@ -1,6 +1,7 @@
 ﻿-- chunkname: @scripts/managers/talents/talent_settings_bardin.lua
 
 require("scripts/entity_system/systems/buff/buff_sync_type")
+require("scripts/settings/profiles/career_constants")
 
 local buff_perks = require("scripts/unit_extensions/default_player_unit/buffs/settings/buff_perk_names")
 local buff_tweak_data = {
@@ -21,6 +22,19 @@ local buff_tweak_data = {
 	},
 	bardin_ironbreaker_gromril_delay = {
 		duration = 20,
+		duration_modifier_func = function (unit, sub_buff_template, duration, buff_extension, params)
+			local mechanism_name = Managers.mechanism:current_mechanism_name()
+
+			if mechanism_name == "versus" then
+				local talent_extension = ScriptUnit.extension(unit, "talent_system")
+
+				if talent_extension:has_talent("bardin_ironbreaker_gromril_stagger") then
+					duration = 30
+				end
+			end
+
+			return duration
+		end,
 	},
 	bardin_ironbreaker_gromril_antistun = {
 		multiplier = -0.5,
@@ -139,7 +153,7 @@ local buff_tweak_data = {
 	bardin_slayer_bloodlust = {},
 	bardin_slayer_conqueror = {},
 	bardin_slayer_crit_chance = {
-		bonus = 0.05,
+		bonus = 0.1,
 	},
 	bardin_slayer_attack_speed_on_double_one_handed_weapons_buff = {
 		multiplier = 0.1,
@@ -211,7 +225,7 @@ local buff_tweak_data = {
 		multiplier = 0.5,
 	},
 	bardin_ranger_activated_ability = {
-		duration = 10,
+		duration = CareerConstants.dr_ranger.ability_duration,
 	},
 	bardin_ranger_vanguard = {},
 	bardin_ranger_reaper = {},
@@ -232,7 +246,8 @@ local buff_tweak_data = {
 		multiplier = 0.3,
 	},
 	bardin_ranger_passive_spawn_potions_or_bombs = {
-		display_multiplier = 0.2,
+		spawn_chance = 0.2,
+		spawn_chance_versus = 0.05,
 	},
 	bardin_ranger_movement_speed = {
 		multiplier = 1.1,
@@ -249,17 +264,17 @@ local buff_tweak_data = {
 		target_number = 2,
 	},
 	bardin_ranger_smoke_attack = {
-		duration = 10,
+		duration = CareerConstants.dr_ranger.ability_duration,
 	},
 	bardin_ranger_smoke_heal = {
-		duration = 10,
+		duration = CareerConstants.dr_ranger.ability_duration,
 	},
 	bardin_ranger_smoke_heal_buff = {
 		heal_amount = 3,
 		time_between_heals = 1,
 	},
 	bardin_ranger_activated_ability_stealth_outside_of_smoke = {
-		duration = 10,
+		duration = CareerConstants.dr_ranger.ability_duration,
 	},
 }
 
@@ -1062,13 +1077,20 @@ TalentBuffTemplates.dwarf_ranger = {
 				buff_area = true,
 				buff_area_buff = "bardin_ranger_activated_ability_buff",
 				buff_self = true,
-				enter_area_func = "enter_buff_area",
-				exit_area_func = "exit_buff_area",
 				icon = "bardin_ranger_activated_ability",
 				name = "bardin_ranger_activated_ability",
 				shared_area = true,
 				sound_to_play = "Play_career_ability_bardin_ranger_enter",
 				buff_sync_type = BuffSyncType.LocalAndServer,
+				duration_modifier_func = function (unit, sub_buff_template, duration, self, params)
+					local mechanism_name = Managers.mechanism:current_mechanism_name()
+
+					if mechanism_name == "versus" then
+						return CareerConstants.dr_ranger.ability_duration_versus
+					end
+
+					return duration
+				end,
 			},
 		},
 	},
@@ -1222,11 +1244,18 @@ TalentBuffTemplates.dwarf_ranger = {
 				buff_area = true,
 				buff_area_buff = "bardin_ranger_smoke_attack_buff",
 				buff_self = true,
-				enter_area_func = "enter_buff_area",
-				exit_area_func = "exit_buff_area",
 				name = "bardin_ranger_activated_ability_attack",
 				shared_area = true,
 				buff_sync_type = BuffSyncType.All,
+				duration_modifier_func = function (unit, sub_buff_template, duration, self, params)
+					local mechanism_name = Managers.mechanism:current_mechanism_name()
+
+					if mechanism_name == "versus" then
+						return CareerConstants.dr_ranger.ability_duration_versus
+					end
+
+					return duration
+				end,
 			},
 		},
 	},
@@ -1248,11 +1277,18 @@ TalentBuffTemplates.dwarf_ranger = {
 				buff_area = true,
 				buff_area_buff = "bardin_ranger_smoke_heal_buff",
 				buff_self = true,
-				enter_area_func = "enter_buff_area",
-				exit_area_func = "exit_buff_area",
 				name = "bardin_ranger_activated_ability_heal",
 				shared_area = true,
 				buff_sync_type = BuffSyncType.LocalAndServer,
+				duration_modifier_func = function (unit, sub_buff_template, duration, self, params)
+					local mechanism_name = Managers.mechanism:current_mechanism_name()
+
+					if mechanism_name == "versus" then
+						return CareerConstants.dr_ranger.ability_duration_versus
+					end
+
+					return duration
+				end,
 			},
 		},
 	},
@@ -1273,6 +1309,15 @@ TalentBuffTemplates.dwarf_ranger = {
 				max_stacks = 1,
 				name = "bardin_ranger_activated_ability",
 				refresh_durations = true,
+				duration_modifier_func = function (unit, sub_buff_template, duration, self, params)
+					local mechanism_name = Managers.mechanism:current_mechanism_name()
+
+					if mechanism_name == "versus" then
+						return CareerConstants.dr_ranger.ability_duration_versus
+					end
+
+					return duration
+				end,
 			},
 		},
 	},
@@ -1410,7 +1455,7 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.bloodlust.buffs[1].multiplier,
+				value = BuffUtils.get_buff_template("bloodlust", "adventure").buffs[1].multiplier,
 			},
 		},
 		buffs = {
@@ -1426,7 +1471,7 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.conqueror.buffs[1].multiplier,
+				value = BuffUtils.get_buff_template("conqueror", "adventure").buffs[1].multiplier,
 			},
 		},
 		buffs = {
@@ -1637,18 +1682,18 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.tank_unbalance_buff.buffs[1].bonus,
+				value = BuffUtils.get_buff_template("tank_unbalance_buff", "adventure").buffs[1].bonus,
 			},
 			{
-				value = BuffTemplates.tank_unbalance_buff.buffs[1].duration,
-			},
-			{
-				value_type = "percent",
-				value = BuffTemplates.tank_unbalance.buffs[1].display_multiplier,
+				value = BuffUtils.get_buff_template("tank_unbalance_buff", "adventure").buffs[1].duration,
 			},
 			{
 				value_type = "percent",
-				value = BuffTemplates.tank_unbalance.buffs[1].max_display_multiplier,
+				value = BuffUtils.get_buff_template("tank_unbalance", "adventure").buffs[1].display_multiplier,
+			},
+			{
+				value_type = "percent",
+				value = BuffUtils.get_buff_template("tank_unbalance", "adventure").buffs[1].max_display_multiplier,
 			},
 		},
 		buffs = {
@@ -1664,11 +1709,11 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.smiter_unbalance.buffs[1].display_multiplier,
+				value = BuffUtils.get_buff_template("smiter_unbalance", "adventure").buffs[1].display_multiplier,
 			},
 			{
 				value_type = "percent",
-				value = BuffTemplates.smiter_unbalance.buffs[1].max_display_multiplier,
+				value = BuffUtils.get_buff_template("smiter_unbalance", "adventure").buffs[1].max_display_multiplier,
 			},
 		},
 		buffs = {
@@ -1684,7 +1729,7 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.power_level_unbalance.buffs[1].multiplier,
+				value = BuffUtils.get_buff_template("power_level_unbalance", "adventure").buffs[1].multiplier,
 			},
 		},
 		buffs = {
@@ -1699,7 +1744,7 @@ Talents.dwarf_ranger = {
 		num_ranks = 1,
 		description_values = {
 			{
-				value = BuffTemplates.reaper.buffs[1].max_targets,
+				value = BuffUtils.get_buff_template("reaper", "adventure").buffs[1].max_targets,
 			},
 		},
 		buffs = {
@@ -1715,7 +1760,7 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.bloodlust.buffs[1].multiplier,
+				value = BuffUtils.get_buff_template("bloodlust", "adventure").buffs[1].multiplier,
 			},
 		},
 		buffs = {
@@ -1731,7 +1776,7 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.conqueror.buffs[1].multiplier,
+				value = BuffUtils.get_buff_template("conqueror", "adventure").buffs[1].multiplier,
 			},
 		},
 		buffs = {
@@ -1931,11 +1976,11 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.smiter_unbalance.buffs[1].display_multiplier,
+				value = BuffUtils.get_buff_template("smiter_unbalance", "adventure").buffs[1].display_multiplier,
 			},
 			{
 				value_type = "percent",
-				value = BuffTemplates.smiter_unbalance.buffs[1].max_display_multiplier,
+				value = BuffUtils.get_buff_template("smiter_unbalance", "adventure").buffs[1].max_display_multiplier,
 			},
 		},
 		buffs = {
@@ -1951,11 +1996,11 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.linesman_unbalance.buffs[1].display_multiplier,
+				value = BuffUtils.get_buff_template("linesman_unbalance", "adventure").buffs[1].display_multiplier,
 			},
 			{
 				value_type = "percent",
-				value = BuffTemplates.linesman_unbalance.buffs[1].max_display_multiplier,
+				value = BuffUtils.get_buff_template("linesman_unbalance", "adventure").buffs[1].max_display_multiplier,
 			},
 		},
 		buffs = {
@@ -1971,7 +2016,7 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.power_level_unbalance.buffs[1].multiplier,
+				value = BuffUtils.get_buff_template("power_level_unbalance", "adventure").buffs[1].multiplier,
 			},
 		},
 		buffs = {
@@ -1997,7 +2042,7 @@ Talents.dwarf_ranger = {
 		num_ranks = 1,
 		description_values = {
 			{
-				value = BuffTemplates.reaper.buffs[1].max_targets,
+				value = BuffUtils.get_buff_template("reaper", "adventure").buffs[1].max_targets,
 			},
 		},
 		buffs = {
@@ -2013,7 +2058,7 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.conqueror.buffs[1].multiplier,
+				value = BuffUtils.get_buff_template("conqueror", "adventure").buffs[1].multiplier,
 			},
 		},
 		buffs = {
@@ -2075,10 +2120,26 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = buff_tweak_data.bardin_ranger_passive_spawn_potions_or_bombs.display_multiplier,
+				value = buff_tweak_data.bardin_ranger_passive_spawn_potions_or_bombs.spawn_chance,
 			},
 		},
 		buffs = {},
+		attributes = {
+			spawn_chance = buff_tweak_data.bardin_ranger_passive_spawn_potions_or_bombs.spawn_chance,
+		},
+		mechanism_overrides = {
+			versus = {
+				description_values = {
+					{
+						value_type = "percent",
+						value = buff_tweak_data.bardin_ranger_passive_spawn_potions_or_bombs.spawn_chance_versus,
+					},
+				},
+				attributes = {
+					spawn_chance = buff_tweak_data.bardin_ranger_passive_spawn_potions_or_bombs.spawn_chance_versus,
+				},
+			},
+		},
 	},
 	{
 		description = "bardin_ranger_passive_improved_ammo_desc_2",
@@ -2209,18 +2270,18 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.tank_unbalance_buff.buffs[1].bonus,
+				value = BuffUtils.get_buff_template("tank_unbalance_buff", "adventure").buffs[1].bonus,
 			},
 			{
-				value = BuffTemplates.tank_unbalance_buff.buffs[1].duration,
-			},
-			{
-				value_type = "percent",
-				value = BuffTemplates.tank_unbalance.buffs[1].display_multiplier,
+				value = BuffUtils.get_buff_template("tank_unbalance_buff", "adventure").buffs[1].duration,
 			},
 			{
 				value_type = "percent",
-				value = BuffTemplates.tank_unbalance.buffs[1].max_display_multiplier,
+				value = BuffUtils.get_buff_template("tank_unbalance", "adventure").buffs[1].display_multiplier,
+			},
+			{
+				value_type = "percent",
+				value = BuffUtils.get_buff_template("tank_unbalance", "adventure").buffs[1].max_display_multiplier,
 			},
 		},
 		buffs = {
@@ -2236,11 +2297,11 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.linesman_unbalance.buffs[1].display_multiplier,
+				value = BuffUtils.get_buff_template("linesman_unbalance", "adventure").buffs[1].display_multiplier,
 			},
 			{
 				value_type = "percent",
-				value = BuffTemplates.linesman_unbalance.buffs[1].max_display_multiplier,
+				value = BuffUtils.get_buff_template("linesman_unbalance", "adventure").buffs[1].max_display_multiplier,
 			},
 		},
 		buffs = {
@@ -2256,7 +2317,7 @@ Talents.dwarf_ranger = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.power_level_unbalance.buffs[1].multiplier,
+				value = BuffUtils.get_buff_template("power_level_unbalance", "adventure").buffs[1].multiplier,
 			},
 		},
 		buffs = {

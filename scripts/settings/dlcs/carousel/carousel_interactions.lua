@@ -1,5 +1,10 @@
 ﻿-- chunkname: @scripts/settings/dlcs/carousel/carousel_interactions.lua
 
+local climb_point_ignored_weapon_states = table.set({
+	"firing",
+	"winding",
+})
+
 InteractionDefinitions.carousel_dark_pact_climb = {
 	config = {
 		duration = 0,
@@ -7,33 +12,6 @@ InteractionDefinitions.carousel_dark_pact_climb = {
 		show_weapons = true,
 		swap_to_3p = false,
 		timeout_duration = 5,
-	},
-	server = {
-		start = function (world, interactor_unit, interactable_unit, data, config, t)
-			data.interaction_timeout = t + config.timeout_duration
-		end,
-		update = function (world, interactor_unit, interactable_unit, data, config, dt, t)
-			local status_extension = ScriptUnit.extension(interactor_unit, "status_system")
-			local breed_action = status_extension:breed_action()
-
-			if t > data.interaction_timeout or breed_action and breed_action.name == "climbing" then
-				return InteractionResult.SUCCESS
-			end
-
-			return InteractionResult.ONGOING
-		end,
-		stop = function (world, interactor_unit, interactable_unit, data, config, t, result)
-			return
-		end,
-		can_interact = function (interactor_unit, interactable_unit)
-			local status_extension = ScriptUnit.extension(interactor_unit, "status_system")
-
-			if not status_extension.breed_action then
-				return
-			end
-
-			return not status_extension:breed_action()
-		end,
 	},
 	client = {
 		start = function (world, interactor_unit, interactable_unit, data, config, t)
@@ -63,7 +41,18 @@ InteractionDefinitions.carousel_dark_pact_climb = {
 
 			local status_extension = ScriptUnit.extension(interactor_unit, "status_system")
 
-			return not status_extension:breed_action() and not status_extension:should_climb()
+			if status_extension:breed_action() or status_extension:should_climb() then
+				return false
+			end
+
+			local weapon_system = Managers.state.entity:system("weapon_system")
+			local current_weapon_state = weapon_system:get_synced_weapon_state(interactor_unit)
+
+			if climb_point_ignored_weapon_states[current_weapon_state] then
+				return false
+			end
+
+			return true
 		end,
 		hud_description = function (interactable_unit, data, config)
 			return Unit.get_data(interactable_unit, "interaction_data", "hud_description"), Unit.get_data(interactable_unit, "interaction_data", "hud_interaction_action")

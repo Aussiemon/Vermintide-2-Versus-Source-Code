@@ -84,11 +84,12 @@ local damage_templates = {
 	},
 	medium_javelin_smiter_stab = {
 		charge_value = "light_attack",
+		melee_boost_override = 2.8,
 		critical_strike = {
 			attack_armor_power_modifer = {
 				1,
 				0.4,
-				2.3,
+				2.2,
 				1,
 				1,
 			},
@@ -104,7 +105,7 @@ local damage_templates = {
 			attack = {
 				1,
 				0.25,
-				2.25,
+				2,
 				1,
 				0.75,
 			},
@@ -123,7 +124,7 @@ local damage_templates = {
 		default_target = {
 			attack_template = "stab_smiter",
 			boost_curve_coefficient = 1,
-			boost_curve_coefficient_headshot = 2.5,
+			boost_curve_coefficient_headshot = 2.2,
 			boost_curve_type = "ninja_curve",
 			power_distribution = {
 				attack = 0.25,
@@ -137,7 +138,7 @@ local damage_templates = {
 			attack_armor_power_modifer = {
 				1,
 				0.4,
-				2.3,
+				2.2,
 				1,
 				1,
 			},
@@ -153,7 +154,7 @@ local damage_templates = {
 			attack = {
 				1,
 				0.25,
-				2.25,
+				2.1,
 				1,
 				0.75,
 			},
@@ -172,9 +173,10 @@ local damage_templates = {
 		default_target = {
 			attack_template = "stab_smiter",
 			boost_curve_coefficient = 1,
-			boost_curve_coefficient_headshot = 2.5,
+			boost_curve_coefficient_headshot = 2.2,
 			boost_curve_type = "ninja_curve",
 			dot_template_name = "weapon_bleed_dot_javelin",
+			melee_boost_override = 2.8,
 			power_distribution = {
 				attack = 0.25,
 				impact = 0.125,
@@ -187,7 +189,7 @@ local damage_templates = {
 			attack_armor_power_modifer = {
 				1,
 				0.5,
-				2.3,
+				2.2,
 				1,
 				1,
 			},
@@ -283,11 +285,11 @@ local damage_templates = {
 		armor_modifier_near = {
 			attack = {
 				1,
-				0.7,
+				0.63,
 				1.1,
 				1,
 				0.75,
-				0.25,
+				0.2,
 			},
 			impact = {
 				1,
@@ -301,11 +303,11 @@ local damage_templates = {
 		armor_modifier_far = {
 			attack = {
 				1,
-				0.7,
+				0.63,
 				1.1,
 				1,
 				0.75,
-				0.25,
+				0.2,
 			},
 			impact = {
 				1,
@@ -317,23 +319,26 @@ local damage_templates = {
 			},
 		},
 		cleave_distribution = {
-			attack = 0.8,
-			impact = 0.8,
+			attack = 0.15,
+			impact = 0.15,
 		},
 		default_target = {
 			attack_template = "projectile_javelin",
 			boost_curve_coefficient = 1,
-			boost_curve_coefficient_headshot = 1.6,
+			boost_curve_coefficient_headshot = 1.5,
 			boost_curve_type = "smiter_curve",
 			power_distribution_near = {
-				attack = 0.8,
+				attack = 0.76,
 				impact = 0.85,
 			},
 			power_distribution_far = {
-				attack = 0.8,
-				impact = 0.85,
+				attack = 0.55,
+				impact = 0.4,
 			},
-			range_modifier_settings = sniper_dropoff_ranges,
+			range_modifier_settings = {
+				dropoff_end = 30,
+				dropoff_start = 15,
+			},
 		},
 	},
 	thorn_wall_explosion = {

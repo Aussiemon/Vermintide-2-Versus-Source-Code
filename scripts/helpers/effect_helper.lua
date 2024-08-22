@@ -268,7 +268,14 @@ EffectHelper.play_skinned_surface_material_effects = function (effect_name, worl
 	end
 
 	if not skip_particles then
-		local particles = effect_settings.particles and effect_settings.particles[material]
+		local custom_shield_block_particles = breed and breed.blocking_hit_effect and shield_blocked
+		local particles
+
+		if custom_shield_block_particles then
+			particles = breed.blocking_hit_effect
+		else
+			particles = effect_settings.particles and effect_settings.particles[material]
+		end
 
 		if particles then
 			local normal_rotation = Quaternion.look(normal, Vector3.up())
@@ -325,6 +332,12 @@ EffectHelper.player_melee_hit_particles = function (world, particles_name, hit_p
 	end
 end
 
+EffectHelper.player_ranged_block_hit_particles = function (world, particles_name, hit_position, hit_direction, hit_unit)
+	local hit_rotation = Quaternion.look(hit_direction)
+
+	World.create_particles(world, particles_name, hit_position, hit_rotation)
+end
+
 EffectHelper.play_melee_hit_effects = function (sound_event, world, hit_position, sound_type, husk, hit_unit)
 	local source_id, wwise_world = WwiseUtils.make_position_auto_source(world, hit_position)
 	local player = Managers.player:owner(hit_unit)
@@ -348,14 +361,15 @@ EffectHelper.play_melee_hit_effects = function (sound_event, world, hit_position
 	WwiseWorld.trigger_event(wwise_world, sound_event, source_id)
 end
 
-EffectHelper.vs_play_hit_sound = function (world, victim_unit, attack_type, damage_type)
+local burning_damage_types = table.enum_safe("burn", "burn_sniper", "burn_shotgun", "burn_carbine", "burn_machinegun", "burninating", "bleed", "burning_tank", "heavy_burning_tank", "light_burning_linesman", "burning_linesman", "burning_smiter", "burning_stab_fencer", "warpfire_ground", "vs_bw_skullstaff_fireball", "vs_bw_skullstaff_beam", "vs_bw_skullstaff_geiser", "vs_bw_skullstaff_spear", "vs_bw_skullstaff_flamethrower")
+local projectile_attack_types = table.enum_safe("projectile", "instant_projectile", "heavy_instant_projectile")
+
+EffectHelper.vs_play_hit_sound = function (world, victim_unit, attack_type, damage_type, damage_source_name)
 	local owner = Managers.player:owner(victim_unit)
 	local is_husk = owner.remote or owner.bot_player or false
-	local enemy_hit_sound = "sword"
+	local enemy_hit_sound
 
-	if attack_type == "projectile" then
-		enemy_hit_sound = "bullet"
-	end
+	enemy_hit_sound = (burning_damage_types[damage_type] or damage_type == "grenade" and damage_source_name == "grenade_fire_01") and "fire" or projectile_attack_types[attack_type] and "bullet" or (damage_type == "gas" or damage_type == "arrow_poison_dot") and "gas" or "sword"
 
 	if enemy_hit_sound then
 		local source_id, wwise_world = WwiseUtils.make_unit_auto_source(world, victim_unit)

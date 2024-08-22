@@ -338,15 +338,13 @@ CharacterSelectionStateCharacter._update_available_profiles = function (self)
 
 	for i, profile_index in ipairs(profiles) do
 		local profile_settings = SPProfiles[profile_index]
-		local profile_name = profile_settings.display_name
 		local is_profile_available = false
 
 		if player then
 			local peer_id = player:network_id()
-			local local_player_id = player:local_player_id()
-			local profile_name = profile_settings.display_name
+			local party_id = Managers.mechanism:reserved_party_id_by_peer(peer_id)
 
-			is_profile_available = mechanism_manager:profile_available_for_peer(peer_id, local_player_id, profile_name)
+			is_profile_available = mechanism_manager:profile_available_for_peer(party_id, peer_id, profile_index)
 		end
 
 		local is_currently_played_profile = own_player_profile_index == profile_index
@@ -1072,6 +1070,12 @@ CharacterSelectionStateCharacter.update = function (self, dt, t)
 		self:_handle_input(dt, t)
 	end
 
+	self:draw(dt, t)
+
+	return self:_handle_transitions()
+end
+
+CharacterSelectionStateCharacter._handle_transitions = function (self)
 	local wanted_state = self:_wanted_state()
 
 	if not self._transition_timer and not self:pending_profile_request() and (wanted_state or self._new_state) then
@@ -1081,8 +1085,6 @@ CharacterSelectionStateCharacter.update = function (self, dt, t)
 			return wanted_state or self._new_state
 		end
 	end
-
-	self:draw(dt, t)
 end
 
 CharacterSelectionStateCharacter.post_update = function (self, dt, t)
@@ -1328,8 +1330,8 @@ CharacterSelectionStateCharacter._populate_career_info = function (self, profile
 	local hero_name = profile.display_name
 	local career_settings = profile.careers[career_index]
 	local career_name = career_settings.name
-	local passive_ability_data = career_settings.passive_ability
-	local activated_ability_data = career_settings.activated_ability[1]
+	local passive_ability_data = CareerUtils.get_passive_ability_by_career(career_settings)
+	local activated_ability_data = CareerUtils.get_ability_data(profile_index, career_index, 1)
 	local passive_display_name = passive_ability_data.display_name
 	local passive_icon = passive_ability_data.icon
 	local activated_display_name = activated_ability_data.display_name
@@ -1593,8 +1595,9 @@ CharacterSelectionStateCharacter._change_career = function (self, profile_index,
 
 	local peer_id = player:network_id()
 	local local_player_id = player:local_player_id()
+	local is_bot = player.bot_player
 
-	self._profile_synchronizer:resync_loadout(peer_id, local_player_id)
+	self._profile_synchronizer:resync_loadout(peer_id, local_player_id, is_bot)
 	CosmeticUtils.sync_local_player_cosmetics(player, profile_index, career_index)
 
 	self._resyncing_loadout = true
@@ -1695,5 +1698,5 @@ CharacterSelectionStateCharacter._animate_element_by_catmullrom = function (self
 end
 
 CharacterSelectionStateCharacter.input_service = function (self)
-	return not (not self._pending_profile_request and not self._resyncing_loadout and not self.parent:input_blocked()) and FAKE_INPUT_SERVICE or self.parent:input_service(true)
+	return (self._pending_profile_request or self._resyncing_loadout or self.parent:input_blocked()) and FAKE_INPUT_SERVICE or self.parent:input_service(true)
 end

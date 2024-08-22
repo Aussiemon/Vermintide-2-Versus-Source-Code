@@ -18,7 +18,6 @@ end
 EnemyCharacterStateStaggered.reset_stagger = function (self)
 	self._accumulated_stagger = 0
 	self._stagger_type = nil
-	self._stagger_time = 0
 end
 
 EnemyCharacterStateStaggered._select_animation = function (self, unit, impact_vec, stagger_anims, action_data)
@@ -114,8 +113,6 @@ EnemyCharacterStateStaggered.on_enter = function (self, unit, input, dt, context
 
 	status_extension:increase_stagger_count()
 
-	self._stagger_time = status_extension:stagger_time()
-
 	local idle_event = "idle"
 	local stagger_anims = action_data.stagger_anims[self._stagger_type]
 	local impact_direction = status_extension:stagger_direction()
@@ -140,6 +137,16 @@ EnemyCharacterStateStaggered.on_enter = function (self, unit, input, dt, context
 
 	if not was_already_in_stagger then
 		self._locomotion_extension:enable_animation_driven_movement(false)
+	end
+
+	if self._player.local_player and not self._player.bot_player then
+		WwiseWorld.trigger_event(self._wwise_world, "Play_versus_hud_pactsworn_stagger_1p")
+	end
+
+	if self._breed.boss and self._stagger_type > 1 then
+		local buff_system = Managers.state.entity:system("buff_system")
+
+		buff_system:add_buff_synced(unit, "vs_boss_stagger_immune", BuffSyncType.Server)
 	end
 end
 
@@ -178,7 +185,7 @@ EnemyCharacterStateStaggered.update = function (self, unit, input, dt, context, 
 		status_extension:set_heavy_stagger_immune_time(nil)
 	end
 
-	if stagger_time_finished and (self._stagger_ignore_anim_cb or stagger_anim_done) then
+	if stagger_time_finished or not self._stagger_ignore_anim_cb and stagger_anim_done then
 		if not csm.state_next and not locomotion_extension:is_on_ground() then
 			csm:change_state("falling")
 		else
@@ -186,10 +193,6 @@ EnemyCharacterStateStaggered.update = function (self, unit, input, dt, context, 
 		end
 
 		return
-	end
-
-	if false then
-		-- Nothing
 	end
 
 	locomotion_extension:set_disable_rotation_update()

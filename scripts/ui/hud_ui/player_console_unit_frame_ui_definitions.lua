@@ -742,6 +742,7 @@ local widget_definitions = {
 }
 local features_list = {
 	ability = true,
+	damage = true,
 	equipment = false,
 	weapons = false,
 }

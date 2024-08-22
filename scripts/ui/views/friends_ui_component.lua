@@ -424,7 +424,7 @@ FriendsUIComponent._populate_tab = function (self, widget, list, allow_invite)
 		if allowed_to_initiate_join_lobby and playing_this_game then
 			local playing_game = friend.playing_game
 
-			if playing_game and playing_game.lobby then
+			if playing_game and (playing_game.lobby or playing_game.ip) then
 				can_join = true
 			end
 		end
@@ -533,11 +533,18 @@ end
 FriendsUIComponent._join_player = function (self, content)
 	local playing_game_info = content.playing_game_info
 	local lobby_id = playing_game_info.lobby
+	local ip, port = playing_game_info.ip, playing_game_info.server_port
 
 	if lobby_id then
 		local lobby_data = LobbyInternal.get_lobby_data_from_id(lobby_id)
 
 		lobby_data.id = lobby_id
 		self._join_lobby_data = lobby_data
+	elseif ip and port then
+		self._join_lobby_data = {
+			server_info = {
+				ip_port = ip .. ":" .. port,
+			},
+		}
 	end
 end

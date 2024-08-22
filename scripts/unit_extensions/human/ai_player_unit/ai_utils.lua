@@ -352,7 +352,7 @@ AiUtils.damage_target = function (target_unit, attacker_unit, action, damage, da
 						local angle_difference = Vector3.flat_angle(hit_unit_dir, damage_direction)
 						local hit_anim
 
-						hit_anim = not (not (angle_difference < -math.pi * 0.75) and not (angle_difference > math.pi * 0.75)) and "hit_reaction_backward" or angle_difference < -math.pi * 0.25 and "hit_reaction_left" or angle_difference < math.pi * 0.25 and "hit_reaction_forward" or "hit_reaction_right"
+						hit_anim = (angle_difference < -math.pi * 0.75 or angle_difference > math.pi * 0.75) and "hit_reaction_backward" or angle_difference < -math.pi * 0.25 and "hit_reaction_left" or angle_difference < math.pi * 0.25 and "hit_reaction_forward" or "hit_reaction_right"
 
 						if hit_anim then
 							unit_animation_event(target_unit, hit_anim)
@@ -491,7 +491,7 @@ end
 
 AiUtils.warpfire_explode_unit = function (unit, blackboard)
 	local world = blackboard.world
-	local explosion_template = ExplosionTemplates.warpfire_explosion
+	local explosion_template = ExplosionUtils.get_template("warpfire_explosion")
 	local node = Unit.node(unit, "j_backpack")
 	local explosion_position = Unit.world_position(unit, node)
 	local attacker_unit_id = Managers.state.unit_storage:go_id(unit)
@@ -538,7 +538,7 @@ AiUtils.chaos_zombie_explosion = function (unit, action, blackboard, delete_unit
 	local damage_source = blackboard.breed.name
 	local world = blackboard.world
 	local explosion_position = position + Vector3.up()
-	local explosion_template = ExplosionTemplates.chaos_zombie_explosion
+	local explosion_template = ExplosionUtils.get_template("chaos_zombie_explosion")
 
 	DamageUtils.create_explosion(world, unit, explosion_position, Quaternion.identity(), explosion_template, 1, damage_source, true, false, unit, 0, false)
 
@@ -563,7 +563,7 @@ AiUtils.generic_mutator_explosion = function (unit, blackboard, explosion_templa
 	local damage_source = blackboard.breed.name
 	local world = blackboard.world
 	local explosion_position = position + Vector3.up()
-	local explosion_template = ExplosionTemplates[explosion_template_name]
+	local explosion_template = ExplosionUtils.get_template(explosion_template_name)
 
 	DamageUtils.create_explosion(world, do_damage and unit, explosion_position, Quaternion.identity(), explosion_template, 1, damage_source, true, false, unit, 0, false)
 
@@ -1015,7 +1015,7 @@ AiUtils.show_polearm = function (packmaster_unit, show)
 	end
 end
 
-AiUtils.stagger = function (unit, blackboard, attacker_unit, stagger_direction, stagger_length, stagger_type, stagger_duration, stagger_animation_scale, t, stagger_value, always_stagger, is_push, should_play_push_sound)
+AiUtils.stagger = function (unit, blackboard, attacker_unit, stagger_direction, stagger_length, stagger_type, stagger_duration, stagger_animation_scale, t, stagger_value, always_stagger, is_push, should_play_push_sound, optional_predicted_damage)
 	fassert(stagger_type > 0, "Tried to use invalid stagger type %q", stagger_type)
 
 	local is_staggered = blackboard.stagger
@@ -1061,7 +1061,7 @@ AiUtils.stagger = function (unit, blackboard, attacker_unit, stagger_direction, 
 		end
 
 		if breed.before_stagger_enter_function then
-			breed.before_stagger_enter_function(unit, blackboard, attacker_unit, is_push)
+			breed.before_stagger_enter_function(unit, blackboard, attacker_unit, is_push, stagger_value_to_add, optional_predicted_damage)
 		end
 
 		if ai_extension.attacked then
@@ -1830,4 +1830,69 @@ AiUtils.is_aggroed = function (unit)
 	local blackboard = BLACKBOARDS[unit]
 
 	return blackboard and blackboard.target_unit
+end
+
+AiUtils.breed_height = function (unit)
+	local bb = BLACKBOARDS[unit]
+	local breed = bb and bb.breed or Unit.get_data(unit, "breed")
+	local height = breed.height
+
+	if not height then
+		return nil
+	end
+
+	local scale = Unit.local_scale(unit, 0)
+
+	return height * scale[3]
+end
+
+local HEAR_DISTANCE = 1
+local RAYCAST_POINTS = {
+	"j_hips",
+	"j_leftforearm",
+	"j_rightforearm",
+	"j_head",
+}
+local NUM_RAYCAST_POINTS = #RAYCAST_POINTS
+
+local function _line_of_sight_from_point(from_pos, target_unit, point_index)
+	local point = RAYCAST_POINTS[point_index]
+	local has_node = Unit.has_node(target_unit, point)
+	local tp
+
+	if has_node then
+		local node = Unit.node(target_unit, point)
+		local physics_world = World.get_data(Unit.world(target_unit), "physics_world")
+		local target_pos = Unit.world_position(target_unit, node)
+		local distance = Vector3.distance(from_pos, target_pos)
+
+		tp = target_pos
+
+		if distance > HEAR_DISTANCE then
+			local direction = (target_pos - from_pos) / distance
+			local result, pos = PhysicsWorld.immediate_raycast(physics_world, from_pos, direction, distance, "closest", "types", "statics", "collision_filter", "filter_ai_line_of_sight_check")
+
+			if result then
+				return false
+			end
+		end
+	end
+
+	return true
+end
+
+AiUtils.line_of_sight_from_random_point = function (from_pos, target_unit, optional_num_attempts, optional_index)
+	local num_attempts = math.min(optional_num_attempts or 1, NUM_RAYCAST_POINTS)
+	local start_index = optional_index or math.random(1, NUM_RAYCAST_POINTS)
+	local index
+
+	for i = 1, num_attempts do
+		index = math.index_wrapper(start_index + i - 1, NUM_RAYCAST_POINTS)
+
+		if _line_of_sight_from_point(from_pos, target_unit, index) then
+			return true
+		end
+	end
+
+	return false, index
 end

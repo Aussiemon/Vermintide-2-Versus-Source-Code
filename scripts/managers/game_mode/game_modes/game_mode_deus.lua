@@ -27,8 +27,7 @@ GameModeDeus.init = function (self, settings, world, network_server, is_server, 
 	fassert(game_mode_settings, "game mode settings can not be nil")
 	fassert(game_mode_settings.deus_run_controller, "game mode settings must provide a deus run controller")
 
-	self.about_to_lose = false
-	self.lost_condition_timer = nil
+	self._lost_condition_timer = nil
 	self._adventure_profile_rules = AdventureProfileRules:new(self._profile_synchronizer, self._network_server)
 
 	local hero_side = Managers.state.side:get_side_from_name("heroes")
@@ -125,30 +124,31 @@ GameModeDeus.evaluate_end_conditions = function (self, round_started, dt, t, mut
 	local mutator_lost, mutator_lost_delay = mutator_handler:evaluate_lose_conditions()
 	local lost = not self._lose_condition_disabled and (mutator_lost or humans_dead or players_disabled or self._level_failed or self:_is_time_up())
 
-	if self.about_to_lose then
+	if self:is_about_to_end_game_early() then
 		if lost then
-			if t > self.lost_condition_timer then
+			if t > self._lost_condition_timer then
 				return true, "lost"
 			else
 				return false
 			end
 		else
-			self.about_to_lose = nil
-			self.lost_condition_timer = nil
+			self:set_about_to_end_game_early(false)
+
+			self._lost_condition_timer = nil
 		end
 	end
 
 	local won = false
 
 	if lost then
-		self.about_to_lose = true
+		self:set_about_to_end_game_early(true)
 
 		if mutator_lost and mutator_lost_delay then
-			self.lost_condition_timer = t + mutator_lost_delay
+			self._lost_condition_timer = t + mutator_lost_delay
 		elseif humans_dead then
-			self.lost_condition_timer = t + GameModeSettings.adventure.lose_condition_time_dead
+			self._lost_condition_timer = t + GameModeSettings.adventure.lose_condition_time_dead
 		else
-			self.lost_condition_timer = t + GameModeSettings.adventure.lose_condition_time
+			self._lost_condition_timer = t + GameModeSettings.adventure.lose_condition_time
 		end
 
 		return false
@@ -195,8 +195,8 @@ GameModeDeus.gm_event_end_conditions_met = function (self, reason, checkpoint_av
 	end
 end
 
-GameModeDeus.player_entered_game_session = function (self, peer_id, local_player_id)
-	GameModeDeus.super.player_entered_game_session(self, peer_id, local_player_id)
+GameModeDeus.player_entered_game_session = function (self, peer_id, local_player_id, requested_party_index)
+	GameModeDeus.super.player_entered_game_session(self, peer_id, local_player_id, requested_party_index)
 	self._adventure_profile_rules:handle_profile_delegation_for_joining_player(peer_id, local_player_id)
 	self._deus_spawning:add_delayed_client(peer_id, local_player_id)
 	self._deus_run_controller:restore_persisted_score(self._statistics_db, peer_id, local_player_id)
@@ -208,17 +208,17 @@ GameModeDeus.player_left_game_session = function (self, peer_id, local_player_id
 	self._deus_run_controller:save_persisted_score(self._statistics_db, peer_id, local_player_id)
 end
 
-GameModeDeus.remove_bot = function (self, peer_id, local_player_id, update_safe)
-	local update_safe = update_safe or false
+GameModeDeus.remove_bot = function (self, party_id, peer_id, local_player_id, update_safe)
+	update_safe = update_safe or false
 
 	if #self._bot_players > 0 then
 		local profile_index = self._profile_synchronizer:profile_by_peer(peer_id, local_player_id)
-		local removed, bot_player = self:_remove_bot_by_profile(self._bot_players, profile_index, update_safe)
+		local removed, bot_player = self:_remove_bot_by_profile(profile_index, update_safe)
 
 		if not removed then
 			bot_player = self._bot_players[#self._bot_players]
 
-			self:_remove_bot(self._bot_players, #self._bot_players, update_safe)
+			self:_remove_bot(bot_player, update_safe)
 		end
 
 		return bot_player
@@ -541,7 +541,7 @@ GameModeDeus._handle_bots = function (self, t, dt)
 		local num_bots_to_add = math.min(delta, open_slots)
 
 		for i = 1, num_bots_to_add do
-			self:_add_bot(bot_players)
+			self:_add_bot()
 		end
 	elseif delta < 0 then
 		local num_bots_to_remove = math.abs(delta)
@@ -549,12 +549,13 @@ GameModeDeus._handle_bots = function (self, t, dt)
 		for i = 1, num_bots_to_remove do
 			local update_safe = true
 
-			self:_remove_bot(bot_players, #bot_players, update_safe)
+			self:_remove_bot(bot_players[#bot_players], update_safe)
 		end
 	end
 end
 
-GameModeDeus._add_bot = function (self, bot_players)
+GameModeDeus._add_bot = function (self)
+	local bot_players = self._bot_players
 	local party_id = 1
 	local party = Managers.party:get_party(party_id)
 	local profile_index, career_index = self:_get_first_available_bot_profile(party)
@@ -573,15 +574,14 @@ GameModeDeus._add_bot = function (self, bot_players)
 	self._deus_run_controller:restore_persisted_score(self._statistics_db, peer_id, local_player_id)
 end
 
-GameModeDeus._remove_bot = function (self, bot_players, index, update_safe)
-	local bot_player = bot_players[index]
-
-	fassert(bot_player, "No bot player at index (%s)", tostring(index))
-
+GameModeDeus._remove_bot = function (self, bot_player, update_safe)
 	local peer_id = bot_player:network_id()
 	local local_player_id = bot_player:local_player_id()
 
 	self._deus_run_controller:save_persisted_score(self._statistics_db, peer_id, local_player_id)
+
+	local bot_players = self._bot_players
+	local index = table.index_of(bot_players, bot_player)
 
 	if update_safe then
 		self:_remove_bot_update_safe(bot_player)
@@ -595,7 +595,8 @@ GameModeDeus._remove_bot = function (self, bot_players, index, update_safe)
 	bot_players[last] = nil
 end
 
-GameModeDeus._remove_bot_by_profile = function (self, bot_players, profile_index, update_safe)
+GameModeDeus._remove_bot_by_profile = function (self, profile_index, update_safe)
+	local bot_players = self._bot_players
 	local bot_index
 	local num_current_bots = #bot_players
 
@@ -616,7 +617,7 @@ GameModeDeus._remove_bot_by_profile = function (self, bot_players, profile_index
 	if bot_index then
 		bot_player = bot_players[bot_index]
 
-		self:_remove_bot(bot_players, bot_index, update_safe or false)
+		self:_remove_bot(bot_player, update_safe or false)
 
 		removed = true
 	end
@@ -629,7 +630,7 @@ GameModeDeus._clear_bots = function (self, update_safe)
 	local num_bot_players = #bot_players
 
 	for i = num_bot_players, 1, -1 do
-		self:_remove_bot(bot_players, i, update_safe)
+		self:_remove_bot(bot_players[i], update_safe)
 	end
 end
 
@@ -649,7 +650,25 @@ GameModeDeus.get_player_wounds = function (self, profile)
 end
 
 GameModeDeus.mutators = function (self)
-	return self._mutators
+	local mutators_list = table.shallow_copy(self._mutators)
+
+	self:append_live_event_mutators(mutators_list)
+
+	local event_mutators = self._deus_run_controller:get_event_mutators()
+
+	if event_mutators then
+		local mutators_list_keys = table.set(mutators_list)
+
+		for i = 1, #event_mutators do
+			local event_mutator = event_mutators[i]
+
+			if not mutators_list_keys[event_mutator] then
+				mutators_list[#mutators_list + 1] = event_mutator
+			end
+		end
+	end
+
+	return mutators_list
 end
 
 GameModeDeus.on_picked_up_soft_currency = function (self, interactable_unit, interactor_unit)

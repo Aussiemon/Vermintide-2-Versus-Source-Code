@@ -102,9 +102,10 @@ LevelTransitionHandler.reload_level = function (self, optional_checkpoint_data, 
 
 	self._checkpoint_data = optional_checkpoint_data
 
+	local skip_metatable = true
 	local level_transition_type = "reload_level"
 
-	self:_set_next_level(level_transition_type, self:get_current_level_key(), self:get_current_environment_variation_id(), optional_level_seed or self:get_current_level_seed(), self:get_current_mechanism(), self:get_current_game_mode(), self:get_current_conflict_director(), self:get_current_locked_director_functions(), self:get_current_difficulty(), self:get_current_difficulty_tweak(), self:get_current_extra_packages())
+	self:_set_next_level(level_transition_type, self:get_current_level_key(), self:get_current_environment_variation_id(), optional_level_seed or self:get_current_level_seed(), self:get_current_mechanism(), self:get_current_game_mode(), self:get_current_conflict_director(), self:get_current_locked_director_functions(), self:get_current_difficulty(), self:get_current_difficulty_tweak(), table.shallow_copy(self:get_current_extra_packages(), skip_metatable))
 end
 
 LevelTransitionHandler.get_checkpoint_data = function (self)
@@ -408,6 +409,9 @@ LevelTransitionHandler._set_next_level = function (self, level_transition_type, 
 	fassert(is_server, "only the server handles next level logic")
 
 	local level_key, environment_variation_id, level_seed, mechanism, game_mode, conflict_director, locked_director_functions, difficulty, difficulty_tweak, extra_packages = LevelTransitionHandler.apply_defaults_to_level_data(optional_level_key, optional_environment_variation_id, optional_level_seed, optional_mechanism, optional_game_mode, optional_conflict_director, optional_locked_director_functions, optional_difficulty, optional_difficulty_tweak, optional_extra_packages, is_server)
+
+	self:_append_event_packages(level_key, extra_packages)
+
 	local new_level_session_id = math.random_seed()
 
 	print("set_next_level( lvl:%s, mc:%s, gm:%s, env:%s, seed:%d, conflict:%s, lckd_director_funcs:{%s}, diff:%s, diff_tweak:%d, id:%d, lt:%s, extra_packages:%s)", tostring(level_key), mechanism, game_mode, tostring(environment_variation_id), level_seed, conflict_director, table.concat(locked_director_functions, ","), difficulty, difficulty_tweak, new_level_session_id, level_transition_type, table.tostring(extra_packages))
@@ -426,6 +430,56 @@ LevelTransitionHandler._set_next_level = function (self, level_transition_type, 
 		level_transition_type = level_transition_type,
 		extra_packages = extra_packages,
 	}
+end
+
+LevelTransitionHandler._append_event_packages = function (self, level_key, extra_packages)
+	local level_settings = LevelSettings[level_key]
+
+	if not level_settings or level_settings.hub_level or level_settings.tutorial_level then
+		return
+	end
+
+	local live_event_interface = Managers.backend:get_interface("live_events")
+	local special_events = live_event_interface:get_special_events()
+
+	if not special_events then
+		return
+	end
+
+	local mutators_list = {}
+
+	for i = 1, #special_events do
+		local special_event_data = special_events[i]
+		local valid_levels = special_event_data.level_keys
+
+		if not valid_levels or table.is_empty(valid_levels) or table.contains(valid_levels, self._level_key) then
+			local weekly_override_type = special_event_data.weekly_event
+
+			if weekly_override_type then
+				if weekly_override_type == "override" then
+					table.clear(mutators_list)
+					table.append(mutators_list, special_event_data.mutators)
+				elseif weekly_override_type == "append" then
+					table.append(mutators_list, special_event_data.mutators)
+				end
+			end
+		end
+	end
+
+	for mutator_i = 1, #mutators_list do
+		local mutator_name = mutators_list[mutator_i]
+		local mutator_packages = MutatorTemplates[mutator_name].packages
+
+		if mutator_packages then
+			for package_i = 1, #mutator_packages do
+				local mutator_package = mutator_packages[package_i]
+
+				if not table.contains(extra_packages, mutator_package) then
+					table.insert(extra_packages, mutator_package)
+				end
+			end
+		end
+	end
 end
 
 LevelTransitionHandler._load_level_packages = function (self, level_key)
@@ -556,16 +610,6 @@ LevelTransitionHandler.apply_defaults_to_level_data = function (level_key, envir
 		end
 	end
 
-	if not DEDICATED_SERVER and rawget(_G, "Steam") then
-		local app_id = Steam.app_id()
-
-		mechanism = app_id == 1026050 and "versus" or mechanism
-	end
-
-	mechanism = Development.parameter("mechanism") or mechanism
-
-	fassert(mechanism == nil or MechanismSettings[mechanism] ~= nil, "Tried to start unknown mechanism '%s'. Are you missing a feature flag?", mechanism)
-
 	if not level_key then
 		local mechanism_settings = MechanismSettings[mechanism]
 		local class_name = mechanism_settings.class_name
@@ -588,10 +632,13 @@ LevelTransitionHandler.apply_defaults_to_level_data = function (level_key, envir
 		end
 	end
 
+	local game_mode_settings = GameModeSettings[game_mode]
+	local forced_difficulty = game_mode_settings and game_mode_settings.forced_difficulty
+
 	environment_variation_id = environment_variation_id or 0
 	conflict_director = script_data.override_conflict_settings or conflict_director or level_settings.conflict_settings or "default"
 	locked_director_functions = locked_director_functions or {}
-	difficulty = script_data.current_difficulty_setting or difficulty or "normal"
+	difficulty = script_data.current_difficulty_setting or forced_difficulty or difficulty or "normal"
 	difficulty_tweak = script_data.current_difficulty_tweak_setting or difficulty_tweak or 0
 
 	if is_server and script_data.random_level_seed_from_toolcenter and not level_seed then

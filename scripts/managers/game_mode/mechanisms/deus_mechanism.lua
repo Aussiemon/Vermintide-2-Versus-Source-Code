@@ -12,6 +12,7 @@ local RPCS = {
 	"rpc_deus_setup_run",
 }
 local DEUS_CAREERS = {}
+local EMPTY_TABLE = {}
 
 for _, profile_settings in ipairs(SPProfiles) do
 	if profile_settings.affiliation == "heroes" then
@@ -121,6 +122,23 @@ local vote_requests = {
 
 		Managers.state.voting:request_vote("deus_settings_vote", vote_data, Network.peer_id())
 	end,
+	deus_weekly = function (request_type, params)
+		local vote_data = {
+			mechanism = "deus",
+			mission_id = params.mission_id,
+			event_data = params.event_data,
+			difficulty = params.difficulty,
+			quick_game = params.quick_game,
+			private_game = params.private_game,
+			always_host = params.always_host,
+			strict_matchmaking = params.strict_matchmaking,
+			dominant_god = params.dominant_god,
+			matchmaking_type = params.matchmaking_type,
+			vote_type = params.request_type,
+		}
+
+		Managers.state.voting:request_vote("deus_settings_vote", vote_data, Network.peer_id())
+	end,
 }
 
 local function get_difficulty_tweak_for_progress(run_progress)
@@ -157,9 +175,11 @@ local function get_next_level_data(deus_run_controller, in_map)
 
 		if curse_name then
 			local curse = MutatorTemplates[curse_name]
-			local package_name = curse.curse_package_name
+			local curse_packages = curse.packages
 
-			table.insert(extra_packages, package_name)
+			if curse_packages then
+				table.append(extra_packages, curse_packages)
+			end
 		end
 	end
 
@@ -184,7 +204,7 @@ DeusMechanism._reset = function (self, settings)
 	self._final_round = false
 
 	if self._is_server then
-		self:_update_current_state()
+		self:_update_current_state(true)
 	end
 end
 
@@ -356,7 +376,7 @@ DeusMechanism.update_loadout = function (self)
 	end
 end
 
-DeusMechanism._update_career_loadout = function (self, local_player_id, career_name)
+DeusMechanism._update_career_loadout = function (self, local_player_id, career_name, is_bot)
 	local deus_run_controller = self._deus_run_controller
 
 	if not deus_run_controller or deus_run_controller:get_run_ended() then
@@ -383,7 +403,7 @@ DeusMechanism._update_career_loadout = function (self, local_player_id, career_n
 		deus_backend:set_loadout_item(ranged_item.backend_id, career_name, "slot_ranged")
 	end
 
-	local power_ups = deus_run_controller:get_power_ups(own_peer_id, local_player_id, profile_index, career_index)
+	local power_ups = deus_run_controller:get_power_ups(own_peer_id, local_player_id, profile_index, career_index, is_bot)
 	local talent_ids = {}
 
 	for _, power_up_instance in ipairs(power_ups) do
@@ -400,7 +420,7 @@ DeusMechanism._update_career_loadout = function (self, local_player_id, career_n
 		end
 	end
 
-	deus_backend:set_deus_talent_ids(career_name, talent_ids)
+	deus_backend:set_deus_talent_ids(career_name, talent_ids, is_bot)
 	deus_backend:refresh_deus_weapons_in_items_backend()
 end
 
@@ -454,6 +474,10 @@ DeusMechanism.get_end_of_level_rewards_arguments = function (self, game_won, qui
 
 	end_of_level_rewards_arguments.current_weave_index = current_weave_index
 
+	local kill_count = statistics_db:get_stat(stats_id, "kills_total")
+
+	end_of_level_rewards_arguments.kill_count = kill_count
+
 	return end_of_level_rewards_arguments
 end
 
@@ -479,6 +503,7 @@ DeusMechanism.request_vote = function (self, params)
 
 	local vote_data = {
 		mission_id = params.mission_id,
+		event_data = params.event_data,
 		difficulty = params.difficulty,
 		quick_game = params.quick_game,
 		private_game = params.private_game,
@@ -522,11 +547,18 @@ DeusMechanism.game_round_ended = function (self, t, dt, reason, reason_data)
 		self._next_state = self._state
 	elseif reason == "start_game" then
 		local difficulty, journey_name, dominant_god
+		local mutators = EMPTY_TABLE
+		local boons = EMPTY_TABLE
 
 		if self._vote_data then
 			difficulty = self._vote_data.difficulty
 			journey_name = self._vote_data.mission_id
 			dominant_god = self._vote_data.dominant_god
+
+			local event_data = self._vote_data.event_data or EMPTY_TABLE
+
+			mutators = event_data.mutators or EMPTY_TABLE
+			boons = event_data.boons or EMPTY_TABLE
 		else
 			difficulty = "normal"
 			journey_name = AvailableJourneyOrder[1]
@@ -559,13 +591,30 @@ DeusMechanism.game_round_ended = function (self, t, dt, reason, reason_data)
 			with_belakor = deus_backend:deus_journey_with_belakor(journey_name)
 		end
 
-		self:_setup_run(run_id, run_seed, true, Network.peer_id(), difficulty, journey_name, dominant_god, with_belakor)
+		self:_setup_run(run_id, run_seed, true, Network.peer_id(), difficulty, journey_name, dominant_god, with_belakor, mutators, boons)
 
 		local difficulty_id = NetworkLookup.difficulties[difficulty]
 		local journey_name_id = NetworkLookup.deus_journeys[journey_name]
 		local dominant_god_id = NetworkLookup.deus_themes[dominant_god]
+		local mutator_ids = {}
 
-		Managers.mechanism:send_rpc_clients("rpc_deus_setup_run", run_id, run_seed, difficulty_id, journey_name_id, dominant_god_id, with_belakor)
+		for i = 1, #mutators do
+			local mutator_name = mutators[i]
+			local mutator_id = NetworkLookup.mutator_templates[mutator_name]
+
+			mutator_ids[#mutator_ids + 1] = mutator_id
+		end
+
+		local boon_ids = {}
+
+		for i = 1, #boons do
+			local boon_name = boons[i]
+			local boon = DeusPowerUpsLookup[boon_name]
+
+			boon_ids[#boon_ids + 1] = boon.lookup_id
+		end
+
+		Managers.mechanism:send_rpc_clients("rpc_deus_setup_run", run_id, run_seed, difficulty_id, journey_name_id, dominant_god_id, with_belakor, mutator_ids, boon_ids)
 
 		next_state = self:_transition_next_node("start")
 	else
@@ -608,10 +657,6 @@ DeusMechanism.game_round_ended = function (self, t, dt, reason, reason_data)
 
 					next_state = self:_transition_to_inn()
 				end
-			end
-
-			if false then
-				-- Nothing
 			end
 		end
 	end
@@ -803,25 +848,6 @@ DeusMechanism._build_side_compositions = function (self, state)
 	return side_compositions
 end
 
-DeusMechanism.profile_available = function (self, profile_synchronizer, profile_name, career_name)
-	local profile_index = FindProfileIndex(profile_name)
-	local party = Managers.party:get_party(1)
-	local occupied_slots = party.occupied_slots
-
-	for i = 1, #occupied_slots do
-		local status = occupied_slots[i]
-		local peer_id = status.peer_id
-		local local_player_id = status.local_player_id
-		local player_profile_id, player_career_id = profile_synchronizer:profile_by_peer(peer_id, local_player_id)
-
-		if player_profile_id == profile_index then
-			return false
-		end
-	end
-
-	return true
-end
-
 DeusMechanism.get_state = function (self)
 	return self._state
 end
@@ -876,16 +902,9 @@ DeusMechanism.uses_random_directors = function (self)
 	return false
 end
 
-DeusMechanism.profile_available_for_peer = function (self, profile_synchronizer, peer_id, local_player_id, profile_name, career_name)
-	local profile_index = FindProfileIndex(profile_name)
-	local reserver_peer_id = profile_synchronizer:get_profile_index_reservation(profile_index)
-
-	return not reserver_peer_id or reserver_peer_id == peer_id
-end
-
-DeusMechanism.profile_changed = function (self, peer_id, local_player_id, profile_index, career_index)
+DeusMechanism.profile_changed = function (self, peer_id, local_player_id, profile_index, career_index, is_bot)
 	if self._deus_run_controller and not self._deus_run_controller:get_run_ended() then
-		self._deus_run_controller:profile_changed(peer_id, local_player_id, profile_index, career_index)
+		self._deus_run_controller:profile_changed(peer_id, local_player_id, profile_index, career_index, is_bot)
 
 		if peer_id == self._deus_run_controller:get_own_peer_id() and local_player_id == REAL_PLAYER_LOCAL_ID then
 			self:_update_own_avatar_info()
@@ -896,19 +915,8 @@ DeusMechanism.profile_changed = function (self, peer_id, local_player_id, profil
 		local career = careers[career_index]
 		local career_name = career.name
 
-		self:_update_career_loadout(local_player_id, career_name)
+		self:_update_career_loadout(local_player_id, career_name, is_bot)
 	end
-end
-
-DeusMechanism.allocate_slot = function (self, sender, profile_index)
-	local network_server = Managers.mechanism:network_server()
-	local profile_synchronizer = network_server.profile_synchronizer
-
-	if profile_synchronizer:try_reserve_profile_for_peer(sender, profile_index) then
-		return true
-	end
-
-	return false
 end
 
 DeusMechanism.sync_mechanism_data = function (self, peer_id, mechanism_newly_initialized)
@@ -923,9 +931,29 @@ DeusMechanism.sync_mechanism_data = function (self, peer_id, mechanism_newly_ini
 		local journey_name_id = NetworkLookup.deus_journeys[deus_run_controller:get_journey_name()]
 		local dominant_god_id = NetworkLookup.deus_themes[deus_run_controller:get_dominant_god()]
 		local with_belakor = deus_run_controller:get_belakor_enabled()
+		local mutators = deus_run_controller:get_event_mutators()
+		local boons = deus_run_controller:get_event_boons()
+		local mutator_ids = {}
+
+		for i = 1, #mutators do
+			local mutator_name = mutators[i]
+			local mutator_id = NetworkLookup.mutator_templates[mutator_name]
+
+			mutator_ids[#mutator_ids + 1] = mutator_id
+		end
+
+		local boon_ids = {}
+
+		for i = 1, #boons do
+			local boon_name = boons[i].name
+			local boon = DeusPowerUpsLookup[boon_name]
+
+			boon_ids[#boon_ids + 1] = boon.lookup_id
+		end
+
 		local channel_id = PEER_ID_TO_CHANNEL[peer_id]
 
-		RPC.rpc_deus_setup_run(channel_id, self._run_id, self._run_seed, difficulty_id, journey_name_id, dominant_god_id, with_belakor)
+		RPC.rpc_deus_setup_run(channel_id, self._run_id, self._run_seed, difficulty_id, journey_name_id, dominant_god_id, not not with_belakor, mutator_ids, boon_ids)
 	end
 end
 
@@ -988,14 +1016,18 @@ DeusMechanism._debug_load_seed = function (self, run_seed, difficulty, with_bela
 	local run_id = string.sub(tostring(math.random_seed()), 0, 8)
 	local journey_name = script_data.deus_journey or AvailableJourneyOrder[1]
 	local dominant_god = script_data.deus_dominant_god or DeusJourneyCycleGods[1]
+	local event_mutator_array = {}
+	local event_boon_array = {}
 
-	self:_setup_run(run_id, run_seed, true, Network.peer_id(), difficulty, journey_name, dominant_god)
+	self:_setup_run(run_id, run_seed, true, Network.peer_id(), difficulty, journey_name, dominant_god, not not with_belakor, event_mutator_array, event_boon_array)
 
 	local difficulty_id = NetworkLookup.difficulties[difficulty]
 	local journey_name_id = NetworkLookup.deus_journeys[journey_name]
 	local dominant_god_id = NetworkLookup.deus_themes[dominant_god]
+	local event_mutator_ids = {}
+	local event_boon_ids = {}
 
-	Managers.mechanism:send_rpc_clients("rpc_deus_setup_run", run_id, run_seed, difficulty_id, journey_name_id, dominant_god_id, not not with_belakor)
+	Managers.mechanism:send_rpc_clients("rpc_deus_setup_run", run_id, run_seed, difficulty_id, journey_name_id, dominant_god_id, not not with_belakor, event_mutator_ids, event_boon_ids)
 
 	if string.starts_with(run_seed, "DEBUG_SHRINE_NODE") then
 		self._deus_run_controller:debug_shrine_setup()
@@ -1011,7 +1043,7 @@ DeusMechanism._debug_load_seed = function (self, run_seed, difficulty, with_bela
 	level_transition_handler:promote_next_level_data()
 end
 
-DeusMechanism._setup_run = function (self, run_id, run_seed, is_server, server_peer_id, difficulty, journey_name, dominant_god, with_belakor)
+DeusMechanism._setup_run = function (self, run_id, run_seed, is_server, server_peer_id, difficulty, journey_name, dominant_god, with_belakor, mutators, boons)
 	local deus_backend = Managers.backend:get_interface("deus")
 	local own_peer_id = Network.peer_id()
 
@@ -1022,21 +1054,24 @@ DeusMechanism._setup_run = function (self, run_id, run_seed, is_server, server_p
 		self._deus_run_controller:destroy()
 	end
 
+	mutators = mutators or EMPTY_TABLE
+	boons = boons or EMPTY_TABLE
+
 	local backend_items = Managers.backend:get_interface("items")
 	local talent_interface = Managers.backend:get_interface("talents")
-	local loadout = backend_items:get_loadout()
-	local initial_loadout = {}
-	local initial_talents = {}
+	local bot_loadout = backend_items:get_bot_loadout()
+	local initial_bot_loadout = {}
+	local initial_bot_talents = {}
 
 	for _, career in ipairs(DEUS_CAREERS) do
-		local talents_for_career = talent_interface:get_talents(career)
+		local talents_for_career = talent_interface:get_bot_talents(career)
 
-		initial_talents[career] = talents_for_career
+		initial_bot_talents[career] = talents_for_career
 
-		local slots = loadout[career]
+		local slots = bot_loadout[career]
 		local initial_loadout_slots = {}
 
-		initial_loadout[career] = initial_loadout_slots
+		initial_bot_loadout[career] = initial_loadout_slots
 
 		for slot, backend_id in pairs(slots) do
 			if slot == "slot_melee" or slot == "slot_ranged" then
@@ -1060,6 +1095,43 @@ DeusMechanism._setup_run = function (self, run_id, run_seed, is_server, server_p
 		end
 	end
 
+	local hero_loadout = backend_items:get_loadout()
+	local initial_loadout = {}
+	local initial_talents = {}
+
+	for _, career in ipairs(DEUS_CAREERS) do
+		local talents_for_career = talent_interface:get_talents(career)
+
+		initial_talents[career] = talents_for_career
+
+		local slots = hero_loadout[career]
+		local initial_loadout_slots = {}
+
+		initial_loadout[career] = initial_loadout_slots
+
+		for slot, backend_id in pairs(slots) do
+			if slot == "slot_melee" or slot == "slot_ranged" then
+				local item_data = backend_items:get_item_from_id(backend_id)
+				local item_key = item_data and item_data.key
+				local deus_item_key = DeusStartingWeaponTypeMapping[item_key]
+
+				if not deus_item_key then
+					fassert(DeusDefaultLoadout[career], "career %s is not properly configured for Morris.", career)
+
+					deus_item_key = DeusDefaultLoadout[career][slot]
+
+					Application.warning("Unknown weapon " .. (item_key or "unknown") .. " in slot " .. slot .. ", can't convert to deus weapon. Using " .. deus_item_key)
+				end
+
+				local item = DeusWeaponGeneration.generate_item_from_item_key(deus_item_key, difficulty, 0, "plentiful", 0)
+
+				item.power_level = DeusStarterWeaponPowerLevels[difficulty] or DeusStarterWeaponPowerLevels.default
+				initial_loadout_slots[slot] = item
+				initial_bot_loadout[career][slot] = initial_bot_loadout[career][slot] or item
+			end
+		end
+	end
+
 	deus_backend:reset_deus_inventory()
 
 	local backend_deus_loadout = {}
@@ -1076,8 +1148,23 @@ DeusMechanism._setup_run = function (self, run_id, run_seed, is_server, server_p
 		end
 	end
 
+	local backend_deus_bot_loadout = {}
+
+	for career, slots in pairs(initial_bot_loadout) do
+		local backend_deus_loadout_slots = {}
+
+		backend_deus_bot_loadout[career] = backend_deus_loadout_slots
+
+		for slot, item_data in pairs(slots) do
+			local new_backend_id = deus_backend:grant_deus_weapon(item_data)
+
+			backend_deus_loadout_slots[slot] = new_backend_id
+		end
+	end
+
 	deus_backend:refresh_deus_weapons_in_items_backend()
 	deus_backend:set_deus_loadout(backend_deus_loadout)
+	deus_backend:set_deus_bot_loadout(backend_deus_bot_loadout)
 
 	local network_handler = Managers.mechanism:network_handler()
 
@@ -1093,14 +1180,14 @@ DeusMechanism._setup_run = function (self, run_id, run_seed, is_server, server_p
 		end
 	end
 
-	self._deus_run_controller = DeusRunController:new(run_id, is_server, network_handler, server_peer_id, own_peer_id, initial_loadout, initial_talents, weapon_group_whitelist)
+	self._deus_run_controller = DeusRunController:new(run_id, is_server, network_handler, server_peer_id, own_peer_id, initial_loadout, initial_talents, initial_bot_loadout, initial_bot_talents, weapon_group_whitelist)
 
 	self._deus_run_controller:register_rpcs(self._network_event_delegate)
 
 	local rolled_over_coins = deus_backend:get_rolled_over_soft_currency()
 	local backend_id = Managers.backend:player_id() or ""
 
-	self._deus_run_controller:setup_run(run_seed, difficulty, journey_name, dominant_god, rolled_over_coins, backend_id, with_belakor)
+	self._deus_run_controller:setup_run(run_seed, difficulty, journey_name, dominant_god, rolled_over_coins, backend_id, with_belakor, mutators, boons)
 	self._deus_run_controller:full_sync()
 	self:_update_own_avatar_info()
 
@@ -1140,13 +1227,29 @@ DeusMechanism._update_own_avatar_info = function (self)
 	self._deus_run_controller:set_own_player_avatar_info(level, name, frame_name)
 end
 
-DeusMechanism.rpc_deus_setup_run = function (self, channel_id, run_id, run_seed, difficulty_id, journey_name_id, dominant_god_id, with_belakor)
+DeusMechanism.rpc_deus_setup_run = function (self, channel_id, run_id, run_seed, difficulty_id, journey_name_id, dominant_god_id, with_belakor, mutator_array, boon_array)
 	local difficulty = NetworkLookup.difficulties[difficulty_id]
 	local journey_name = NetworkLookup.deus_journeys[journey_name_id]
 	local dominant_god = NetworkLookup.deus_themes[dominant_god_id]
 	local server_peer_id = CHANNEL_TO_PEER_ID[channel_id]
+	local mutators = {}
 
-	self:_setup_run(run_id, run_seed, false, server_peer_id, difficulty, journey_name, dominant_god, with_belakor)
+	for i = 1, #mutator_array do
+		local mutator_id = mutator_array[i]
+
+		mutators[#mutators + 1] = NetworkLookup.mutator_templates[mutator_id]
+	end
+
+	local boons = {}
+
+	for i = 1, #boon_array do
+		local boon_id = boon_array[i]
+		local boon = DeusPowerUpsLookup[boon_id]
+
+		boons[#boons + 1] = boon.name
+	end
+
+	self:_setup_run(run_id, run_seed, false, server_peer_id, difficulty, journey_name, dominant_god, with_belakor, mutators, boons)
 end
 
 DeusMechanism.should_play_level_introduction = function (self)
@@ -1236,7 +1339,15 @@ DeusMechanism.get_level_dialogue_context = function (self)
 	}
 end
 
-DeusMechanism._update_current_state = function (self)
+DeusMechanism.is_packages_loaded = function (self)
+	if not self._deus_run_controller then
+		return true
+	end
+
+	return self._deus_run_controller:is_weekly_event_packages_loaded()
+end
+
+DeusMechanism._update_current_state = function (self, skip_sync)
 	local new_state
 
 	if not self._deus_run_controller or self._deus_run_controller:get_run_ended() then
@@ -1254,7 +1365,7 @@ DeusMechanism._update_current_state = function (self)
 	end
 
 	Managers.mechanism:choose_next_state(new_state)
-	Managers.mechanism:progress_state()
+	Managers.mechanism:progress_state(skip_sync)
 end
 
 DeusMechanism.get_player_level_fallback = function (self, player)
@@ -1267,4 +1378,14 @@ end
 
 DeusMechanism.get_starting_level = function ()
 	return HUB_LEVEL_NAME
+end
+
+DeusMechanism.reserved_party_id_by_peer = function (self, peer_id)
+	return 1
+end
+
+DeusMechanism.try_reserve_profile_for_peer_by_mechanism = function (self, profile_synchronizer, peer_id, profile_index, career_index, force_respawning)
+	local party_id = self:reserved_party_id_by_peer(peer_id)
+
+	return profile_synchronizer:try_reserve_profile_for_peer(party_id, peer_id, profile_index, career_index)
 end

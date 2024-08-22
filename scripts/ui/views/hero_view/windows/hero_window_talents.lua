@@ -280,11 +280,11 @@ HeroWindowTalents._populate_talents_by_hero = function (self, initialize)
 			local selected_column = talents[i]
 			local no_talent_selected = not selected_column or selected_column == 0
 			local unlock_name = "talent_point_" .. i
-			local talent_unlock_level = TalentUnlockLevels[unlock_name]
 			local row_unlocked = ProgressionUnlocks.is_unlocked(unlock_name, self.hero_level)
 			local level_text_color = row_unlocked and Colors.get_color_table_with_alpha("green", 255) or Colors.get_color_table_with_alpha("red", 255)
+			local talent_template = ProgressionUnlocks.get_unlock(unlock_name)
 
-			content.level_text = tostring(talent_unlock_level)
+			content.level_text = tostring(talent_template.level_requirement)
 			style.level_text.text_color = level_text_color
 
 			if row_unlocked and not no_talent_selected then
@@ -454,8 +454,8 @@ HeroWindowTalents._populate_career_info = function (self, initialize)
 
 	widgets_by_name.career_background.style.background.color = career_color
 
-	local passive_ability_data = career_settings.passive_ability
-	local activated_ability_data = career_settings.activated_ability[1]
+	local passive_ability_data = CareerUtils.get_passive_ability_by_career(career_settings)
+	local activated_ability_data = CareerUtils.get_ability_data_by_career(career_settings, 1)
 	local passive_display_name = passive_ability_data.display_name
 	local passive_icon = passive_ability_data.icon
 	local activated_display_name = activated_ability_data.display_name

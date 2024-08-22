@@ -28,6 +28,10 @@ ScoreboardHelper.scoreboard_topic_stats = {
 			},
 			{
 				"kills_per_breed",
+				"chaos_bulwark",
+			},
+			{
+				"kills_per_breed",
 				"chaos_berzerker",
 			},
 			{
@@ -628,6 +632,86 @@ ScoreboardHelper.scoreboard_topic_stats_versus = {
 				"kills_per_breed",
 				"hero_we_waywatcher",
 			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_wh_captain",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_dr_slayer",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_wh_priest",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_dr_ironbreaker",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_we_maidenguard",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_bw_necromancer",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_es_questingknight",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_we_thornsister",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_es_knight",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_es_huntsman",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_wh_bountyhunter",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_dr_ranger",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_dr_engineer",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_es_mercenary",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_bw_scholar",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_bw_unchained",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_bw_adept",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_wh_zealot",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_we_shade",
+			},
+			{
+				"vs_knockdowns_per_breed",
+				"hero_we_waywatcher",
+			},
 		},
 		sort_function = function (a, b)
 			return a.score > b.score
@@ -724,8 +808,8 @@ ScoreboardHelper.scoreboard_topic_stats_versus = {
 	},
 	{
 		display_text = "scoreboard_topic_damage_dealt_pactsworn",
-		name = "damage_dealt_pactsworn",
-		stat_type = "damage_dealt_pactsworn",
+		name = "vs_damage_dealt_to_pactsworn",
+		stat_type = "vs_damage_dealt_to_pactsworn",
 		sort_function = function (a, b)
 			return a.score > b.score
 		end,
@@ -749,14 +833,14 @@ ScoreboardHelper.scoreboard_topic_stats_versus = {
 	{
 		display_text = "scoreboard_topic_disables",
 		name = "disables",
-		stat_type = "disables_per_breed",
+		stat_type = "vs_disables_per_breed",
 		stat_types = {
 			{
-				"disables_per_breed",
+				"vs_disables_per_breed",
 				"vs_gutter_runner",
 			},
 			{
-				"disables_per_breed",
+				"vs_disables_per_breed",
 				"vs_packmaster",
 			},
 		},
@@ -770,7 +854,7 @@ ScoreboardHelper.scoreboard_grouped_topic_stats_versus = {
 		group_name = "heroes",
 		stats = {
 			"kills_specials",
-			"damage_dealt_pactsworn",
+			"vs_damage_dealt_to_pactsworn",
 			"saves",
 			"revives",
 		},
@@ -785,25 +869,40 @@ ScoreboardHelper.scoreboard_grouped_topic_stats_versus = {
 	},
 }
 
-ScoreboardHelper.get_versus_stats = function (statistics_db, profile_synchronizer, saved_scoreboard_stats)
+ScoreboardHelper.get_versus_stats = function (statistics_db, saved_scoreboard_stats)
 	assert(statistics_db, "Missing statistics_database reference.")
-	assert(profile_synchronizer, "Missing profile_synchronizer reference.")
 
 	local human_players = Managers.player:human_players()
+	local mechanism = Managers.mechanism:game_mechanism()
+	local party_manager = Managers.party
 	local player_list = {}
 
 	for _, player in pairs(human_players) do
 		local player_peer_id = player:network_id()
 		local player_name = player:name()
 		local stats_id = player:stats_id()
-		local profile_index = profile_synchronizer:profile_by_peer(player_peer_id, player:local_player_id())
+		local local_player_id = player:local_player_id()
+		local player_level = ExperienceSettings.get_player_level(player)
+		local portrait_frame = CosmeticUtils.get_cosmetic_slot(player, "slot_frame")
+		local profile_index, career_index = Managers.mechanism:get_persistent_profile_index_reservation(player_peer_id)
+		local weapon, hero_skin, hat = mechanism:get_hero_cosmetics(player_peer_id, local_player_id)
 
 		player_list[stats_id] = {
 			name = player_name,
 			peer_id = player_peer_id,
-			local_player_id = player:local_player_id(),
+			local_player_id = local_player_id,
 			stats_id = stats_id,
 			profile_index = profile_index,
+			career_index = career_index,
+			player_level = player_level,
+			portrait_frame = portrait_frame and portrait_frame.item_name,
+			hero_skin = hero_skin,
+			weapon = {
+				item_name = weapon,
+			},
+			hat = {
+				item_name = hat,
+			},
 			scores = {},
 		}
 	end

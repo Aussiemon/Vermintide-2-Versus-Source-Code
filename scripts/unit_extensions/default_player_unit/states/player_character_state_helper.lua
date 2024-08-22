@@ -517,7 +517,8 @@ CharacterStateHelper.move_in_air_pactsworn = function (first_person_extension, i
 	local unit_rotation = first_person_extension:current_rotation()
 	local move_velocity = Vector3.normalize(Vector3.flat(Quaternion.rotate(unit_rotation, move_direction)))
 	local movement_settings_table = PlayerUnitMovementSettings.get_movement_settings_table(unit)
-	local move_cap = breed.movement_speed
+	local breed_multiplier = breed.movement_speed_multiplier
+	local move_cap = movement_settings_table.move_speed
 	local ghost_mode_extension = ScriptUnit.extension(unit, "ghost_mode_system")
 	local in_ghost_mode = ghost_mode_extension:is_in_ghost_mode()
 
@@ -525,7 +526,7 @@ CharacterStateHelper.move_in_air_pactsworn = function (first_person_extension, i
 		move_cap = movement_settings_table.ghost_move_speed
 	end
 
-	move_cap = move_cap * 0.7
+	move_cap = move_cap * breed_multiplier * 0.7
 
 	if movement.y < 0 then
 		speed = speed * movement_settings_table.backward_move_scale
@@ -794,7 +795,7 @@ CharacterStateHelper._check_cooldown = function (weapon_extension, action, t)
 	return is_in_cooldown
 end
 
-CharacterStateHelper.wield_input = function (input_extension, inventory_extension, action_name, verify)
+CharacterStateHelper.wield_input = function (input_extension, inventory_extension, action_name)
 	if action_name ~= "action_wield" then
 		return nil
 	end
@@ -1000,7 +1001,9 @@ CharacterStateHelper._check_chain_action = function (wield_input, action_data, i
 		input = wield_input
 	end
 
-	if input or action_data.auto_chain then
+	local auto_chain = action_data.auto_chain and input_extra_requirement
+
+	if input or auto_chain then
 		local select_chance = action_data.select_chance or 1
 		local is_selected = select_chance >= math.random()
 		local chain_action_available = current_action_extension:is_chain_action_available(action_data, t)
@@ -1032,6 +1035,8 @@ CharacterStateHelper._check_chain_action = function (wield_input, action_data, i
 
 					if buffered and action_data.input == "action_one_release" then
 						force_release_input = "action_one_hold"
+					elseif auto_chain and action_data.input == "action_wield" then
+						-- Nothing
 					end
 
 					return true, new_action, new_sub_action, wield_input, send_buffer, clear_buffer, force_release_input
@@ -1217,7 +1222,7 @@ CharacterStateHelper.update_weapon_actions = function (t, unit, input_extension,
 			end
 		end
 
-		can_interrupt = (not (current_action_settings and current_action_settings.uninterruptible) and not script_data.uninterruptible and not reloading and not is_bot_player and not buff_extension:has_buff_perk("uninterruptible") and not uninterruptible_heavy or false) and (recent_damage_type == "cutting_berserker" and true or status_extension:hitreact_interrupt())
+		can_interrupt = ((not current_action_settings or not current_action_settings.uninterruptible) and not script_data.uninterruptible and not reloading and not is_bot_player and not buff_extension:has_buff_perk("uninterruptible") and not uninterruptible_heavy or false) and (recent_damage_type == "cutting_berserker" and true or status_extension:hitreact_interrupt())
 
 		if can_interrupt and not status_extension:is_disabled() then
 			local has_reduced_hit_react_buff = buff_extension:has_buff_perk("reduced_hit_react")
@@ -1866,17 +1871,17 @@ end
 CharacterStateHelper.ghost_mode = function (ghost_mode_extension, input_extension)
 	if not ghost_mode_extension:is_in_ghost_mode() then
 		if input_extension:get("ghost_mode_enter") and ghost_mode_extension:allowed_to_enter() then
-			ghost_mode_extension:request_enter_ghost_mode()
+			ghost_mode_extension:try_enter_ghost_mode()
 		end
 	elseif ghost_mode_extension:is_in_ghost_mode() then
 		if input_extension:get("ghost_mode_exit") and ghost_mode_extension:allowed_to_leave() then
 			local force_leave = false
 
-			ghost_mode_extension:request_leave_ghost_mode(force_leave)
-		end
+			ghost_mode_extension:try_leave_ghost_mode(force_leave)
+		elseif input_extension:get("ghost_mode_enter") then
+			local find_furthest_player = false
 
-		if input_extension:get("ghost_mode_enter") then
-			ghost_mode_extension:teleport_player()
+			ghost_mode_extension:teleport_player(find_furthest_player)
 		end
 	end
 end

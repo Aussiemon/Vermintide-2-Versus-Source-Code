@@ -21,7 +21,6 @@ NavGraphSystem.init = function (self, context, system_name)
 	self.entity_manager = entity_manager
 	self.world = context.world
 	self._is_server = context.is_server
-	self._stored_jump_data = {}
 	self.unit_extension_data = {}
 	self._use_level_jumps = Managers.state.game_mode:setting("use_level_jumps")
 
@@ -133,17 +132,13 @@ NavGraphSystem.init_nav_graphs = function (self, unit, smart_object_id, extensio
 
 		local navgraph = GwNavGraph.create(nav_world, is_bidirectional, control_points, debug_color, layer_id, smart_object_index)
 
-		if not use_for_versus then
-			GwNavGraph.add_to_database(navgraph)
+		if not use_for_versus and not script_data.disable_crowd_dispersion then
+			GwNavWorld.register_all_navgraphedges_for_crowd_dispersion(nav_world, navgraph, 1, 100)
 		end
 
-		if not use_for_versus then
-			if not script_data.disable_crowd_dispersion then
-				GwNavWorld.register_all_navgraphedges_for_crowd_dispersion(nav_world, navgraph, 1, 100)
-			end
+		GwNavGraph.add_to_database(navgraph)
 
-			extension.navgraphs[#extension.navgraphs + 1] = navgraph
-		end
+		extension.navgraphs[#extension.navgraphs + 1] = navgraph
 	end
 
 	if self._use_level_jumps and use_for_versus then
@@ -195,32 +190,18 @@ NavGraphSystem.spawn_versus_jump_unit = function (self, jump_object_data, swap)
 	local right = Vector3.normalize(Vector3.cross(direction, Vector3.up()))
 	local up = Vector3.normalize(Vector3.cross(right, direction))
 	local rotation = Quaternion.look(direction, up)
+	local extension_init_data = {
+		nav_graph_system = {
+			smart_object_index = jump_object_data.smart_object_index,
+			swap = swap,
+		},
+	}
+	local jump_unit = Managers.state.unit_spawner:spawn_local_unit_with_extensions("units/test_unit/jump_marker_ground_pactsworn", "versus_dark_pact_climbing_interaction_unit", extension_init_data, spawn_position, rotation)
+	local node_id = Unit.node(jump_unit, "c_interaction")
 
-	if self._is_server then
-		local extension_init_data = {
-			nav_graph_system = {
-				smart_object_index = jump_object_data.smart_object_index,
-				swap = swap,
-			},
-		}
-		local jump_unit = Managers.state.unit_spawner:spawn_network_unit("units/test_unit/jump_marker_ground_pactsworn", "versus_dark_pact_climbing_interaction_unit", extension_init_data, spawn_position, rotation)
-		local node_id = Unit.node(jump_unit, "c_interaction")
+	Unit.set_local_scale(jump_unit, node_id, Vector3(1, 2, 1))
 
-		Unit.set_local_scale(jump_unit, node_id, Vector3(1, 2, 1))
-
-		self.level_jumps[jump_unit] = unit_jump_data
-	else
-		local storage = self._stored_jump_data[jump_object_data.smart_object_index]
-
-		if not storage then
-			storage = {}
-			self._stored_jump_data[jump_object_data.smart_object_index] = storage
-		end
-
-		local index = not swap and 1 or 2
-
-		storage[index] = unit_jump_data
-	end
+	self.level_jumps[jump_unit] = unit_jump_data
 end
 
 NavGraphSystem.level_jump_units = function (self)
@@ -255,10 +236,6 @@ NavGraphSystem.on_add_extension = function (self, world, unit, extension_name, e
 
 		if smart_object_id and self.smart_objects[smart_object_id] and not self.no_nav_mesh and (not Unit.has_data(unit, "enabled_on_spawn") or Unit.get_data(unit, "enabled_on_spawn") == true) then
 			self:init_nav_graphs(unit, smart_object_id, extension)
-		end
-
-		if false then
-			-- Nothing
 		end
 	end
 
@@ -298,16 +275,6 @@ NavGraphSystem.on_add_extension = function (self, world, unit, extension_name, e
 
 		extension.smart_object_index = smart_object_index
 		extension.swap = swap
-
-		if self._is_server then
-			return extension
-		end
-
-		local storage = self._stored_jump_data[smart_object_index]
-		local index = not swap and 1 or 2
-		local jump_data = storage[index]
-
-		self.level_jumps[unit] = jump_data
 	end
 
 	return extension

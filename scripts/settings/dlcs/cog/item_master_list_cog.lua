@@ -103,6 +103,7 @@ ItemMasterList.skin_dr_engineer_white = {
 }
 ItemMasterList.bardin_engineer_career_skill_weapon = {
 	is_local = true,
+	item_type = "bardin_engineer_career_skill_weapon",
 	rarity = "plentiful",
 	right_hand_unit = "units/weapons/player/wpn_dw_rotary_gun_01_t1/wpn_dw_rotary_gun_01_t1",
 	template = "bardin_engineer_career_skill_weapon",
@@ -110,6 +111,7 @@ ItemMasterList.bardin_engineer_career_skill_weapon = {
 }
 ItemMasterList.bardin_engineer_career_skill_weapon_heavy = {
 	is_local = true,
+	item_type = "bardin_engineer_career_skill_weapon_heavy",
 	rarity = "plentiful",
 	right_hand_unit = "units/weapons/player/wpn_dw_rotary_gun_01_t2/wpn_dw_rotary_gun_01_t2",
 	template = "bardin_engineer_career_skill_weapon_special",
@@ -567,33 +569,15 @@ ItemMasterList.dr_steam_pistol_magic_01 = {
 		"dr_ironbreaker",
 	},
 }
-ItemMasterList.dr_steam_pistol_skin_02_magic_01 = {
-	description = "dr_steam_pistol_skin_02_magic_01_description",
-	display_name = "dr_steam_pistol_skin_02_magic_01_name",
-	hud_icon = "weapon_generic_icon_staff_3",
-	information_text = "information_weapon_skin",
-	inventory_icon = "icon_wpn_dw_steam_pistol_01_t2_magic",
-	item_type = "weapon_skin",
-	matching_item_key = "dr_steam_pistol",
-	rarity = "magic",
-	required_dlc = "cog_upgrade",
-	right_hand_unit = "units/weapons/player/wpn_dw_steam_pistol_01_t2/wpn_dw_steam_pistol_01_t2_magic_01",
-	slot_type = "weapon_skin",
-	template = "heavy_steam_pistol_template_1",
-	can_wield = {
-		"dr_engineer",
-		"dr_ranger",
-		"dr_ironbreaker",
-	},
-}
 ItemMasterList.dr_steam_pistol_01_t2_magic_01 = {
-	description = "dr_steam_pistol_01_t2_magic_01_desciption",
+	description = "dr_steam_pistol_skin_01_magic_01_description",
+	display_name = "dr_steam_pistol_skin_01_magic_01_name",
 	hud_icon = "weapon_generic_icon_staff_3",
 	inventory_icon = "icon_wpn_dw_steam_pistol_01_t2_magic",
 	item_type = "weapon_skin",
 	matching_item_key = "dr_steam_pistol",
 	rarity = "magic",
-	required_dlc = "cog_upgrade",
+	required_dlc = "cog",
 	right_hand_unit = "units/weapons/player/wpn_dw_steam_pistol_01_t2/wpn_dw_steam_pistol_01_t2_magic_01",
 	slot_type = "weapon_skin",
 	template = "heavy_steam_pistol_template_1",
@@ -693,16 +677,4 @@ UpdateItemMasterList({
 	"dr_shield_hammer_magic_01",
 	"dr_2h_pick",
 	"dr_2h_pick_magic_01",
-	"vs_dr_1h_axe",
-	"vs_dr_1h_hammer",
-	"vs_dr_2h_axe",
-	"vs_dr_2h_hammer",
-	"vs_dr_drake_pistol",
-	"vs_dr_drakegun",
-	"vs_dr_dual_wield_hammers",
-	"vs_dr_handgun",
-	"vs_dr_rakegun",
-	"vs_dr_shield_axe",
-	"vs_dr_shield_hammer",
-	"vs_dr_2h_pick",
 }, "dr_engineer")

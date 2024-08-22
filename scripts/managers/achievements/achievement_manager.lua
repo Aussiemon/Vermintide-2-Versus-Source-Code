@@ -283,6 +283,10 @@ AchievementManager.is_enabled = function (self)
 	return self._enabled
 end
 
+AchievementManager.num_achievement_categories = function (self)
+	return #outline.categories
+end
+
 AchievementManager.update = function (self, dt, t)
 	if not self._enabled or not self:_check_version_number() or not self:_check_initialized_achievements() or not self:_verify_platform_achievements() or script_data["eac-untrusted"] then
 		return
@@ -412,25 +416,32 @@ AchievementManager.outline = function (self)
 	return outline
 end
 
-AchievementManager._search_sub_categories = function (self, categories, in_category_id)
+AchievementManager._search_sub_categories = function (self, categories, in_category_id, result, is_in_sub_category)
 	if not categories then
 		return
 	end
+
+	local result = result or {}
 
 	for i = 1, #categories do
 		local category = categories[i]
 		local category_id = category.name
 
-		if category_id == in_category_id then
-			return category.entries
-		else
-			local result = self:_search_sub_categories(category.categories, in_category_id)
+		if is_in_sub_category or category_id == in_category_id then
+			local is_in_sub_category = true
+			local entries = category.entries
 
-			if result then
-				return result
+			if entries then
+				table.append(result, entries)
 			end
+
+			self:_search_sub_categories(category.categories, in_category_id, result, is_in_sub_category)
+		else
+			self:_search_sub_categories(category.categories, in_category_id, result)
 		end
 	end
+
+	return result
 end
 
 AchievementManager.get_entries_from_category = function (self, in_category_id)
@@ -627,7 +638,7 @@ AchievementManager._check_initialized_achievements = function (self)
 			if unlocked then
 				self._unlocked_achievements[template.id] = true
 			elseif error_msg then
-				Application.warning("[AchievementManager]", "ERROR: %s", error_msg)
+				Application.warning(string.format("[AchievementManager] ERROR: %s", error_msg))
 
 				self._unlocked_achievements[template.id] = true
 			end
@@ -712,7 +723,7 @@ AchievementManager._setup_achievement_data = function (self, achievement_id)
 
 	fassert(achievement_data, "Missing achievemnt for [\"%s\"]", achievement_id)
 
-	local name, desc, completed, progress, requirements, claimed, required_dlc
+	local name, desc, completed, progress, requirements, claimed, required_dlc, desc_value
 	local player_manager = Managers.player
 	local player = player_manager:local_player()
 
@@ -803,6 +814,7 @@ AchievementManager._setup_achievement_data = function (self, achievement_id)
 		id = achievement_id,
 		name = name,
 		desc = desc,
+		desc_value = desc_value,
 		icon = achievement_data.icon,
 		required_dlc = achievement_data.required_dlc,
 		required_dlc_extra = achievement_data.required_dlc_extra,
@@ -902,4 +914,39 @@ AchievementManager.debug_draw = function (self)
 	end
 
 	Gui.rect(gui, Vector3(start_pos.x - 20, pos.y - 20, 100), Vector2(300, start_pos.y - pos.y + 40), bg_color)
+end
+
+AchievementManager.get_challenge_progression = function (self, optional_category)
+	local player = Managers.player:local_player()
+	local stats_id = player:stats_id()
+	local statistics_db = self._statistics_db
+	local achievement_progress = {}
+
+	if optional_category then
+		local entries = self:get_entries_from_category(optional_category)
+
+		for _, achievement_id in ipairs(entries) do
+			local achievement_data = AchievementTemplates.achievements[achievement_id]
+
+			if achievement_data and achievement_data.progress then
+				local progress_data = achievement_data.progress(statistics_db, stats_id)
+
+				achievement_progress[achievement_id] = progress_data[1] / progress_data[2]
+			elseif achievement_data then
+				achievement_progress[achievement_id] = achievement_data.completed(statistics_db, stats_id) and 1 or 0
+			end
+		end
+	else
+		for achievement_id, achievement_data in pairs(AchievementTemplates.achievements) do
+			if achievement_data.progress then
+				local progress_data = achievement_data.progress(statistics_db, stats_id)
+
+				achievement_progress[achievement_id] = progress_data[1] / progress_data[2]
+			elseif achievement_data then
+				achievement_progress[achievement_id] = achievement_data.completed(statistics_db, stats_id) and 1 or 0
+			end
+		end
+	end
+
+	return achievement_progress
 end

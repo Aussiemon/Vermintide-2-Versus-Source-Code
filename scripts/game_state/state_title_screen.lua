@@ -33,15 +33,19 @@ StateTitleScreen.on_enter = function (self, params)
 	end
 
 	if IS_CONSOLE then
+		local current_mechanism_name = Managers.mechanism:current_mechanism_name()
+
 		Managers.mechanism:destroy()
 
-		Managers.mechanism = GameMechanismManager:new()
+		Managers.mechanism = GameMechanismManager:new(current_mechanism_name)
 
 		if rawget(_G, "LobbyInternal") and LobbyInternal.network_initialized() and (IS_PS4 or Managers.account:offline_mode()) then
 			if Managers.party:has_party_lobby() then
 				local lobby = Managers.party:steal_lobby()
 
-				LobbyInternal.leave_lobby(lobby)
+				if type(lobby) ~= "table" then
+					LobbyInternal.leave_lobby(lobby)
+				end
 			end
 
 			LobbyInternal.shutdown_client()
@@ -54,7 +58,7 @@ StateTitleScreen.on_enter = function (self, params)
 	}
 
 	for _, parameter in pairs(args) do
-		if parameter == "-auto-host-level" or parameter == "-auto-join" or parameter == "-skip-splash" or loading_context.join_lobby_data or loading_context.offline_invite then
+		if parameter == "-auto-host-level" or parameter == "-auto-join" or parameter == "-skip-splash" or parameter == "-deus-auto-host" or loading_context.join_lobby_data or loading_context.offline_invite then
 			self._auto_start = true
 
 			break
@@ -89,9 +93,15 @@ StateTitleScreen.on_enter = function (self, params)
 
 	if IS_WINDOWS or IS_LINUX then
 		Managers.eac = Managers.eac or EacManager:new()
+
+		self:_load_global_resources()
 	end
 
-	self:_init_beta_overlay()
+	if Managers.beta_overlay then
+		Managers.beta_overlay:destroy()
+
+		Managers.beta_overlay = nil
+	end
 
 	if IS_PS4 then
 		local account_manager = Managers.account
@@ -115,6 +125,20 @@ StateTitleScreen.on_enter = function (self, params)
 	end
 
 	ShowCursorStack.push()
+end
+
+StateTitleScreen._load_global_resources = function (self)
+	if not GlobalResources.loaded then
+		local package_manager = Managers.package
+
+		for i, name in ipairs(GlobalResources) do
+			if not package_manager:has_loaded(name) then
+				package_manager:load(name, "global", nil, true)
+			end
+		end
+
+		GlobalResources.loaded = true
+	end
 end
 
 StateTitleScreen._demo_hack_state_managers = function (self)
@@ -177,11 +201,11 @@ StateTitleScreen._setup_leak_prevention = function (self)
 end
 
 StateTitleScreen._setup_world = function (self)
-	if not Managers.package:has_loaded("resource_packages/start_menu_splash", "StateSplashScreen") and not GameSettingsDevelopment.skip_start_screen then
+	if not Managers.package:has_loaded("resource_packages/start_menu_splash", "StateSplashScreen") and not GameSettingsDevelopment.skip_start_screen and not Development.parameter("skip_start_screen") then
 		Managers.package:load("resource_packages/start_menu_splash", "StateSplashScreen")
 	end
 
-	if IS_CONSOLE and not Managers.package:has_loaded("resource_packages/news_splash/news_splash", "state_splash_screen") and not GameSettingsDevelopment.skip_start_screen then
+	if IS_CONSOLE and not Managers.package:has_loaded("resource_packages/news_splash/news_splash", "state_splash_screen") and not GameSettingsDevelopment.skip_start_screen and not Development.parameter("skip_start_screen") then
 		Managers.package:load("resource_packages/news_splash/news_splash", "state_splash_screen")
 	end
 
@@ -217,12 +241,14 @@ StateTitleScreen._init_input = function (self)
 	input_manager:initialize_device("mouse", 1)
 	input_manager:initialize_device("gamepad")
 	input_manager:create_input_service("Player", "PlayerControllerKeymaps", "PlayerControllerFilters")
+	input_manager:create_input_service("chat_input", "ChatControllerSettings", "ChatControllerFilters")
+	input_manager:create_input_service("player_list_input", "IngamePlayerListKeymaps", "IngamePlayerListFilters")
 end
 
 local DO_RELOAD = true
 
 StateTitleScreen._init_ui = function (self)
-	if not GameSettingsDevelopment.skip_start_screen then
+	if not GameSettingsDevelopment.skip_start_screen and not Development.parameter("skip_start_screen") then
 		if script_data.honduras_demo then
 			self._title_start_ui = DemoTitleUI:new(self._world, self._viewport, self)
 		else
@@ -268,7 +294,9 @@ StateTitleScreen._init_chat_manager = function (self)
 end
 
 StateTitleScreen._init_beta_overlay = function (self)
-	Managers.beta_overlay = BetaOverlay:new(Managers.world:world("top_ingame_view"))
+	if not Managers.beta_overlay then
+		Managers.beta_overlay = BetaOverlay:new(Managers.world:world("top_ingame_view"))
+	end
 end
 
 StateTitleScreen.update = function (self, dt, t)
@@ -288,6 +316,10 @@ StateTitleScreen.update = function (self, dt, t)
 
 	if Managers.eac ~= nil then
 		Managers.eac:update(dt, t)
+	end
+
+	if Managers.music then
+		Managers.music:update(dt, t)
 	end
 
 	local render_only_background = GameSettingsDevelopment.skip_start_screen
@@ -386,11 +418,15 @@ StateTitleScreen.on_exit = function (self, application_shutdown)
 		self._title_start_ui = nil
 	end
 
+	self:_init_beta_overlay()
+
 	if application_shutdown and rawget(_G, "LobbyInternal") and LobbyInternal.client then
 		if Managers.party:has_party_lobby() then
 			local lobby = Managers.party:steal_lobby()
 
-			LobbyInternal.leave_lobby(lobby)
+			if type(lobby) ~= "table" then
+				LobbyInternal.leave_lobby(lobby)
+			end
 		end
 
 		LobbyInternal.shutdown_client()
@@ -417,7 +453,7 @@ StateTitleScreen.on_exit = function (self, application_shutdown)
 		Managers.package:unload("resource_packages/start_menu_splash", "StateSplashScreen")
 	end
 
-	if not GameSettingsDevelopment.skip_start_screen then
+	if IS_CONSOLE and not GameSettingsDevelopment.skip_start_screen and not Development.parameter("skip_start_screen") then
 		Managers.music:trigger_event("Stop_menu_screen_music")
 	end
 

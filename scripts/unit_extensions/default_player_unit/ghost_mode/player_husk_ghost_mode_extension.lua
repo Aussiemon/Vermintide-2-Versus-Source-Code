@@ -7,11 +7,8 @@ PlayerHuskGhostModeExtension.init = function (self, extension_init_context, unit
 	self._world = extension_init_context.world
 	self._network_transmit = extension_init_context.network_transmit
 	self._is_server = self._network_transmit.is_server
-	self._allowed_to_leave = false
+	self._has_left_once = false
 	self._ghost_mode_active = false
-	self._reason_not_allowed_to_leave = nil
-	self._reason_allowed_to_enter = nil
-	self._teleport_target_type = "disabled"
 	self._is_husk = true
 end
 
@@ -20,38 +17,8 @@ PlayerHuskGhostModeExtension.extensions_ready = function (self)
 	self._breed = Unit.get_data(self._unit, "breed")
 end
 
-PlayerUnitGhostModeExtension.game_object_initialized = function (self, unit, go_id)
-	local start_in_ghost_mode = true
-
-	if start_in_ghost_mode then
-		self:enter_ghost_mode()
-	end
-end
-
 PlayerHuskGhostModeExtension.destroy = function (self)
 	self:_clear_world_marker()
-end
-
-PlayerHuskGhostModeExtension.set_allowed_to_leave = function (self, allowed_to_leave, reason)
-	self._allowed_to_leave = allowed_to_leave
-	self._reason_not_allowed_to_leave = reason
-end
-
-PlayerHuskGhostModeExtension.set_allowed_to_enter = function (self, allowed_to_enter, reason)
-	self._allowed_to_enter = allowed_to_enter
-	self._reason_allowed_to_enter = reason
-end
-
-PlayerHuskGhostModeExtension.allowed_to_enter = function (self)
-	return self._allowed_to_enter, self._reason_allowed_to_enter
-end
-
-PlayerHuskGhostModeExtension.allowed_to_leave = function (self)
-	if Development.parameter("disable_ghost_mode") then
-		return true
-	else
-		return self._allowed_to_leave, self._reason_not_allowed_to_leave
-	end
 end
 
 PlayerHuskGhostModeExtension.is_in_ghost_mode = function (self)
@@ -85,8 +52,8 @@ PlayerHuskGhostModeExtension._is_spectator = function (self)
 		return false
 	end
 
-	if self._is_spectator ~= nil then
-		return self._is_spectator
+	if self._is_spectator_cached ~= nil then
+		return self._is_spectator_cached
 	end
 
 	local player = Managers.player:local_player()
@@ -96,26 +63,33 @@ PlayerHuskGhostModeExtension._is_spectator = function (self)
 
 	fassert(player_party, "player not in a party")
 
-	self._is_spectator = player_party.name == "spectators"
+	self._is_spectator_cached = player_party.name == "spectators"
 
-	return self._is_spectator
+	return self._is_spectator_cached
 end
 
-PlayerHuskGhostModeExtension.enter_ghost_mode = function (self)
+PlayerHuskGhostModeExtension.husk_enter_ghost_mode = function (self)
+	local player_unit = self._unit
+
 	self._ghost_mode_active = true
-
-	if not DEDICATED_SERVER then
-		local skin_unit = CosmeticsUtils.get_third_person_mesh_unit(self._unit)
-
-		Unit.flow_event(skin_unit, "lua_entered_ghost_mode")
-	end
 
 	local inventory_extension = ScriptUnit.extension(self._unit, "inventory_system")
 	local equipment = inventory_extension:equipment()
 	local weapon_unit = equipment.right_hand_wielded_unit_3p or equipment.left_hand_wielded_unit_3p
 
-	if weapon_unit and not DEDICATED_SERVER then
-		Unit.flow_event(weapon_unit, "lua_entered_ghost_mode")
+	if not DEDICATED_SERVER then
+		if weapon_unit then
+			Unit.flow_event(weapon_unit, "lua_entered_ghost_mode")
+		end
+
+		local skin_unit = CosmeticsUtils.get_third_person_mesh_unit(player_unit)
+
+		if self._has_left_once then
+			World.create_particles(self._world, "fx/chr_gutter_foff", POSITION_LOOKUP[player_unit])
+		end
+
+		Unit.flow_event(skin_unit, "lua_entered_ghost_mode")
+		Unit.flow_event(player_unit, "lua_entered_ghost_mode")
 	end
 
 	local status_extension = ScriptUnit.extension(self._unit, "status_system")
@@ -125,12 +99,15 @@ PlayerHuskGhostModeExtension.enter_ghost_mode = function (self)
 	if self:_in_same_side_as_local_player() then
 		self:_add_world_marker()
 	elseif not self:_is_spectator() then
-		Unit.set_unit_visibility(self._unit, false)
 		self._inventory_extension:show_third_person_inventory(false)
 	end
 
 	GhostModeSystem.set_sweep_actors(self._unit, self._breed, false)
 	Managers.state.event:trigger("set_new_enemy_role")
+
+	local dialogue_context_system = Managers.state.entity:system("dialogue_context_system")
+
+	dialogue_context_system:set_context_value(self._unit, "is_in_ghost_mode", true)
 end
 
 PlayerHuskGhostModeExtension._add_world_marker = function (self)
@@ -150,15 +127,30 @@ PlayerHuskGhostModeExtension._clear_world_marker = function (self)
 end
 
 PlayerHuskGhostModeExtension.cb_world_marker_spawned = function (self, unit, marker_id, widget)
-	local profile_index = Managers.player:owner(unit):profile_index()
+	local owner = Managers.player:owner(unit)
+	local profile_index = owner and owner:profile_index()
 	local profile = SPProfiles[profile_index]
+	local player_name = owner and owner:name()
 
-	widget.content.icon = profile.ui_portrait
+	player_name = player_name and player_name ~= "" and player_name or "n/a"
+	widget.content.player_name = player_name
+
+	local peer_id = owner:network_id()
+	local local_player_id = owner:local_player_id()
+	local owner_game_mode_data = Managers.party:get_player_status(peer_id, local_player_id).game_mode_data
+	local respawn_timer = owner_game_mode_data and owner_game_mode_data.spawn_timer
+
+	if respawn_timer then
+		widget.content.respawn_timer = respawn_timer
+	end
+
+	widget.content.icon = profile and profile.ui_portrait or "unit_frame_portrait_default"
 	self._marker_id = marker_id
 end
 
-PlayerHuskGhostModeExtension.leave_ghost_mode = function (self)
+PlayerHuskGhostModeExtension.husk_leave_ghost_mode = function (self)
 	self._ghost_mode_active = false
+	self._has_left_once = true
 
 	local player_unit = self._unit
 	local inventory_extension = ScriptUnit.extension(player_unit, "inventory_system")
@@ -170,15 +162,8 @@ PlayerHuskGhostModeExtension.leave_ghost_mode = function (self)
 
 	if self:_in_same_side_as_local_player() then
 		self:_clear_world_marker()
-	elseif not self:_is_spectator() then
-		Unit.set_unit_visibility(player_unit, true)
-
-		local career_extension = ScriptUnit.extension(player_unit, "career_system")
-		local career_data = career_extension:career_settings()
-
-		if not status_extension:get_unarmed() then
-			self._inventory_extension:show_third_person_inventory(true)
-		end
+	elseif not self:_is_spectator() and not status_extension:get_unarmed() then
+		self._inventory_extension:show_third_person_inventory(true)
 	end
 
 	GhostModeSystem.set_sweep_actors(player_unit, self._breed, true)
@@ -188,22 +173,31 @@ PlayerHuskGhostModeExtension.leave_ghost_mode = function (self)
 			Unit.flow_event(weapon_unit, "lua_left_ghost_mode")
 		end
 
-		local skin_unit = CosmeticsUtils.get_third_person_mesh_unit(self._unit)
+		local skin_unit = CosmeticsUtils.get_third_person_mesh_unit(player_unit)
 
 		Unit.flow_event(skin_unit, "lua_left_ghost_mode")
+		Unit.flow_event(player_unit, "lua_left_ghost_mode")
 	end
 
 	if self._is_server then
 		local dialogue_input = ScriptUnit.extension_input(player_unit, "dialogue_system")
 
 		dialogue_input:trigger_dialogue_event("spawning")
+
+		if not self._has_played_boss_sound and self._breed.boss then
+			local dialogue_system = Managers.state.entity:system("dialogue_system")
+
+			dialogue_system:trigger_mission_giver_event("vs_mg_new_spawn_monster")
+
+			self._has_played_boss_sound = true
+		end
 	end
+
+	local dialogue_context_system = Managers.state.entity:system("dialogue_context_system")
+
+	dialogue_context_system:set_context_value(player_unit, "is_in_ghost_mode", false)
 end
 
 PlayerHuskGhostModeExtension.set_safe_spot = function (self, safe_spot)
 	self._safe_spot = safe_spot
-end
-
-PlayerHuskGhostModeExtension.set_teleport_target_type = function (self, teleport_target_type)
-	self._teleport_target_type = teleport_target_type
 end

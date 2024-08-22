@@ -2,6 +2,8 @@
 
 require("scripts/managers/game_mode/mechanisms/adventure_mechanism")
 
+local mechanism_manager_testify = script_data.testify and require("scripts/managers/game_mode/game_mechanism_manager_testify")
+
 MechanismSettings = {
 	adventure = {
 		check_matchmaking_hero_availability = true,
@@ -159,8 +161,8 @@ local function check_bool_string(text)
 	end
 end
 
-GameMechanismManager.init = function (self)
-	self._mechanism_key = nil
+GameMechanismManager.init = function (self, optional_mechanism_key)
+	self._mechanism_key = optional_mechanism_key
 	self._game_mechanism = nil
 	self._level_seed = nil
 	self._locked_director_functions = nil
@@ -168,7 +170,6 @@ GameMechanismManager.init = function (self)
 	self._venture_started = false
 
 	self:_init_mechanism()
-	self:reset_party_data(false)
 end
 
 GameMechanismManager.handle_level_load = function (self, done_again_during_loading)
@@ -240,13 +241,13 @@ GameMechanismManager.get_end_of_level_extra_mission_results = function (self)
 	end
 end
 
-GameMechanismManager.sync_players_session_score = function (self, statistics_db, profile_synchronizer, players_session_score)
+GameMechanismManager.sync_players_session_score = function (self, players_session_score)
 	local peer_ids = {}
 	local local_player_ids = {}
 	local scores = {}
 
 	if self._game_mechanism.sync_players_session_score then
-		self._game_mechanism:sync_players_session_score(statistics_db, profile_synchronizer, players_session_score, peer_ids, local_player_ids, scores)
+		self._game_mechanism:sync_players_session_score(players_session_score, peer_ids, local_player_ids, scores)
 	else
 		for _, player_data in pairs(players_session_score) do
 			peer_ids[#peer_ids + 1] = player_data.peer_id
@@ -261,6 +262,7 @@ GameMechanismManager.sync_players_session_score = function (self, statistics_db,
 	end
 
 	self:send_rpc_clients("rpc_sync_players_session_score", peer_ids, local_player_ids, scores)
+	Managers.state.event:trigger("player_session_scores_synced")
 end
 
 GameMechanismManager.network_server = function (self)
@@ -438,6 +440,23 @@ GameMechanismManager._unregister_mechanism_rpcs = function (self)
 	end
 end
 
+GameMechanismManager._setup_mechanism_specific_career_settings = function (self)
+	for career_name, career_settings in pairs(CareerSettingsOriginal) do
+		local mechanism_overrides = career_settings.mechanism_overrides
+
+		if mechanism_overrides then
+			local mechanism_override = mechanism_overrides[self._mechanism_key]
+
+			if mechanism_override then
+				local new_settings = table.shallow_copy(career_settings)
+
+				table.merge_recursive(new_settings, mechanism_override)
+				table.merge(CareerSettings[career_name], new_settings)
+			end
+		end
+	end
+end
+
 GameMechanismManager._init_mechanism = function (self)
 	local level_transition_handler = Managers.level_transition_handler
 	local mechanism_key = level_transition_handler:get_current_mechanism()
@@ -457,6 +476,8 @@ GameMechanismManager._init_mechanism = function (self)
 			self._game_mechanism:left_mechanism_due_to_switch()
 		end
 
+		self:_setup_mechanism_specific_career_settings()
+
 		local class = rawget(_G, settings.class_name)
 
 		self._game_mechanism = class:new(settings)
@@ -466,16 +487,22 @@ GameMechanismManager._init_mechanism = function (self)
 		end
 
 		if switching_mechanism then
+			MechanismOverrides.mechanism_switched()
 			Managers.backend:commit(true, function ()
 				Managers.backend:switch_mechanism(mechanism_key)
 				Managers.backend:load_mechanism_loadout(mechanism_key)
 			end)
+		elseif Managers.backend:get_backend_mirror() then
+			Managers.backend:switch_mechanism(mechanism_key)
+			Managers.backend:load_mechanism_loadout(mechanism_key)
 		end
 	end
 
 	self:_register_mechanism_rpcs()
 
 	SaveData.last_mechanism = mechanism_key
+
+	self:reset_party_data(false)
 end
 
 GameMechanismManager.rpc_level_load_started = function (self, channel_id, session_id)
@@ -673,14 +700,6 @@ GameMechanismManager.load_packages = function (self)
 	end
 end
 
-GameMechanismManager.profile_available = function (self, profile_name, career_name)
-	if self._game_mechanism then
-		return self._game_mechanism:profile_available(self._profile_synchronizer, profile_name, career_name)
-	end
-
-	return true
-end
-
 GameMechanismManager.preferred_slot_id = function (self, party_id, peer_id, local_player_id)
 	if self._game_mechanism and self._game_mechanism.preferred_slot_id then
 		return self._game_mechanism:preferred_slot_id(party_id, peer_id, local_player_id)
@@ -689,17 +708,15 @@ GameMechanismManager.preferred_slot_id = function (self, party_id, peer_id, loca
 	return nil
 end
 
-GameMechanismManager.profile_available_for_peer = function (self, peer_id, local_player_id, profile_name, career_name)
-	if self._game_mechanism then
-		return self._game_mechanism:profile_available_for_peer(self._profile_synchronizer, peer_id, local_player_id, profile_name, career_name)
-	end
+GameMechanismManager.profile_available_for_peer = function (self, party_id, peer_id, profile_index)
+	local reserver_peer_id = self._profile_synchronizer:get_profile_index_reservation(party_id, profile_index)
 
-	return false
+	return not reserver_peer_id or reserver_peer_id == peer_id
 end
 
-GameMechanismManager.profile_changed = function (self, peer_id, local_player_id, profile_index, career_index)
+GameMechanismManager.profile_changed = function (self, peer_id, local_player_id, profile_index, career_index, is_bot)
 	if self._game_mechanism and self._game_mechanism.profile_changed then
-		return self._game_mechanism:profile_changed(peer_id, local_player_id, profile_index, career_index)
+		return self._game_mechanism:profile_changed(peer_id, local_player_id, profile_index, career_index, is_bot)
 	end
 
 	return false
@@ -743,14 +760,17 @@ GameMechanismManager.setting = function (self, key)
 	return MechanismSettings[self._mechanism_key][key]
 end
 
-GameMechanismManager.progress_state = function (self)
+GameMechanismManager.progress_state = function (self, skip_sync)
 	local new_state = self._game_mechanism:progress_state()
 	local settings = MechanismSettings[self._mechanism_key]
 	local states = settings.states
 	local state_id = table.find(states, new_state)
 
 	fassert(state_id, "State not found in mechanism settings")
-	self:send_rpc_clients("rpc_set_current_mechanism_state", state_id)
+
+	if not skip_sync then
+		self:send_rpc_clients("rpc_set_current_mechanism_state", state_id)
+	end
 end
 
 GameMechanismManager.get_starting_level = function (self)
@@ -789,6 +809,14 @@ GameMechanismManager.backend_profiles_loaded = function (self)
 end
 
 GameMechanismManager.try_reserve_game_server_slots = function (self, reserver, peers, invitee)
+	local game_mode_manager = Managers.state.game_mode
+
+	if game_mode_manager and not game_mode_manager:is_reservable() then
+		print("Rejected game server reservation because game mode denies joining")
+
+		return false
+	end
+
 	if self._game_mechanism.try_reserve_game_server_slots then
 		return self._game_mechanism:try_reserve_game_server_slots(reserver, peers, invitee)
 	end
@@ -997,6 +1025,7 @@ GameMechanismManager.rpc_sync_players_session_score = function (self, channel_id
 
 	if self._game_mechanism.get_players_session_score then
 		unsynced_players_session_score, mechanism_stats_by_player = self._game_mechanism:get_players_session_score(statistics_db, self._profile_synchronizer)
+		mechanism_stats_by_player = mechanism_stats_by_player or ScoreboardHelper.num_stats_per_player
 	end
 
 	unsynced_players_session_score = unsynced_players_session_score or ScoreboardHelper.get_grouped_topic_statistics(statistics_db, self._profile_synchronizer)
@@ -1034,6 +1063,8 @@ GameMechanismManager.rpc_sync_players_session_score = function (self, channel_id
 	end
 
 	self.synced_players_session_score = unsynced_players_session_score
+
+	Managers.state.event:trigger("player_session_scores_synced")
 end
 
 GameMechanismManager.dedicated_server_peer_id = function (self)
@@ -1110,7 +1141,7 @@ GameMechanismManager.setup_mechanism_parties = function (self)
 		self._game_mechanism:setup_mechanism_parties()
 	end
 
-	if self._lobby and self._lobby.set_max_members then
+	if not IS_CONSOLE and self._lobby and self._lobby.set_max_members then
 		self._lobby:set_max_members(self:max_instance_members())
 	end
 end
@@ -1141,12 +1172,6 @@ GameMechanismManager.get_slot_reservation_handler = function (self)
 	end
 end
 
-GameMechanismManager.clear_player_reservation_handler = function (self)
-	if self._game_mechanism.clear_player_reservation_handler then
-		self._game_mechanism:clear_player_reservation_handler()
-	end
-end
-
 GameMechanismManager.rpc_set_peer_backend_id = function (self, channel_id, peer_backend_id)
 	if not self._is_server then
 		Application.warning("[GameMechanismManager:rpc_set_peer_backend_id] sent rpc to non-server peer")
@@ -1165,4 +1190,72 @@ GameMechanismManager.get_social_wheel_class = function (self)
 	local social_wheel_class = MechanismSettings[self._mechanism_key].social_wheel
 
 	return social_wheel_class and social_wheel_class or "SocialWheelUI"
+end
+
+GameMechanismManager.load_end_screen_resources = function (self)
+	if self._game_mechanism.load_end_screen_resources then
+		self._game_mechanism:load_end_screen_resources()
+	end
+end
+
+GameMechanismManager.unload_end_screen_resources = function (self)
+	if self._game_mechanism.unload_end_screen_resources then
+		self._game_mechanism:unload_end_screen_resources()
+	end
+end
+
+GameMechanismManager.is_peer_fully_synced = function (self, peer_id)
+	if self._game_mechanism.is_peer_fully_synced then
+		return self._game_mechanism:is_peer_fully_synced(peer_id)
+	end
+
+	return true
+end
+
+GameMechanismManager.update_testify = function (self, dt, t)
+	Testify:poll_requests_through_handler(mechanism_manager_testify, self)
+
+	if self._game_mechanism.update_testify then
+		self._game_mechanism:update_testify(dt, t)
+	end
+end
+
+GameMechanismManager.player_joined_party = function (self, peer_id, local_player_id, party_id, slot_id, is_bot)
+	if self._game_mechanism.player_joined_party then
+		self._game_mechanism:player_joined_party(peer_id, local_player_id, party_id, slot_id, is_bot)
+	end
+end
+
+GameMechanismManager.reserved_party_id_by_peer = function (self, peer_id)
+	return self._game_mechanism:reserved_party_id_by_peer(peer_id)
+end
+
+GameMechanismManager.try_reserve_profile_for_peer_by_mechanism = function (self, peer_id, profile_index, career_index, force_respawning)
+	return self._game_mechanism:try_reserve_profile_for_peer_by_mechanism(self._profile_synchronizer, peer_id, profile_index, career_index, force_respawning)
+end
+
+GameMechanismManager.get_persistent_profile_index_reservation = function (self, peer_id)
+	if self._profile_synchronizer then
+		local profile_index, career_index = self._profile_synchronizer:get_persistent_profile_index_reservation(peer_id)
+
+		return profile_index, career_index
+	end
+end
+
+GameMechanismManager.remote_client_connecting = function (self, peer_id)
+	if self._game_mechanism.remote_client_connecting then
+		self._game_mechanism:remote_client_connecting(peer_id)
+	end
+end
+
+GameMechanismManager.remote_client_disconnected = function (self, peer_id)
+	if self._game_mechanism.remote_client_disconnected then
+		self._game_mechanism:remote_client_disconnected(peer_id)
+	end
+end
+
+GameMechanismManager.state_context_set_up = function (self)
+	if self._game_mechanism.state_context_set_up then
+		return self._game_mechanism:state_context_set_up()
+	end
 end

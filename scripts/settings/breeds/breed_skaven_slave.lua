@@ -23,6 +23,7 @@ breed_data = {
 	flingable = true,
 	has_inventory = true,
 	has_running_attack = true,
+	height = 1.45,
 	hit_effect_template = "HitEffectsSkavenSlave",
 	hit_mass_count = 1,
 	hit_reaction = "ai_default",

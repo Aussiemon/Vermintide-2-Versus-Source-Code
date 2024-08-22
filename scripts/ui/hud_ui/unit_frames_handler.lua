@@ -81,6 +81,12 @@ UnitFramesHandler.add_damage_feedback_event = function (self, hash, is_local_pla
 		if not show_local_player_damage_feedback then
 			return
 		end
+	else
+		local show_teammates_damage_feedback = Application.user_setting("hud_damage_feedback_on_teammates")
+
+		if not show_teammates_damage_feedback then
+			return
+		end
 	end
 
 	local unit_frame = self.unit_frame_by_player[attacker_player]
@@ -215,10 +221,10 @@ UnitFramesHandler._create_unit_frame_by_type = function (self, frame_type, frame
 	local definitions
 
 	if frame_type == "team" then
-		definitions = local_require("scripts/ui/hud_ui/team_member_unit_frame_ui_definitions")
-
 		if is_dark_pact then
 			definitions = local_require("scripts/ui/hud_ui/dark_pact_team_member_unit_frame_ui_definitions")
+		else
+			definitions = local_require("scripts/ui/hud_ui/team_member_unit_frame_ui_definitions")
 		end
 	elseif frame_type == "player" then
 		local gamepad_active = self.input_manager:is_device_active("gamepad") or not IS_WINDOWS
@@ -231,20 +237,16 @@ UnitFramesHandler._create_unit_frame_by_type = function (self, frame_type, frame
 		if should_use_game_pad then
 			definitions = local_require("scripts/ui/hud_ui/player_console_unit_frame_ui_definitions")
 			unit_frame.gamepad_version = true
+		elseif is_dark_pact then
+			definitions = local_require("scripts/ui/hud_ui/dark_pact_player_unit_frame_ui_definitions")
+			player_data.is_player_darkpact = true
 		else
 			definitions = local_require("scripts/ui/hud_ui/player_unit_frame_ui_definitions")
-
-			if is_dark_pact then
-				definitions = local_require("scripts/ui/hud_ui/dark_pact_player_unit_frame_ui_definitions")
-				player_data.is_player_darkpact = true
-			end
 		end
+	elseif is_dark_pact then
+		definitions = local_require("scripts/ui/hud_ui/dark_pact_team_member_unit_frame_ui_definitions")
 	else
 		definitions = local_require("scripts/ui/hud_ui/team_member_unit_frame_ui_definitions")
-
-		if is_dark_pact then
-			definitions = local_require("scripts/ui/hud_ui/dark_pact_team_member_unit_frame_ui_definitions")
-		end
 	end
 
 	unit_frame.data = state_data

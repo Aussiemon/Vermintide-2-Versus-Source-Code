@@ -5,11 +5,16 @@ require("scripts/settings/dlcs/lake/passive_ability_questing_knight")
 ActivatedAbilitySettings.es_4 = {
 	{
 		action_name = "action_career_es_4",
-		cooldown = 40,
+		cooldown = 60,
 		description = "career_active_desc_markus_questingknight",
 		display_name = "career_active_name_markus_questingknight",
 		icon = "markus_questing_knight_activated_ability",
 		weapon_name = "markus_questingknight_career_skill_weapon",
+		mechanism_overrides = {
+			versus = {
+				cooldown = 40,
+			},
+		},
 	},
 }
 PassiveAbilitySettings.es_4 = {
@@ -21,6 +26,9 @@ PassiveAbilitySettings.es_4 = {
 		"markus_questing_knight_ability_cooldown_on_damage_taken",
 		"markus_questing_knight_perk_movement_speed",
 		"markus_questing_knight_perk_first_target_damage",
+		"markus_questing_knight_perk_power_block",
+	},
+	husk_buffs = {
 		"markus_questing_knight_perk_power_block",
 	},
 	perks = {

@@ -11,14 +11,14 @@ end
 PoisonWindGlobadierStateFalling.update = function (self, unit, input, dt, context, t)
 	local csm = self._csm
 	local career_extension = self._career_extension
+	local ghost_mode_extension = self._ghost_mode_extension
+	local in_ghost_mode = ghost_mode_extension:is_in_ghost_mode()
 
-	if career_extension:ability_was_triggered(self._gas_ability_id) then
+	if not in_ghost_mode and career_extension:ability_was_triggered(self._gas_ability_id) then
 		csm:change_state("globadier_throwing")
 
 		return
 	end
 
-	local ghost_mode_extension = self._ghost_mode_extension
-	local in_ghost_mode = ghost_mode_extension:is_in_ghost_mode()
 	local handled = self:common_movement(in_ghost_mode, dt, unit)
 end

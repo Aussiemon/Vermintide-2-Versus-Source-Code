@@ -83,6 +83,7 @@ GearUtils.create_equipment = function (world, slot_name, item_data, unit_1p, uni
 		id = slot_name,
 		item_data = item_data,
 		item_template = item_template,
+		item_template_name = item_template.name,
 		skin = item_units.skin,
 		right_unit_3p = right_hand_weapon_unit_3p,
 		right_ammo_unit_3p = right_hand_ammo_unit_3p,
@@ -169,6 +170,8 @@ GearUtils.apply_material_settings = function (unit, material_settings)
 			else
 				Unit.set_vector4_for_materials(unit, variable_name, Quaternion(data.x, data.y, data.z, data.w))
 			end
+		elseif data.type == "texture" and Application.can_get("texture", data.texture) then
+			Unit.set_texture_for_materials(unit, variable_name, data.texture)
 		end
 	end
 end
@@ -194,16 +197,18 @@ GearUtils.spawn_inventory_unit = function (world, hand, item_template, item_unit
 	local unit_template_3p_name = item_data.third_person_extension_template or item_template.third_person_extension_template or "weapon_unit_3p"
 	local extension_init_data_3p
 
-	if item_template.uses_weapon_system_on_3p and not owner_unit_1p then
-		extension_init_data_3p = {
-			weapon_system = {
-				item_template = item_template,
-			},
-		}
-	else
+	if owner_unit_1p then
 		unit_template_3p_name = "weapon_unit_3p"
-		extension_init_data_3p = {}
 	end
+
+	extension_init_data_3p = {
+		weapon_system = {
+			item_template = item_template,
+			item_name = item_name,
+			owner_unit = owner_unit_3p,
+			world = world,
+		},
+	}
 
 	local weapon_unit_3p_name = weapon_unit_name .. "_3p"
 	local weapon_unit_3p = Managers.state.unit_spawner:spawn_local_unit_with_extensions(weapon_unit_3p_name, unit_template_3p_name, extension_init_data_3p)
@@ -456,6 +461,12 @@ end
 local temp_table = {}
 
 GearUtils.hot_join_sync = function (peer_id, unit, equipment, additional_items)
+	local is_marked_for_deletion = Managers.state.unit_spawner:is_marked_for_deletion(unit)
+
+	if is_marked_for_deletion then
+		return
+	end
+
 	local slots = equipment.slots
 	local unit_object_id = Managers.state.unit_storage:go_id(unit)
 	local channel_id = PEER_ID_TO_CHANNEL[peer_id]

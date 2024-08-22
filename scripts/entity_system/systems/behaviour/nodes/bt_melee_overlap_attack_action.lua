@@ -39,6 +39,7 @@ BTMeleeOverlapAttackAction.enter = function (self, unit, blackboard, t)
 
 	blackboard.action = action
 	blackboard.active_node = BTMeleeOverlapAttackAction
+	blackboard.attack_token = true
 
 	local target_unit = blackboard.override_target_unit or blackboard.target_unit
 
@@ -57,11 +58,16 @@ BTMeleeOverlapAttackAction.enter = function (self, unit, blackboard, t)
 	blackboard.keep_target = true
 	blackboard.past_damage_in_attack = false
 
-	local attack = blackboard.attack
-	local freeze_intensity_decay_time = attack.freeze_intensity_decay_time or 15
+	local side = Managers.state.side.side_by_unit[unit]
+	local is_conflict_enemy = side and side.side_id == Managers.state.conflict.default_enemy_side_id
 
-	if freeze_intensity_decay_time > 0 then
-		Managers.state.conflict:freeze_intensity_decay(freeze_intensity_decay_time)
+	if is_conflict_enemy then
+		local attack = blackboard.attack
+		local freeze_intensity_decay_time = attack.freeze_intensity_decay_time or 15
+
+		if freeze_intensity_decay_time > 0 then
+			Managers.state.conflict:freeze_intensity_decay(freeze_intensity_decay_time)
+		end
 	end
 
 	AiUtils.add_attack_intensity(target_unit, action, blackboard)
@@ -205,7 +211,12 @@ BTMeleeOverlapAttackAction._init_attack = function (self, unit, target_unit, bla
 	local affected_by_gravity = true
 	local script_driven_rotation = rotation_time > 0
 
-	LocomotionUtils.set_animation_driven_movement(unit, anim_driven, affected_by_gravity, script_driven_rotation)
+	if anim_driven and attack.blend_time and not blackboard.attack_blend_end_t then
+		blackboard.attack_blend_end_t = t + attack.blend_time
+	else
+		LocomotionUtils.set_animation_driven_movement(unit, anim_driven, affected_by_gravity, script_driven_rotation)
+	end
+
 	locomotion_extension:use_lerp_rotation(not anim_driven)
 	Managers.state.network:anim_event(unit, attack_anim)
 
@@ -292,6 +303,10 @@ BTMeleeOverlapAttackAction._init_attack = function (self, unit, target_unit, bla
 		blackboard.attack_locked_in_t = t + lock_attack_time
 	end
 
+	if blackboard.breed.use_backstab_vo then
+		self:_backstab_sound(unit, blackboard)
+	end
+
 	return true
 end
 
@@ -327,6 +342,7 @@ BTMeleeOverlapAttackAction.leave = function (self, unit, blackboard, t, reason, 
 
 	blackboard.action = nil
 	blackboard.active_node = nil
+	blackboard.attack_token = nil
 	blackboard.anim_locked = nil
 	blackboard.attack = nil
 	blackboard.attack_anim_driven = nil
@@ -347,6 +363,8 @@ BTMeleeOverlapAttackAction.leave = function (self, unit, blackboard, t, reason, 
 	blackboard.locked_target_unit = nil
 	blackboard.past_damage_in_attack = nil
 	blackboard.attack_locked_in_t = nil
+	blackboard.backstab_attack_trigger = nil
+	blackboard.attack_blend_end_t = nil
 
 	if blackboard.continous_overlap_data then
 		table.clear(blackboard.continous_overlap_data)
@@ -457,6 +475,16 @@ BTMeleeOverlapAttackAction.run = function (self, unit, blackboard, t, dt)
 		end
 	end
 
+	if blackboard.attack_blend_end_t and t > blackboard.attack_blend_end_t then
+		local attack = blackboard.attack
+		local script_driven_rotation = attack.rotation_time and attack.rotation_time > 0
+
+		blackboard.attack_blend_end_t = nil
+		blackboard.attack_rotation_update_timer = attack.rotation_time + t
+
+		LocomotionUtils.set_animation_driven_movement(unit, true, true, script_driven_rotation)
+	end
+
 	if t <= blackboard.anim_locked then
 		local attack = blackboard.attack
 
@@ -478,7 +506,7 @@ BTMeleeOverlapAttackAction.run = function (self, unit, blackboard, t, dt)
 			else
 				blackboard.attack_rotation_update_timer = nil
 
-				if blackboard.attack_anim_driven then
+				if blackboard.attack_anim_driven and not blackboard.attack_blend_end_t then
 					locomotion_extension:set_animation_driven(true, true, false)
 				end
 			end
@@ -590,7 +618,7 @@ BTMeleeOverlapAttackAction.hit_player = function (self, unit, blackboard, hit_un
 	local dealt_damage = false
 
 	if DamageUtils.check_block(unit, hit_unit, action.fatigue_type, attack_direction) then
-		if not action.ignore_shield_block and DamageUtils.check_ranged_block(unit, hit_unit, Vector3.normalize(POSITION_LOOKUP[hit_unit] - POSITION_LOOKUP[unit]), action.shield_blocked_fatigue_type or "shield_blocked_slam") then
+		if not action.ignore_shield_block and DamageUtils.check_ranged_block(unit, hit_unit, action.shield_blocked_fatigue_type or "shield_blocked_slam") then
 			self:push_player(unit, hit_unit, attack.player_push_speed_blocked, attack.player_push_speed_blocked_z, false)
 		else
 			if action.blocked_damage then
@@ -921,4 +949,43 @@ BTMeleeOverlapAttackAction.anim_cb_attack_grabbed_smash = function (self, unit, 
 	local action = blackboard.action
 
 	AiUtils.damage_target(blackboard.victim_grabbed, unit, action, action.damage)
+end
+
+BTMeleeOverlapAttackAction._backstab_sound = function (self, unit, blackboard)
+	local breed = blackboard.breed
+	local target_unit = blackboard.locked_target_unit
+
+	if not blackboard.target_unit_status_extension or not target_unit then
+		return
+	end
+
+	local player = Managers.player:unit_owner(target_unit)
+
+	if not player or player.bot_player then
+		return
+	end
+
+	local is_flanking = AiUtils.unit_is_flanking_player(unit, target_unit)
+
+	if not is_flanking then
+		return
+	end
+
+	if player.local_player then
+		local dialogue_extension = ScriptUnit.extension(unit, "dialogue_system")
+		local wwise_source, wwise_world = WwiseUtils.make_unit_auto_source(blackboard.world, unit, dialogue_extension.voice_node)
+		local sound_event = breed.backstab_player_sound_event
+		local audio_system_extension = Managers.state.entity:system("audio_system")
+
+		audio_system_extension:_play_event_with_source(wwise_world, sound_event, wwise_source)
+	else
+		local network_manager = Managers.state.network
+		local network_transmit = network_manager.network_transmit
+		local unit_id = network_manager:unit_game_object_id(unit)
+		local peer_id = player:network_id()
+
+		network_transmit:send_rpc("rpc_check_trigger_backstab_sfx", peer_id, unit_id)
+	end
+
+	blackboard.backstab_attack_trigger = true
 end

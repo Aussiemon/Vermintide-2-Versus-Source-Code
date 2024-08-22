@@ -89,7 +89,7 @@ BTChargeAttackAction.enter = function (self, unit, blackboard, t)
 
 	blackboard.old_navtag_layer_cost_table = old_cost_table
 
-	local charge_navtag_layer_cost_table = blackboard.charge_navtag_layer_cost_table
+	local charge_navtag_layer_cost_table = blackboard.navigation_extension:get_navtag_layer_cost_table("charge")
 
 	if charge_navtag_layer_cost_table then
 		local traverse_logic = blackboard.navigation_extension:traverse_logic()
@@ -283,10 +283,6 @@ BTChargeAttackAction._start_lunge = function (self, unit, blackboard, lunge_data
 			self:_cancel_charge(unit, blackboard)
 
 			return
-		end
-
-		if false then
-			-- Nothing
 		end
 	end
 
@@ -554,11 +550,11 @@ BTChargeAttackAction._push_player = function (self, unit, hit_unit, blackboard, 
 	end
 end
 
-BTChargeAttackAction._hit_player = function (self, unit, blackboard, hit_unit, action, attack_direction)
+BTChargeAttackAction._hit_player = function (self, unit, blackboard, hit_unit, action)
 	local hit_attacking_target = hit_unit == blackboard.attacking_target
 	local hit_unit_status_extension = ScriptUnit.has_extension(hit_unit, "status_system")
 	local blocked = not action.unblockable_by_normal_blocks and DamageUtils.check_block(unit, hit_unit, action.fatigue_type)
-	local blocked_with_shield = DamageUtils.check_ranged_block(unit, hit_unit, attack_direction, action.shield_blocked_fatigue_type or "ogre_shove")
+	local blocked_with_shield = DamageUtils.check_ranged_block(unit, hit_unit, action.shield_blocked_fatigue_type or "ogre_shove")
 
 	if hit_attacking_target and not blocked_with_shield and not blocked then
 		AiUtils.damage_target(hit_unit, unit, action, action.damage)
@@ -606,7 +602,7 @@ BTChargeAttackAction._hit_ai = function (self, unit, hit_unit, action, blackboar
 
 			AiUtils.stagger(hit_unit, hit_unit_blackboard, unit, push_direction, push_data.stagger_distance, stagger_type, stagger_duration, nil, t, nil, nil, nil, true)
 
-			if breed_name == "chaos_warrior" then
+			if not DEDICATED_SERVER and breed_name == "chaos_warrior" then
 				local attacker_name = blackboard.breed and blackboard.breed.name
 
 				if attacker_name == "beastmen_bestigor" then
@@ -704,10 +700,6 @@ BTChargeAttackAction._is_at_edge = function (self, unit, blackboard, from, direc
 
 	if not hit2 then
 		return true
-	end
-
-	if false then
-		-- Nothing
 	end
 end
 

@@ -1,5 +1,7 @@
 ﻿-- chunkname: @scripts/settings/explosion_templates.lua
 
+require("scripts/settings/explosion_utils")
+
 ExplosionTemplates = {}
 ExplosionTemplates.machinegun_poison_arrow = {
 	explosion = {
@@ -683,6 +685,7 @@ ExplosionTemplates.cannon_ball_throw = {
 		damage_profile = "cannonball_impact",
 		effect_name = "fx/wpnfx_frag_grenade_impact",
 		ignore_attacker_unit = true,
+		ignore_players = true,
 		level_unit_damage = true,
 		max_damage_radius = 5,
 		no_prop_damage = true,
@@ -864,6 +867,11 @@ ExplosionTemplates.bardin_ranger_activated_ability_stagger = {
 		radius = 7,
 		sound_event_name = "Play_bardin_ranger_smoke_grenade_ability",
 		use_attacker_power_level = true,
+		mechanism_overrides = {
+			versus = {
+				effect_name = "fx/wpnfx_smoke_grenade_impact_versus",
+			},
+		},
 	},
 }
 ExplosionTemplates.bardin_ranger_activated_ability_upgraded_stagger = {
@@ -1220,25 +1228,6 @@ ExplosionTemplates.chaos_vortex_dummy_missile = {
 		max_damage_radius_min = 0.1,
 		power_level = 0,
 		radius = 0.1,
-	},
-}
-ExplosionTemplates.corpse_explosion_default = {
-	time_to_explode = 1,
-	explosion = {
-		alert_enemies = true,
-		alert_enemies_radius = 20,
-		allow_friendly_fire_override = true,
-		damage_interval = 0,
-		damage_profile = "corpse_explosion_default",
-		effect_name = "fx/chr_nurgle_explosion_01",
-		max_damage_radius_max = 2,
-		max_damage_radius_min = 0.5,
-		power_level = 500,
-		radius = 3.2,
-		sound_event_name = "Play_enemy_chaos_warrior_transform_explode",
-		immune_breeds = {
-			all = true,
-		},
 	},
 }
 ExplosionTemplates.lightning_strike = {

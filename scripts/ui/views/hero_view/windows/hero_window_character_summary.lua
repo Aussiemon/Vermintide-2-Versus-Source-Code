@@ -754,8 +754,8 @@ HeroWindowCharacterSummary._populate_talents = function (self, hero_name, career
 	for i = 1, NumTalentRows do
 		local unlock_name = "talent_point_" .. i
 		local row_unlocked = ProgressionUnlocks.is_unlocked(unlock_name, hero_level)
-		local talent_unlock_level = TalentUnlockLevels[unlock_name]
-		local level_text = tostring(talent_unlock_level)
+		local talent_template = ProgressionUnlocks.get_unlock(unlock_name)
+		local level_text = tostring(talent_template.level_requirement)
 		local slot_widget = UIWidget.init(widget_definition)
 
 		slot_widgets[i] = slot_widget
@@ -1060,8 +1060,11 @@ HeroWindowCharacterSummary._populate_career_info = function (self, career_name)
 		255,
 		255,
 	}
-	local passive_ability_data = career_settings.passive_ability
-	local activated_ability_data = career_settings.activated_ability[1]
+	local passive_ability_data = CareerUtils.get_passive_ability_by_career(career_settings)
+	local profile = PROFILES_BY_CAREER_NAMES[career_name]
+	local profile_index = profile.index
+	local career_index = career_index_from_name(profile_index, career_name)
+	local activated_ability_data = CareerUtils.get_ability_data_by_career(career_settings, 1)
 	local passive_display_name = passive_ability_data.display_name
 	local passive_icon = passive_ability_data.icon
 	local activated_display_name = activated_ability_data.display_name

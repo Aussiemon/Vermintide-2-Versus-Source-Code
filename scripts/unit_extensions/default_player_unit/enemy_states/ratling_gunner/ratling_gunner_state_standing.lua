@@ -14,8 +14,6 @@ RatlingGunnerStateStanding.on_enter = function (self, unit, input, dt, context, 
 
 	self._left_wpn_particle_node_name = "g_ratlinggun"
 	self._left_wpn_particle_name = "fx/wpnfx_gunner_enemy_in_range_1p"
-
-	self:check_enemies_in_range_vfx()
 end
 
 RatlingGunnerStateStanding.update = function (self, unit, input, dt, context, t)
@@ -28,19 +26,8 @@ RatlingGunnerStateStanding.update = function (self, unit, input, dt, context, t)
 	local csm = self._csm
 	local career_extension = self._career_extension
 
-	self:check_enemies_in_range_vfx()
-	RatlingGunnerStateWalking.super:debug_display_ratling_gunner_ammo(unit)
-
-	if career_extension:ability_was_triggered(self._reload_ability_id) then
-		csm:change_state("ratling_gunner_reloading")
-
-		return
-	end
-
-	if career_extension:ability_was_triggered(self._fire_ability_id) then
-		csm:change_state("ratling_gunner_firing")
-
-		return
+	if not handled then
+		CharacterStateHelper.update_weapon_actions(t, unit, self._input_extension, self._inventory_extension, self._health_extension)
 	end
 
 	self:_update_taunt_dialogue(t)

@@ -28,7 +28,6 @@ PackmasterStateDragging.on_enter = function (self, unit, input, dt, context, t, 
 
 	self._enter_time = t
 	self._move_input_direction = Vector3Box()
-	self._claw_equipped = false
 
 	StatusUtils.set_grabbed_by_pack_master_network("pack_master_pulling", dragged_unit, true, unit)
 	status_extension:set_is_packmaster_dragging(dragged_unit)
@@ -94,11 +93,12 @@ PackmasterStateDragging.update = function (self, unit, input, dt, context, t)
 	local csm = self._csm
 	local world = self._world
 	local unit = self._unit
+	local params = self._temp_params
 	local target_unit = self._dragged_unit
+	local status_ext = ScriptUnit.has_extension(target_unit, "status_system")
+	local target_ledge_hanging = status_ext and status_ext:get_is_ledge_hanging()
 
-	if not HEALTH_ALIVE[target_unit] then
-		local params = self._temp_params
-
+	if not HEALTH_ALIVE[target_unit] or target_ledge_hanging then
 		csm:change_state("walking", params)
 
 		return
@@ -109,11 +109,6 @@ PackmasterStateDragging.update = function (self, unit, input, dt, context, t)
 	local equipment = dragged_unit_inventory_extension:equipment()
 	local weapon_unit = equipment.right_hand_wielded_unit_3p
 	local slot_name = dragged_unit_inventory_extension:get_wielded_slot_name()
-
-	if not self._claw_equipped and weapon_unit and slot_name == "slot_packmaster_claw" then
-		self._claw_equipped = true
-	end
-
 	local input_extension = self._input_extension
 	local status_extension = self._status_extension
 	local first_person_extension = self._first_person_extension
@@ -182,8 +177,10 @@ PackmasterStateDragging.update = function (self, unit, input, dt, context, t)
 	local is_moving = CharacterStateHelper.has_move_input(input_extension)
 
 	if not self.is_bot then
-		local move_acceleration_up_dt = movement_settings_table.move_acceleration_up * dt
-		local move_acceleration_down_dt = movement_settings_table.move_acceleration_down * dt
+		local breed_move_acceleration_up = self._breed and self._breed.breed_move_acceleration_up
+		local breed_move_acceleration_down = self._breed and self._breed.breed_move_acceleration_down
+		local move_acceleration_up_dt = breed_move_acceleration_up * dt or movement_settings_table.move_acceleration_up * dt
+		local move_acceleration_down_dt = breed_move_acceleration_down * dt or movement_settings_table.move_acceleration_down * dt
 
 		if is_moving then
 			current_movement_speed_scale = math.min(1, current_movement_speed_scale + move_acceleration_up_dt)
@@ -231,7 +228,13 @@ PackmasterStateDragging.update = function (self, unit, input, dt, context, t)
 	Managers.state.network:anim_set_variable_float(unit, "distance_to_target", network_safe_dist)
 
 	if move_anim_3p ~= self.move_anim_3p or move_anim_1p ~= self.move_anim_1p then
-		if move_anim_1p == "idle" and self._claw_equipped then
+		local dragged_unit_inventory_extension = ScriptUnit.extension(target_unit, "inventory_system")
+		local slot_name = dragged_unit_inventory_extension:get_wielded_slot_name()
+		local equipment = dragged_unit_inventory_extension:equipment()
+		local weapon_unit = equipment.right_hand_wielded_unit_3p
+		local claw_equipped = weapon_unit and slot_name == "slot_packmaster_claw"
+
+		if move_anim_1p == "idle" and claw_equipped then
 			local inventory_system = Managers.state.entity:system("inventory_system")
 
 			inventory_system:weapon_anim_event(target_unit, "attack_grab_idle")

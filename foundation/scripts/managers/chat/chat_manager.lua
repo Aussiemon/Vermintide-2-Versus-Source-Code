@@ -265,6 +265,10 @@ ChatManager.remove_message_target = function (self, message_target)
 		self.message_targets_lut[message_target] = nil
 		self.message_targets[target_index] = nil
 
+		if not self.message_targets[self.current_message_target_index] then
+			self.current_message_target_index = 1
+		end
+
 		return true
 	end
 end
@@ -956,7 +960,7 @@ COMMAND_LUT = {
 
 ChatManager._handle_command = function (self, message, recent_message_index, optional_message_target)
 	if string.find(message, "/") == 1 then
-		local parameters = string.split(message, " ")
+		local parameters = string.split_deprecated(message, " ")
 		local command = COMMAND_LUT[parameters[1]]
 		local context_data
 

@@ -68,7 +68,7 @@ BTChargePositionAction.enter = function (self, unit, blackboard, t)
 
 	blackboard.old_navtag_layer_cost_table = old_cost_table
 
-	local charge_navtag_layer_cost_table = blackboard.charge_navtag_layer_cost_table
+	local charge_navtag_layer_cost_table = blackboard.navigation_extension:get_navtag_layer_cost_table("charge")
 
 	if charge_navtag_layer_cost_table then
 		local traverse_logic = blackboard.navigation_extension:traverse_logic()
@@ -368,10 +368,10 @@ BTChargePositionAction._push_player = function (self, unit, hit_unit, blackboard
 	StatusUtils.set_catapulted_network(hit_unit, true, velocity)
 end
 
-BTChargePositionAction._hit_player = function (self, unit, blackboard, hit_unit, action, attack_direction)
+BTChargePositionAction._hit_player = function (self, unit, blackboard, hit_unit, action)
 	local hit_unit_status_extension = ScriptUnit.has_extension(hit_unit, "status_system")
 	local blocked = DamageUtils.check_block(unit, hit_unit, action.fatigue_type)
-	local blocked_with_shield = DamageUtils.check_ranged_block(unit, hit_unit, attack_direction, action.shield_blocked_fatigue_type or "ogre_shove")
+	local blocked_with_shield = DamageUtils.check_ranged_block(unit, hit_unit, action.shield_blocked_fatigue_type or "ogre_shove")
 
 	if not blocked_with_shield and not blocked then
 		AiUtils.damage_target(hit_unit, unit, action, action.damage)
@@ -514,10 +514,6 @@ BTChargePositionAction._is_at_edge = function (self, unit, blackboard, from, dir
 
 	if not hit2 then
 		return true
-	end
-
-	if false then
-		-- Nothing
 	end
 end
 

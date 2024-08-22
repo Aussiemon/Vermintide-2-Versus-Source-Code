@@ -12,6 +12,7 @@ PlayerCharacterStateGrabbedByPackMaster.init = function (self, character_state_i
 	self.last_valid_position = Vector3Box()
 	self._drag_delta_move = Vector3Box()
 	self.next_hanging_damage_time = 0
+	self._mechanism_name = Managers.mechanism:current_mechanism_name()
 end
 
 PlayerCharacterStateGrabbedByPackMaster.on_enter = function (self, unit, input, dt, context, t, previous_state, params)
@@ -190,6 +191,10 @@ PlayerCharacterStateGrabbedByPackMaster.states = {
 
 			if position then
 				parent.locomotion_extension:teleport_to(position)
+
+				if script_data.vs_debug_hoist then
+					QuickDrawerStay:sphere(position, 0.5, Colors.get("yellow"))
+				end
 			end
 		end,
 	},
@@ -232,6 +237,16 @@ PlayerCharacterStateGrabbedByPackMaster.states = {
 		enter = function (parent, unit)
 			_init_packmaster_grab_state(parent, unit, "pack_master_hoisting")
 
+			local inventory_extension = ScriptUnit.extension(unit, "inventory_system")
+			local equipment = inventory_extension:equipment()
+			local weapon_unit = equipment.right_hand_wielded_unit_3p
+			local slot_name = inventory_extension:get_wielded_slot_name()
+			local is_wielding_packmaster_claw = slot_name == "slot_packmaster_claw" and weapon_unit
+
+			if not is_wielding_packmaster_claw then
+				inventory_extension:wield("slot_packmaster_claw")
+			end
+
 			local dragged_unit_profile_id = Managers.player:owner(unit):profile_index()
 			local target_unit_name = SPProfiles[dragged_unit_profile_id].unit_name
 			local grab_hang_name = "attack_grab_hang_" .. target_unit_name
@@ -245,9 +260,17 @@ PlayerCharacterStateGrabbedByPackMaster.states = {
 				Managers.state.network:anim_event(packmaster_unit, grab_hang_name)
 			end
 
-			local new_pos = PactswornUtils.get_hoist_position(unit, packmaster_unit)
+			local function safe_navigation_callback()
+				if ALIVE[unit] and ALIVE[packmaster_unit] then
+					local new_pos = PactswornUtils.get_hoist_position(unit, packmaster_unit)
 
-			parent.locomotion_extension:teleport_to(new_pos, nil)
+					parent.locomotion_extension:teleport_to(new_pos, nil)
+				end
+			end
+
+			local ai_navigation_system = Managers.state.entity:system("ai_navigation_system")
+
+			ai_navigation_system:add_safe_navigation_callback(safe_navigation_callback)
 		end,
 		run = function (parent, unit)
 			return
@@ -337,6 +360,15 @@ PlayerCharacterStateGrabbedByPackMaster.update = function (self, unit, input, dt
 
 	CharacterStateHelper.look(input_extension, self.player.viewport_name, self.first_person_extension, status_extension, self.inventory_extension)
 
+	if self._mechanism_name == "versus" and CharacterStateHelper.is_ledge_hanging(self.world, unit, self.temp_params) then
+		local grabber = status_extension:get_pack_master_grabber()
+
+		StatusUtils.set_grabbed_by_pack_master_network("pack_master_unhooked", unit, false, grabber)
+		csm:change_state("ledge_hanging", self.temp_params)
+
+		return
+	end
+
 	local states = PlayerCharacterStateGrabbedByPackMaster.states
 	local last_state = self.pack_master_status
 
@@ -424,6 +456,13 @@ PlayerCharacterStateGrabbedByPackMaster.update = function (self, unit, input, dt
 
 	Unit.set_local_rotation(unit, 0, rotation)
 	self.locomotion_extension:set_wanted_pos(wanted_position)
+
+	if script_data.vs_debug_hoist then
+		QuickDrawer:sphere(wanted_position, 0.5, Colors.get("green"))
+		QuickDrawer:sphere(hand_pos, 0.5, Colors.get("blue"))
+		QuickDrawer:line(hand_pos, hand_pos + hand_to_neck_vec, Colors.get("blue"))
+		QuickDrawer:sphere(new_neck_pos, 0.5, Colors.get("yellow"))
+	end
 
 	local physics_world = World.get_data(self.world, "physics_world")
 	local radius = 0.9

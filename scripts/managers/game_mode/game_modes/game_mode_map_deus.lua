@@ -165,7 +165,25 @@ end
 local EMPTY_TABLE = {}
 
 GameModeMapDeus.mutators = function (self)
-	return EMPTY_TABLE
+	local mutators_list = {}
+
+	self:append_live_event_mutators(mutators_list)
+
+	local event_mutators = self._deus_run_controller:get_event_mutators()
+
+	if event_mutators then
+		local mutators_list_keys = table.set(mutators_list)
+
+		for i = 1, #event_mutators do
+			local event_mutator = event_mutators[i]
+
+			if not mutators_list_keys[event_mutator] then
+				mutators_list[#mutators_list + 1] = event_mutator
+			end
+		end
+	end
+
+	return mutators_list
 end
 
 GameModeMapDeus.update = function (self, t, dt)
@@ -347,8 +365,8 @@ GameModeMapDeus._are_all_peers_in_same_state = function (self)
 	return true
 end
 
-GameModeMapDeus.player_entered_game_session = function (self, peer_id, local_player_id)
-	GameModeMapDeus.super.player_entered_game_session(self, peer_id, local_player_id)
+GameModeMapDeus.player_entered_game_session = function (self, peer_id, local_player_id, requested_party_index)
+	GameModeMapDeus.super.player_entered_game_session(self, peer_id, local_player_id, requested_party_index)
 
 	local status = Managers.party:get_player_status(peer_id, local_player_id)
 

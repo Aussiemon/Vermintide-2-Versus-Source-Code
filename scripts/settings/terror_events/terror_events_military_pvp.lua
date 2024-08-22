@@ -115,7 +115,7 @@ local terror_event_blueprints = {
 		},
 		{
 			"event_horde",
-			composition_type = "event_large_chaos",
+			composition_type = "event_medium_chaos",
 			limit_spawners = 4,
 			spawner_id = "courtyard_hidden",
 		},
@@ -182,7 +182,7 @@ local terror_event_blueprints = {
 		},
 		{
 			"event_horde",
-			composition_type = "event_large_chaos",
+			composition_type = "event_medium_chaos",
 			limit_spawners = 4,
 			spawner_id = "courtyard_hidden",
 		},
@@ -199,7 +199,7 @@ local terror_event_blueprints = {
 		},
 		{
 			"event_horde",
-			composition_type = "event_large",
+			composition_type = "event_medium",
 			limit_spawners = 8,
 			spawner_id = "courtyard",
 		},
@@ -289,7 +289,7 @@ local terror_event_blueprints = {
 		},
 		{
 			"event_horde",
-			composition_type = "event_large",
+			composition_type = "event_medium",
 			limit_spawners = 8,
 			spawner_id = "end_event_start",
 		},
@@ -602,7 +602,7 @@ local terror_event_blueprints = {
 		},
 		{
 			"event_horde",
-			composition_type = "event_large",
+			composition_type = "event_medium",
 			limit_spawners = 4,
 			spawner_id = "end_event_left_hidden",
 		},
@@ -647,7 +647,7 @@ local terror_event_blueprints = {
 		},
 		{
 			"event_horde",
-			composition_type = "event_large",
+			composition_type = "event_medium",
 			limit_spawners = 4,
 			spawner_id = "end_event_right",
 		},
@@ -692,7 +692,7 @@ local terror_event_blueprints = {
 		},
 		{
 			"event_horde",
-			composition_type = "event_large",
+			composition_type = "event_medium",
 			limit_spawners = 4,
 			spawner_id = "end_event_middle",
 		},
@@ -737,7 +737,7 @@ local terror_event_blueprints = {
 		},
 		{
 			"event_horde",
-			composition_type = "event_large",
+			composition_type = "event_medium",
 			limit_spawners = 4,
 			spawner_id = "end_event_back",
 		},

@@ -1,5 +1,39 @@
 ﻿-- chunkname: @scripts/ui/views/ingame_ui_settings.lua
 
+local default_disable_for_mechanism = {
+	adventure = {
+		matchmaking = false,
+		matchmaking_ready = true,
+		not_matchmaking = false,
+	},
+	versus = {
+		matchmaking = false,
+		matchmaking_ready = true,
+		not_matchmaking = false,
+	},
+	deus = {
+		matchmaking = false,
+		matchmaking_ready = true,
+		not_matchmaking = false,
+	},
+}
+local disable_for_mechanism_versus_disabled = {
+	adventure = {
+		matchmaking = false,
+		matchmaking_ready = true,
+		not_matchmaking = false,
+	},
+	versus = {
+		matchmaking = true,
+		matchmaking_ready = true,
+		not_matchmaking = true,
+	},
+	deus = {
+		matchmaking = false,
+		matchmaking_ready = true,
+		not_matchmaking = false,
+	},
+}
 local transitions = {
 	leave_group = function (self)
 		self:_cancel_popup()
@@ -58,6 +92,14 @@ local transitions = {
 		local text = warning_message_data ~= nil and warning_message_data.is_allowed() and Localize("exit_game_popup_text") .. "\n\n" .. Localize(warning_message_data.message) or Localize("quit_game_popup_text")
 
 		self.popup_id = Managers.popup:queue_popup(text, Localize("popup_exit_game_topic"), "end_game", Localize("popup_choice_yes"), "cancel_popup_hero_view", Localize("popup_choice_no"))
+	end,
+	quit_game_hero_view_legacy = function (self)
+		self:_cancel_popup()
+
+		local warning_message_data = Managers.mechanism:mechanism_setting("progress_loss_warning_message_data")
+		local text = warning_message_data ~= nil and warning_message_data.is_allowed() and Localize("exit_game_popup_text") .. "\n\n" .. Localize(warning_message_data.message) or Localize("quit_game_popup_text")
+
+		self.popup_id = Managers.popup:queue_popup(text, Localize("popup_exit_game_topic"), "end_game", Localize("popup_choice_yes"), "cancel_popup", Localize("popup_choice_no"))
 	end,
 	return_to_title_screen = function (self)
 		self:_cancel_popup()
@@ -713,67 +755,74 @@ local view_settings = {
 	end,
 	hotkey_mapping = {
 		hotkey_hero = {
-			disable_when_matchmaking = false,
-			disable_when_matchmaking_in_versus = true,
-			disable_when_matchmaking_ready = true,
 			error_message = "matchmaking_ready_interaction_message_profile_view",
 			in_transition = "character_selection_force",
 			in_transition_menu = "character_selection_view",
 			transition_state = "character",
 			view = "character_selection",
+			disable_for_mechanism = default_disable_for_mechanism,
 		},
 		hotkey_map = {
-			disable_when_matchmaking = true,
-			disable_when_matchmaking_ready = true,
 			error_message = "matchmaking_ready_interaction_message_map",
 			in_transition = "start_game_view_force",
 			in_transition_menu = "start_game_view",
 			transition_state = "play",
 			view = "start_game_view",
+			disable_for_mechanism = {
+				adventure = {
+					matchmaking = true,
+					matchmaking_ready = true,
+					not_matchmaking = false,
+				},
+				versus = {
+					matchmaking = true,
+					matchmaking_ready = true,
+					not_matchmaking = false,
+				},
+				deus = {
+					matchmaking = true,
+					matchmaking_ready = true,
+					not_matchmaking = false,
+				},
+			},
 		},
 		hotkey_inventory = {
-			disable_when_matchmaking_in_versus = true,
-			disable_when_matchmaking_ready = true,
 			error_message = "matchmaking_ready_interaction_message_inventory",
 			in_transition = "hero_view_force",
 			in_transition_menu = "hero_view",
 			transition_state = "overview",
 			view = "hero_view",
+			disable_for_mechanism = default_disable_for_mechanism,
 		},
 		hotkey_loot = {
 			can_interact_func = "not_in_modded",
-			disable_when_matchmaking_ready = true,
 			error_message = "matchmaking_ready_interaction_message_loot",
 			in_transition = "hero_view_force",
 			in_transition_menu = "hero_view",
 			transition_state = "loot",
 			view = "hero_view",
+			disable_for_mechanism = disable_for_mechanism_versus_disabled,
 		},
 		hotkey_achievements = {
-			cat_disabled = true,
-			disable_when_matchmaking_ready = true,
 			error_message = "matchmaking_ready_interaction_message_achievements",
 			in_transition = "hero_view_force",
 			in_transition_menu = "hero_view",
 			transition_state = "achievements",
 			view = "hero_view",
+			disable_for_mechanism = disable_for_mechanism_versus_disabled,
 		},
 		hotkey_weave_forge = {
 			can_interact_func = "weaves_requirements_fulfilled",
-			disable_when_matchmaking = false,
-			disable_when_matchmaking_in_versus = true,
-			disable_when_matchmaking_ready = true,
 			error_message = "matchmaking_ready_interaction_message_weave_forge",
 			in_transition = "hero_view_force",
 			in_transition_menu = "hero_view",
 			required_dlc = "scorpion",
 			transition_state = "weave_forge",
 			view = "hero_view",
+			disable_for_mechanism = disable_for_mechanism_versus_disabled,
 		},
 		hotkey_weave_play = {
 			can_interact_func = "weaves_requirements_fulfilled",
-			disable_when_matchmaking_in_versus = true,
-			disable_when_matchmaking_ready = true,
 			error_message = "matchmaking_ready_interaction_message_weave_play",
 			in_transition = "start_game_view_force",
 			in_transition_menu = "start_game_view",
@@ -781,17 +830,33 @@ local view_settings = {
 			transition_state = "play",
 			transition_sub_state = "weave_quickplay",
 			view = "start_game_view",
+			disable_for_mechanism = disable_for_mechanism_versus_disabled,
 		},
 		hotkey_weave_leaderboard = {
 			can_interact_func = "weaves_requirements_fulfilled",
-			disable_when_matchmaking = false,
-			disable_when_matchmaking_ready = true,
 			error_message = "matchmaking_ready_interaction_message_weave_leaderboard",
 			in_transition = "start_game_view_force",
 			in_transition_menu = "start_game_view",
 			required_dlc = "scorpion",
 			transition_state = "leaderboard",
 			view = "start_game_view",
+			disable_for_mechanism = {
+				adventure = {
+					matchmaking = false,
+					matchmaking_ready = true,
+					not_matchmaking = false,
+				},
+				versus = {
+					matchmaking = true,
+					matchmaking_ready = true,
+					not_matchmaking = true,
+				},
+				deus = {
+					matchmaking = true,
+					matchmaking_ready = true,
+					not_matchmaking = true,
+				},
+			},
 		},
 	},
 	blocked_transitions = {},

@@ -215,8 +215,8 @@ achievements.bless_book_run = {
 					return
 				end
 
-				local tome_template = slot_data_tome.item_template
-				local grim_template = slot_data_grim.item_template
+				local tome_template = inventory_extension:get_item_template(slot_data_tome)
+				local grim_template = inventory_extension:get_item_template(slot_data_grim)
 
 				if tome_template.is_grimoire and grim_template.is_grimoire then
 					statistics_db:increment_stat(stats_id, "bless_book_run")
@@ -340,7 +340,7 @@ achievements.bless_unbreakable_damage_block = {
 			return
 		end
 
-		if not (buff_extension:num_buff_stacks("victor_priest_activated_ability_invincibility") > 0) and not (buff_extension:num_buff_stacks("victor_priest_activated_ability_invincibility_improved") > 0) then
+		if buff_extension:num_buff_stacks("victor_priest_activated_ability_invincibility") <= 0 then
 			return
 		end
 
@@ -432,7 +432,9 @@ achievements.bless_punch_back = {
 				local damage_data = event_data[register_damage_damage_data]
 				local damage_type = damage_data[DamageDataIndex.DAMAGE_TYPE]
 				local damage_source = damage_data[DamageDataIndex.DAMAGE_SOURCE_NAME]
-				local is_punch_attack = damage_source == "wh_2h_hammer" and damage_type == "stab_smiter"
+				local item = rawget(ItemMasterList, damage_source)
+				local is_2h_hammer = item and item.item_type == "wh_2h_hammer"
+				local is_punch_attack = is_2h_hammer and damage_type == "stab_smiter"
 				local t = Managers.time:time("game")
 
 				if is_punch_attack and t - last_attack_t <= bless_punch_back_time_window then
@@ -482,7 +484,7 @@ achievements.bless_cluch_revive = {
 			return
 		end
 
-		if not (buff_extension:num_buff_stacks("victor_priest_activated_ability_invincibility") > 0) and not (buff_extension:num_buff_stacks("victor_priest_activated_ability_invincibility_improved") > 0) then
+		if buff_extension:num_buff_stacks("victor_priest_activated_ability_invincibility") <= 0 then
 			return
 		end
 
@@ -561,7 +563,7 @@ achievements.bless_ranged_raki = {
 			return
 		end
 
-		local current_buff = buff_extension:get_buff_type("victor_priest_activated_ability_invincibility") or buff_extension:get_buff_type("victor_priest_activated_ability_invincibility_improved")
+		local current_buff = buff_extension:get_buff_type("victor_priest_activated_ability_invincibility")
 
 		if current_buff then
 			if not template_data.last_buff_id or not current_buff or template_data.last_buff_id ~= current_buff.id then
@@ -847,8 +849,9 @@ achievements.bless_kill_specials_hammer_book = {
 		end
 
 		local damage_source = damage_data[DamageDataIndex.DAMAGE_SOURCE_NAME]
+		local item = rawget(ItemMasterList, damage_source)
 
-		if damage_source ~= "wh_hammer_book" then
+		if not item or item.item_type ~= "wh_hammer_book" then
 			return
 		end
 
@@ -916,8 +919,10 @@ achievements.bless_mighty_blow = {
 		end
 
 		local damage_type = damage_data and damage_data[DamageDataIndex.DAMAGE_TYPE]
-		local damage_source = damage_data and damage_data[DamageDataIndex.DAMAGE_SOURCE_NAME]
-		local is_punch_attack = damage_source == "wh_2h_hammer" and damage_type == "stab_smiter"
+		local damage_source = damage_data[DamageDataIndex.DAMAGE_SOURCE_NAME]
+		local item = rawget(ItemMasterList, damage_source)
+		local is_2h_hammer = item and item.item_type == "wh_2h_hammer"
+		local is_punch_attack = is_2h_hammer and damage_type == "stab_smiter"
 
 		if not is_punch_attack then
 			return
@@ -980,7 +985,7 @@ achievements.bless_block_attacks = {
 			return
 		end
 
-		local current_buff = buff_extension:get_buff_type("victor_priest_activated_ability_invincibility") or buff_extension:get_buff_type("victor_priest_activated_ability_invincibility_improved")
+		local current_buff = buff_extension:get_buff_type("victor_priest_activated_ability_invincibility")
 
 		if not current_buff then
 			return
@@ -1071,8 +1076,9 @@ achievements.bless_charged_hammer = {
 		end
 
 		local damage_source = damage_data[DamageDataIndex.DAMAGE_SOURCE_NAME]
+		local item = rawget(ItemMasterList, damage_source)
 
-		if damage_source ~= "wh_hammer_book" then
+		if not item or item.item_type ~= "wh_hammer_book" then
 			return
 		end
 
@@ -1152,7 +1158,7 @@ achievements.bless_protected_killing = {
 		local buff_extension = ScriptUnit.has_extension(attacker_unit, "buff_system")
 
 		if buff_extension then
-			local buff = buff_extension:get_buff_type("victor_priest_activated_ability_invincibility") or buff_extension:get_buff_type("victor_priest_activated_ability_invincibility_improved")
+			local buff = buff_extension:get_buff_type("victor_priest_activated_ability_invincibility")
 
 			if buff then
 				buff._bless_protected_killing_count = (buff._bless_protected_killing_count or 0) + 1

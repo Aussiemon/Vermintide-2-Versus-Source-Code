@@ -151,6 +151,24 @@ IngamePlayerListUI._create_ui_elements = function (self)
 		mutators = {},
 	}
 
+	local mutator_summary4_widget = widgets_by_name.mutator_summary4
+
+	mutator_summary4_widget.content.item = {
+		mutators = {},
+	}
+
+	local mutator_summary5_widget = widgets_by_name.mutator_summary5
+
+	mutator_summary5_widget.content.item = {
+		mutators = {},
+	}
+
+	local mutator_summary6_widget = widgets_by_name.mutator_summary6
+
+	mutator_summary6_widget.content.item = {
+		mutators = {},
+	}
+
 	local specific_widget_definitions = definitions.specific_widget_definitions
 
 	self._input_description_text_widget = UIWidget.init(specific_widget_definitions.input_description_text)
@@ -160,14 +178,13 @@ IngamePlayerListUI._create_ui_elements = function (self)
 	self._collectibles_divider = UIWidget.init(specific_widget_definitions.collectibles_divider)
 	self._level_description_widget = UIWidget.init(specific_widget_definitions.level_description)
 	self._private_checkbox_widget = UIWidget.init(specific_widget_definitions.private_checkbox)
+	self._private_checkbox_disabled_reasons = {}
 	self._node_info_widget = nil
 
 	local twitch_connection = Managers.twitch and (Managers.twitch:is_connected() or Managers.twitch:is_activated())
 
 	if Managers.state.game_mode:game_mode_key() == "weave" or twitch_connection then
-		local content = self._private_checkbox_widget.content
-
-		content.is_disabled = true
+		self._private_checkbox_disabled_reasons.weave_or_twitch = true
 	end
 
 	local player_list_widgets = {}
@@ -193,7 +210,7 @@ IngamePlayerListUI._create_ui_elements = function (self)
 end
 
 local MUTATORS_PER_COLUMN = 1
-local MUTATOR_ROWS = 3
+local MUTATOR_ROWS = 6
 local MAX_MUTATORS = MUTATORS_PER_COLUMN * MUTATOR_ROWS
 
 IngamePlayerListUI._setup_mutator_data = function (self)
@@ -223,10 +240,28 @@ IngamePlayerListUI._setup_mutator_data = function (self)
 
 	table.clear(mutator_storage3)
 
+	local mutator_summary_widget4 = widgets_by_name.mutator_summary4
+	local mutator_storage4 = mutator_summary_widget4.content.item.mutators
+
+	table.clear(mutator_storage4)
+
+	local mutator_summary_widget5 = widgets_by_name.mutator_summary5
+	local mutator_storage5 = mutator_summary_widget5.content.item.mutators
+
+	table.clear(mutator_storage5)
+
+	local mutator_summary_widget6 = widgets_by_name.mutator_summary6
+	local mutator_storage6 = mutator_summary_widget6.content.item.mutators
+
+	table.clear(mutator_storage6)
+
 	local mutator_storage = {
 		mutator_storage1,
 		mutator_storage2,
 		mutator_storage3,
+		mutator_storage4,
+		mutator_storage5,
+		mutator_storage6,
 	}
 
 	if mutators then
@@ -335,6 +370,7 @@ IngamePlayerListUI._setup_chaos_wastes_info = function (self)
 	end
 
 	self._node_info_widget = widget
+	widget.offset[2] = self._num_mutators * -100 - 30
 end
 
 IngamePlayerListUI._setup_deed_reward_data = function (self, deed_reward_data)
@@ -493,7 +529,7 @@ end
 
 IngamePlayerListUI._create_player_portrait = function (self, portrait_frame, portrait_image, player_level_text)
 	local definition = UIWidgets.create_portrait_frame("player_portrait", portrait_frame, player_level_text, 1, nil, portrait_image)
-	local widget = UIWidget.init(definition)
+	local widget = UIWidget.init(definition, self._ui_top_renderer)
 
 	self._player_portrait_widget = widget
 end
@@ -823,8 +859,9 @@ IngamePlayerListUI._update_player_information = function (self, dt, t)
 			end
 
 			local portrait_frame_name = portrait_frame_name or portrait_frame and portrait_frame.item_name or "default"
+			local current_portrait_frame_name = player_data.portrait_frame and player_data.portrait_frame.item_name
 
-			if player_data.career_index ~= career_index or display_name ~= player_data.hero_name or player_level_text ~= player_data.player_level_text or portrait_frame ~= player_data.portrait_frame then
+			if player_data.career_index ~= career_index or display_name ~= player_data.hero_name or player_level_text ~= player_data.player_level_text or portrait_frame_name ~= current_portrait_frame_name then
 				player_data.career_index = career_index
 
 				local portrait_widget = self:_create_portrait_frame_widget(portrait_frame_name, portrait_image, player_level_text)
@@ -837,6 +874,7 @@ IngamePlayerListUI._update_player_information = function (self, dt, t)
 				player_data.player_level_text = player_level_text
 				player_data.portrait_widget = portrait_widget
 				player_data.hero_name = display_name
+				player_data.portrait_frame = portrait_frame
 
 				if player_data.is_local_player then
 					player_data.sync_local_player_info = true
@@ -858,8 +896,8 @@ IngamePlayerListUI._update_player_information = function (self, dt, t)
 			if player_data.sync_local_player_info then
 				player_data.sync_local_player_info = nil
 
-				local passive_ability_data = career_settings.passive_ability
-				local activated_ability_data = career_settings.activated_ability[1]
+				local passive_ability_data = CareerUtils.get_passive_ability_by_career(career_settings)
+				local activated_ability_data = CareerUtils.get_ability_data_by_career(career_settings, 1)
 				local activated_display_name = activated_ability_data.display_name
 				local activated_icon = activated_ability_data.icon
 
@@ -885,7 +923,7 @@ end
 
 IngamePlayerListUI._create_portrait_frame_widget = function (self, frame_settings_name, portrait_texture, player_level_text)
 	local widget_definition = UIWidgets.create_portrait_frame("player_list_portrait", frame_settings_name, player_level_text, 1, nil, portrait_texture)
-	local widget = UIWidget.init(widget_definition)
+	local widget = UIWidget.init(widget_definition, self._ui_top_renderer)
 	local widget_content = widget.content
 
 	widget_content.frame_settings_name = frame_settings_name
@@ -997,7 +1035,7 @@ IngamePlayerListUI.update = function (self, dt, t)
 					self._cursor_active = true
 				end
 			end
-		elseif input_service:get("ingame_player_list_pressed") then
+		elseif input_service:get("ingame_player_list_pressed") and not self:_is_in_deus_map_view() then
 			if not self._active then
 				self:_set_active(true)
 			end
@@ -1024,34 +1062,7 @@ IngamePlayerListUI.update = function (self, dt, t)
 			self:_update_difficulty()
 		end
 
-		local private_checkbox_content = self._private_checkbox_widget.content
-
-		if self._local_player.is_server and not self._is_in_inn and not private_checkbox_content.is_disabled then
-			local private_checkbox_hotspot = private_checkbox_content.button_hotspot
-
-			if private_checkbox_hotspot.on_hover_enter then
-				WwiseWorld.trigger_event(self._wwise_world, "Play_hud_hover")
-			end
-
-			if self._private_setting_enabled and private_checkbox_hotspot.on_release then
-				local is_private = Managers.matchmaking:is_game_private()
-				local map_save_data = self._map_save_data
-
-				map_save_data.private_enabled = not is_private
-
-				WwiseWorld.trigger_event(self._wwise_world, "Play_hud_select")
-				self:_set_privacy_enabled(map_save_data.private_enabled, true)
-
-				PlayerData.map_view_data = map_save_data
-
-				Managers.save:auto_save(SaveFileName, SaveData, callback(self, "on_save_ended_callback"))
-
-				local matchmaking_manager = Managers.matchmaking
-
-				matchmaking_manager:set_in_progress_game_privacy(map_save_data.private_enabled)
-			end
-		end
-
+		self:_update_private_checkbox()
 		self:_sync_missions()
 		self:_update_fade_in_duration(dt)
 		self:_draw(dt)
@@ -1393,7 +1404,6 @@ IngamePlayerListUI._update_dynamic_widget_information = function (self, dt, t)
 			local total_health = status_extension:is_dead() and 0 or health_extension:current_health()
 			local total_health_percent = status_extension:is_dead() and 0 or health_extension:current_health_percent()
 			local health_percent = status_extension:is_dead() and 0 or health_extension:current_permanent_health_percent()
-			local is_wounded = status_extension:is_wounded()
 			local is_knocked_down = (status_extension:is_knocked_down() or status_extension:get_is_ledge_hanging()) and total_health_percent > 0
 			local is_ready_for_assisted_respawn = status_extension:is_ready_for_assisted_respawn()
 			local needs_help = status_extension:is_grabbed_by_pack_master() or status_extension:is_hanging_from_hook() or status_extension:is_pounced_down() or status_extension:is_grabbed_by_corruptor() or status_extension:is_in_vortex() or status_extension:is_grabbed_by_chaos_spawn()
@@ -1530,6 +1540,38 @@ IngamePlayerListUI._update_difficulty = function (self)
 		self:_set_difficulty_name(Localize(difficulty_name))
 
 		self._current_difficulty_name = difficulty_name
+	end
+end
+
+IngamePlayerListUI._update_private_checkbox = function (self)
+	local private_checkbox_content = self._private_checkbox_widget.content
+
+	private_checkbox_content.is_disabled = not table.is_empty(self._private_checkbox_disabled_reasons)
+
+	if self._local_player.is_server and not self._is_in_inn and not private_checkbox_content.is_disabled then
+		local private_checkbox_hotspot = private_checkbox_content.button_hotspot
+
+		if private_checkbox_hotspot.on_hover_enter then
+			WwiseWorld.trigger_event(self._wwise_world, "Play_hud_hover")
+		end
+
+		if self._private_setting_enabled and private_checkbox_hotspot.on_release then
+			local is_private = Managers.matchmaking:is_game_private()
+			local map_save_data = self._map_save_data
+
+			map_save_data.private_enabled = not is_private
+
+			WwiseWorld.trigger_event(self._wwise_world, "Play_hud_select")
+			self:_set_privacy_enabled(map_save_data.private_enabled, true)
+
+			PlayerData.map_view_data = map_save_data
+
+			Managers.save:auto_save(SaveFileName, SaveData, callback(self, "on_save_ended_callback"))
+
+			local matchmaking_manager = Managers.matchmaking
+
+			matchmaking_manager:set_in_progress_game_privacy(map_save_data.private_enabled)
+		end
 	end
 end
 
@@ -1728,4 +1770,16 @@ IngamePlayerListUI._has_client_duplicate = function (self, player_list, peer_id)
 	else
 		return false
 	end
+end
+
+IngamePlayerListUI._is_in_deus_map_view = function (self)
+	local mechanism_name = Managers.mechanism:current_mechanism_name()
+
+	if mechanism_name ~= "deus" then
+		return false
+	end
+
+	local current_mechanism_state = Managers.mechanism:get_state()
+
+	return current_mechanism_state == "map_deus"
 end

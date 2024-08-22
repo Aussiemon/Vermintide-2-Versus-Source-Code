@@ -144,7 +144,7 @@ Pickups.level_events.training_dummy_bob = {
 				ai_system:set_attribute(ai_unit, "armor", "training_dummy", false)
 			end,
 		}
-		local unit = Managers.state.conflict:_spawn_unit(breed, spawn_pos, spawn_rot, "pickup", nil, nil, optional_data)
+		local unit = Managers.state.conflict:spawn_unit_immediate(breed, spawn_pos, spawn_rot, "pickup", nil, nil, optional_data)
 
 		return unit
 	end,
@@ -176,7 +176,7 @@ Pickups.level_events.training_dummy_armored_bob = {
 				ai_system:set_attribute(ai_unit, "armor", "training_dummy", true)
 			end,
 		}
-		local unit = Managers.state.conflict:_spawn_unit(breed, spawn_pos, spawn_rot, "pickup", nil, nil, optional_data)
+		local unit = Managers.state.conflict:spawn_unit_immediate(breed, spawn_pos, spawn_rot, "pickup", nil, nil, optional_data)
 
 		return unit
 	end,
@@ -253,6 +253,21 @@ Pickups.level_events.explosive_barrel = {
 	spawn_weighting = 1,
 	type = "explosive_inventory_item",
 	unit_name = "units/weapons/player/pup_explosive_barrel/pup_explosive_barrel_01",
+	unit_template_name = "explosive_pickup_projectile_unit",
+	wield_on_pickup = true,
+}
+Pickups.level_events.whale_oil_barrel = {
+	additional_data_func = "explosive_barrel",
+	debug_pickup_category = "level_event",
+	hud_description = "explosive_barrel",
+	individual_pickup = false,
+	item_description = "explosive_barrel",
+	item_name = "whale_oil_barrel",
+	only_once = true,
+	slot_name = "slot_level_event",
+	spawn_weighting = 1,
+	type = "explosive_inventory_item",
+	unit_name = "units/weapons/player/pup_whale_oil_barrel/pup_whale_oil_barrel_01",
 	unit_template_name = "explosive_pickup_projectile_unit",
 	wield_on_pickup = true,
 }
@@ -405,6 +420,20 @@ Pickups.level_events.gargoyle_head = {
 	type = "inventory_item",
 	unit_name = "units/weapons/player/pup_gargoyle_head/pup_gargoyle_head_01",
 	unit_template_name = "pickup_projectile_unit",
+	wield_on_pickup = true,
+}
+Pickups.level_events.gargoyle_head_vs = {
+	debug_pickup_category = "level_event",
+	hud_description = "gargoyle_head",
+	individual_pickup = false,
+	item_description = "gargoyle_head",
+	item_name = "wpn_gargoyle_head",
+	only_once = true,
+	slot_name = "slot_level_event",
+	spawn_weighting = 1e-06,
+	type = "inventory_item",
+	unit_name = "units/weapons/player/pup_gargoyle_head/pup_gargoyle_head_01",
+	unit_template_name = "pickup_projectile_unit_limited",
 	wield_on_pickup = true,
 }
 Pickups.level_events.magic_crystal = {

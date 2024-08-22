@@ -64,8 +64,8 @@ MatchmakingStateStartGame._verify_requirements = function (self)
 	if difficulty then
 		local difficulty_settings = DifficultySettings[difficulty]
 
-		if difficulty_settings.extra_requirement_name and not mechanism_settings.disable_difficulty_check and not Development.parameter("unlock_all_difficulties") then
-			local players_not_meeting_requirements = DifficultyManager.players_below_difficulty_rank(difficulty, human_players)
+		if not mechanism_settings.disable_difficulty_check and not Development.parameter("unlock_all_difficulties") and difficulty_settings.extra_requirement_name then
+			local players_not_meeting_requirements = DifficultyManager.players_locked_difficulty_rank(difficulty, human_players)
 
 			if #players_not_meeting_requirements > 0 then
 				self._matchmaking_manager:cancel_matchmaking()

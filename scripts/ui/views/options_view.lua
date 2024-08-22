@@ -12,6 +12,7 @@ local widget_definitions = definitions.widget_definitions
 local title_button_definitions = settings_definitions.title_button_definitions
 local button_definitions = definitions.button_definitions
 local child_input_services = definitions.child_input_services
+local animation_definitions = definitions.animation_definitions
 local SettingsMenuNavigation = SettingsMenuNavigation
 local SettingsWidgetTypeTemplate = SettingsWidgetTypeTemplate
 
@@ -261,9 +262,11 @@ OptionsView.init = function (self, ingame_ui_context)
 	self.ingame_ui = ingame_ui_context.ingame_ui
 	self.voip = ingame_ui_context.voip
 	self.render_settings = {
+		alpha_multiplier = 0,
 		snap_pixel_positions = false,
 	}
 	self.is_in_tutorial = ingame_ui_context.is_in_tutorial
+	self.in_title_screen = ingame_ui_context.in_title_screen
 	self.platform = PLATFORM
 
 	local input_manager = ingame_ui_context.input_manager
@@ -794,6 +797,13 @@ end
 
 OptionsView.destroy = function (self)
 	self:cleanup_popups()
+
+	if self._cursor_pushed then
+		ShowCursorStack.pop()
+
+		self._cursor_pushed = nil
+	end
+
 	self.menu_input_description:destroy()
 
 	self.menu_input_description = nil
@@ -844,6 +854,7 @@ OptionsView.create_ui_elements = function (self)
 	self.exit_button = UIWidget.init(button_definitions.exit_button)
 	self.apply_button = UIWidget.init(button_definitions.apply_button)
 	self.reset_to_default = UIWidget.init(button_definitions.reset_to_default)
+	self.back_button = UIWidget.init(button_definitions.back_button)
 	self.scrollbar = UIWidget.init(definitions.scrollbar_definition)
 	self.scrollbar.content.disable_frame = true
 	self.safe_rect_widget = UIWidget.init(definitions.create_safe_rect_widget())
@@ -909,12 +920,19 @@ OptionsView.create_ui_elements = function (self)
 		end
 
 		settings_lists.video_settings = self:build_settings_list(settings_definitions.video_settings_definition, "video_settings_list")
-		settings_lists.audio_settings = self:build_settings_list(settings_definitions.audio_settings_definition, "audio_settings_list")
+
+		if Managers.voice_chat or self.voip then
+			settings_lists.audio_settings = self:build_settings_list(settings_definitions.audio_settings_definition, "audio_settings_list")
+		else
+			settings_lists.audio_settings = self:build_settings_list(settings_definitions.audio_settings_definition_without_voip, "audio_settings_list")
+		end
+
 		settings_lists.gameplay_settings = self:build_settings_list(settings_definitions.gameplay_settings_definition, "gameplay_settings_list")
 		settings_lists.display_settings = self:build_settings_list(settings_definitions.display_settings_definition, "display_settings_list")
 		settings_lists.keybind_settings = self:build_settings_list(settings_definitions.keybind_settings_definition, "keybind_settings_list")
 		settings_lists.gamepad_settings = self:build_settings_list(settings_definitions.gamepad_settings_definition, "gamepad_settings_list")
 		settings_lists.network_settings = self:build_settings_list(settings_definitions.network_settings_definition, "network_settings_list")
+		settings_lists.versus_settings = self:build_settings_list(settings_definitions.versus_settings_definition, "versus_settings_list")
 		settings_lists.video_settings.hide_reset = true
 		settings_lists.video_settings.needs_apply_confirmation = true
 	elseif IS_XB1 then
@@ -952,6 +970,8 @@ OptionsView.create_ui_elements = function (self)
 	self.selected_title = nil
 	self.ui_scenegraph = UISceneGraph.init_scenegraph(definitions.scenegraph_definition)
 	self.ui_calibration_view = UICalibrationView:new()
+	self._animations = {}
+	self._ui_animator = UIAnimator:new(self._ui_scenegraph, definitions.animation_definitions)
 	RELOAD_OPTIONS_VIEW = false
 
 	self:_setup_text_buttons_width()
@@ -1402,6 +1422,8 @@ OptionsView.update_gamepad_layout_widget = function (self, keymaps, using_left_h
 		end
 	end
 
+	local sort_table = {}
+
 	for button_name, actions in pairs(display_keybinds) do
 		for i = 1, #actions do
 			local action_name = actions[i]
@@ -1409,7 +1431,16 @@ OptionsView.update_gamepad_layout_widget = function (self, keymaps, using_left_h
 			if not widget_content[button_name] then
 				widget_content[button_name] = Localize(action_name)
 			else
-				local display_text = widget_content[button_name] .. "/" .. Localize(action_name)
+				table.clear(sort_table)
+
+				local loc_action_name = Localize(action_name)
+
+				sort_table[1] = loc_action_name
+				sort_table[2] = widget_content[button_name]
+
+				table.sort(sort_table)
+
+				local display_text = sort_table[1] .. "/" .. sort_table[2]
 
 				widget_content[button_name] = display_text
 			end
@@ -1544,6 +1575,9 @@ end
 
 OptionsView.on_enter = function (self, params)
 	ShowCursorStack.push()
+
+	self._cursor_pushed = true
+
 	self:_setup_text_buttons_width()
 	self:set_original_settings()
 	self:reset_changed_settings()
@@ -1572,14 +1606,32 @@ OptionsView.on_enter = function (self, params)
 	self.input_manager:block_device_except_service("options_menu", "mouse", 1)
 	self.input_manager:block_device_except_service("options_menu", "gamepad", 1)
 
-	local world = self.ui_renderer.world
-	local shading_env = World.get_data(world, "shading_environment")
+	if not self.in_title_screen then
+		local world = self.ui_renderer.world
+		local shading_env = World.get_data(world, "shading_environment")
 
-	if shading_env then
-		ShadingEnvironment.set_scalar(shading_env, "fullscreen_blur_enabled", 1)
-		ShadingEnvironment.set_scalar(shading_env, "fullscreen_blur_amount", 0.75)
-		ShadingEnvironment.apply(shading_env)
+		if shading_env then
+			ShadingEnvironment.set_scalar(shading_env, "fullscreen_blur_enabled", 1)
+			ShadingEnvironment.set_scalar(shading_env, "fullscreen_blur_amount", 0.75)
+			ShadingEnvironment.apply(shading_env)
+		end
 	end
+
+	UIWidgetUtils.reset_layout_button(self.back_button)
+	self:_start_animation("on_enter")
+end
+
+OptionsView._start_animation = function (self, animation_name)
+	self.render_settings = self.render_settings or {
+		alpha_multiplier = 0,
+		snap_pixel_positions = false,
+	}
+
+	local params = {
+		render_settings = self.render_settings,
+	}
+
+	self._animations[animation_name] = self._ui_animator:start_animation(animation_name, nil, self.ui_scenegraph, params, 1, 0)
 end
 
 OptionsView.on_exit = function (self)
@@ -1589,6 +1641,9 @@ OptionsView.on_exit = function (self)
 
 	self:cleanup_popups()
 	ShowCursorStack.pop()
+
+	self._cursor_pushed = nil
+
 	self.input_manager:device_unblock_all_services("keyboard", 1)
 	self.input_manager:device_unblock_all_services("mouse", 1)
 	self.input_manager:device_unblock_all_services("gamepad", 1)
@@ -1868,7 +1923,9 @@ OptionsView.apply_changes = function (self, user_settings, render_settings, bot_
 		end
 	end
 
-	Framerate.set_playing()
+	if not self.in_title_screen then
+		Framerate.set_playing()
+	end
 
 	local network_manager = Managers.state.network
 
@@ -2296,7 +2353,7 @@ OptionsView.apply_changes = function (self, user_settings, render_settings, bot_
 
 	local minion_outlines = user_settings.minion_outlines
 
-	if minion_outlines then
+	if minion_outlines and not self.in_title_screen then
 		local local_player = Managers.player:local_player()
 		local local_player_unit = local_player and local_player.player_unit
 		local commander_extension = ScriptUnit.extension(local_player_unit, "ai_commander_system")
@@ -2312,8 +2369,9 @@ OptionsView.apply_changes = function (self, user_settings, render_settings, bot_
 
 	local overcharge_opacity = user_settings.overcharge_opacity
 	local player_manager = Managers.player
+	local game = Managers.state.network and Managers.state.network:game()
 
-	if overcharge_opacity and player_manager then
+	if overcharge_opacity and player_manager and game then
 		local local_player = player_manager:local_player()
 		local player_unit = local_player.player_unit
 		local overcharge_extension = ScriptUnit.extension(player_unit, "overcharge_system")
@@ -2464,6 +2522,7 @@ OptionsView.apply_changes = function (self, user_settings, render_settings, bot_
 	end
 
 	ShowCursorStack.update_clip_cursor()
+	WwiseWorld.trigger_event(self.wwise_world, "Play_hud_button_close")
 
 	if Managers.state.event then
 		print("[OptionsView] Triggering `on_game_options_changed`")
@@ -2688,6 +2747,7 @@ OptionsView.update = function (self, dt)
 
 	self:draw_widgets(dt, disable_all_input)
 	self:_handle_ps_pads(gamepad_active)
+	self:_update_animations(dt)
 
 	if self.save_data_error_popup_id then
 		local result = Managers.popup:query_result(self.save_data_error_popup_id)
@@ -2795,9 +2855,33 @@ OptionsView.update = function (self, dt)
 			WwiseWorld.trigger_event(self.wwise_world, "Play_hud_hover")
 		end
 
-		if not disable_all_input and not self:has_popup() and not self.draw_gamepad_tooltip and (not selected_widget and input_service:get("toggle_menu", true) or exit_button_hotspot.is_hover and exit_button_hotspot.on_release) then
-			WwiseWorld.trigger_event(self.wwise_world, "Play_hud_select")
-			self:on_exit_pressed()
+		local back_button_hotspot = self.back_button.content.button_hotspot
+
+		if back_button_hotspot.on_hover_enter then
+			WwiseWorld.trigger_event(self.wwise_world, "Play_hud_hover")
+		end
+
+		if not disable_all_input and not self:has_popup() and not self.draw_gamepad_tooltip then
+			if not selected_widget and input_service:get("toggle_menu", true) or exit_button_hotspot.is_hover and exit_button_hotspot.on_release or back_button_hotspot.is_hover and back_button_hotspot.on_release then
+				WwiseWorld.trigger_event(self.wwise_world, "Play_hud_select")
+				self:on_exit_pressed()
+			end
+
+			UIWidgetUtils.animate_layout_button(self.back_button, dt)
+		end
+	end
+end
+
+OptionsView._update_animations = function (self, dt)
+	local ui_animator = self._ui_animator
+
+	ui_animator:update(dt)
+
+	local animations = self._animations
+
+	for animation_name, animation_id in pairs(animations) do
+		if ui_animator:is_animation_completed(animation_id) then
+			animations[animation_name] = nil
 		end
 	end
 end
@@ -2881,7 +2965,7 @@ OptionsView.handle_apply_popup_results = function (self, result)
 			end
 		end
 
-		if needs_restart then
+		if needs_restart and not self.in_title_screen then
 			local text = Localize("changes_need_restart_popup_text")
 
 			self.apply_popup_id = Managers.popup:queue_popup(text, Localize("popup_needs_restart_topic"), "continue", Localize("popup_choice_continue"), "restart", Localize("popup_choice_restart_now"))
@@ -2978,8 +3062,11 @@ OptionsView.update_apply_button = function (self)
 
 	if self:changes_been_made() then
 		widget.content.button_text.disabled = false
+		widget.content.button_text.disable_button = false
+		widget.style.text.text_color = Colors.get_color_table_with_alpha("cheeseburger", 255)
 	else
 		widget.content.button_text.disabled = true
+		widget.content.button_text.disable_button = true
 	end
 end
 
@@ -3206,8 +3293,8 @@ OptionsView.draw_widgets = function (self, dt, disable_all_input)
 	self:handle_title_buttons(ui_top_renderer, disable_all_input)
 
 	self.reset_to_default.content.button_text.disable_button = disable_all_input
-	self.apply_button.content.button_text.disable_button = disable_all_input
 	self.exit_button.content.button_hotspot.disable_button = disable_all_input
+	self.back_button.content.button_hotspot.disable_button = disable_all_input
 
 	if not gamepad_active then
 		local keybind_info_text = self.keybind_info_text
@@ -3226,6 +3313,10 @@ OptionsView.draw_widgets = function (self, dt, disable_all_input)
 
 		UIRenderer.draw_widget(ui_top_renderer, self.apply_button)
 		UIRenderer.draw_widget(ui_top_renderer, self.exit_button)
+
+		if self.in_title_screen then
+			UIRenderer.draw_widget(ui_top_renderer, self.back_button)
+		end
 	elseif draw_gamepad_tooltip then
 		UIRenderer.draw_widget(ui_top_renderer, self.gamepad_tooltip_text_widget)
 	end
@@ -3274,7 +3365,7 @@ OptionsView.update_settings_list = function (self, settings_list, ui_renderer, u
 
 	local scenegraph_id_start = settings_list.scenegraph_id_start
 	local list_position = UISceneGraph.get_world_position(ui_scenegraph, scenegraph_id_start)
-	local mask_pos = Vector3.deprecated_copy(UISceneGraph.get_world_position(ui_scenegraph, "list_mask"))
+	local mask_pos = UISceneGraph.get_world_position(ui_scenegraph, "list_mask")
 	local mask_size = UISceneGraph.get_size(ui_scenegraph, "list_mask")
 	local selected_widget = self.selected_widget
 	local gamepad_active = Managers.input:is_device_active("gamepad")
@@ -4369,6 +4460,99 @@ OptionsView.cb_hud_clamp_ui_scaling = function (self, content)
 	UPDATE_RESOLUTION_LOOKUP(force_update)
 end
 
+OptionsView.cb_vs_floating_damage = function (self, content)
+	local options_values = content.options_values
+	local current_selection = content.current_selection
+
+	self.changed_user_settings.vs_floating_damage = options_values[current_selection]
+end
+
+OptionsView.cb_vs_floating_damage_setup = function (self)
+	local options = {
+		{
+			value = "none",
+			text = Localize("menu_settings_crosshair_none"),
+		},
+		{
+			value = "floating",
+			text = Localize("menu_settings_floating_damage"),
+		},
+		{
+			value = "streak",
+			text = Localize("menu_settings_streak_damage"),
+		},
+		{
+			value = "both",
+			text = Localize("menu_settings_both"),
+		},
+	}
+	local default_value = DefaultUserSettings.get("user_settings", "vs_floating_damage")
+	local user_settings_value = Application.user_setting("vs_floating_damage")
+	local default_option, selected_option
+
+	for i, option in ipairs(options) do
+		if option.value == user_settings_value then
+			selected_option = i
+		end
+
+		if option.value == default_value then
+			default_option = i
+		end
+	end
+
+	fassert(default_option, "default option %i does not exist in cb_enabled_crosshairs_setup options table", default_value)
+
+	return selected_option or default_option, options, "menu_settings_vs_floating_damage", default_option
+end
+
+OptionsView.cb_vs_floating_damage_saved_value = function (self, widget)
+	local value = assigned(self.changed_user_settings.vs_floating_damage, Application.user_setting("vs_floating_damage")) or DefaultUserSettings.get("user_settings", "vs_floating_damage")
+	local options_values = widget.content.options_values
+	local selected_option = 1
+
+	for i = 1, #options_values do
+		if value == options_values[i] then
+			selected_option = i
+
+			break
+		end
+	end
+
+	widget.content.current_selection = selected_option
+end
+
+OptionsView.cb_vs_hud_damage_feedback_in_world_setup = function (self)
+	local options = {
+		{
+			value = false,
+			text = Localize("menu_settings_off"),
+		},
+		{
+			value = true,
+			text = Localize("menu_settings_on"),
+		},
+	}
+	local hud_damage_feedback_in_world = Application.user_setting("hud_damage_feedback_in_world") or false
+	local selection = hud_damage_feedback_in_world and 2 or 1
+	local default_value = DefaultUserSettings.get("user_settings", "hud_damage_feedback_in_world") and 2 or 1
+
+	return selection, options, "settings_menu_hud_damage_feedback_in_world", default_value
+end
+
+OptionsView.cb_vs_hud_damage_feedback_in_world_saved_value = function (self, widget)
+	local hud_damage_feedback_in_world = assigned(self.changed_user_settings.hud_damage_feedback_in_world, Application.user_setting("hud_damage_feedback_in_world"))
+
+	widget.content.current_selection = hud_damage_feedback_in_world and 2 or 1
+end
+
+OptionsView.cb_vs_hud_damage_feedback_in_world = function (self, content)
+	local options_values = content.options_values
+	local current_selection = content.current_selection
+	local value = options_values[current_selection]
+
+	self.changed_user_settings.hud_damage_feedback_in_world = value
+end
+
 OptionsView.cb_vs_hud_damage_feedback_on_yourself_setup = function (self)
 	local options = {
 		{
@@ -4399,6 +4583,38 @@ OptionsView.cb_vs_hud_damage_feedback_on_yourself = function (self, content)
 	local value = options_values[current_selection]
 
 	self.changed_user_settings.hud_damage_feedback_on_yourself = value
+end
+
+OptionsView.cb_vs_hud_damage_feedback_on_teammates_setup = function (self)
+	local options = {
+		{
+			value = false,
+			text = Localize("menu_settings_off"),
+		},
+		{
+			value = true,
+			text = Localize("menu_settings_on"),
+		},
+	}
+	local hud_damage_feedback_on_teammates = Application.user_setting("hud_damage_feedback_on_teammates") or false
+	local selection = hud_damage_feedback_on_teammates and 2 or 1
+	local default_value = DefaultUserSettings.get("user_settings", "hud_damage_feedback_on_teammates") and 2 or 1
+
+	return selection, options, "settings_menu_hud_damage_feedback_on_teammates", default_value
+end
+
+OptionsView.cb_vs_hud_damage_feedback_on_teammates_saved_value = function (self, widget)
+	local hud_damage_feedback_on_teammates = assigned(self.changed_user_settings.hud_damage_feedback_on_teammates, Application.user_setting("hud_damage_feedback_on_teammates"))
+
+	widget.content.current_selection = hud_damage_feedback_on_teammates and 2 or 1
+end
+
+OptionsView.cb_vs_hud_damage_feedback_on_teammates = function (self, content)
+	local options_values = content.options_values
+	local current_selection = content.current_selection
+	local value = options_values[current_selection]
+
+	self.changed_user_settings.hud_damage_feedback_on_teammates = value
 end
 
 OptionsView.cb_hud_custom_scale_setup = function (self)
@@ -5145,9 +5361,7 @@ OptionsView.cb_fsr_enabled = function (self, content, style, called_from_graphic
 end
 
 OptionsView.cb_fsr_enabled_condition = function (self, content, style)
-	if false then
-		-- Nothing
-	elseif self:_get_current_user_setting("dlss_enabled") then
+	if self:_get_current_user_setting("dlss_enabled") then
 		self:_set_setting_override(content, style, "fsr_enabled", false)
 		self:_set_override_reason(content, "menu_settings_dlss_enabled")
 

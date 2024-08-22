@@ -13,7 +13,7 @@ GameSettingsDevelopment.trunk_path = GameSettingsDevelopment.trunk_path or false
 GameSettingsDevelopment.quicklaunch_params = GameSettingsDevelopment.quicklaunch_params or {}
 GameSettingsDevelopment.quicklaunch_params.level_key = LEVEL_EDITOR_TEST and "editor_level" or "castle_01"
 GameSettingsDevelopment.start_state = LEVEL_EDITOR_TEST and "game" or DEDICATED_SERVER and "dedicated_server" or "menu"
-GameSettingsDevelopment.skip_start_screen = true
+GameSettingsDevelopment.skip_start_screen = false
 GameSettingsDevelopment.disable_shadow_lights_system = true
 GameSettingsDevelopment.use_baked_enemy_meshes = false
 GameSettingsDevelopment.help_screen_enabled = false
@@ -126,9 +126,11 @@ if settings.steam or Development.parameter("force_steam") then
 		elseif app_id == 552500 then
 			GameSettingsDevelopment.backend_settings = BackendSettings.prod_steam_playfab
 		elseif app_id == 1270350 then
-			GameSettingsDevelopment.backend_settings = BackendSettings.beta_steam_playfab
+			GameSettingsDevelopment.backend_settings = BackendSettings.cat_steam_playfab
 		elseif app_id == 1026050 then
 			GameSettingsDevelopment.backend_settings = BackendSettings.carousel_steam_playfab
+		elseif app_id == 2792380 then
+			GameSettingsDevelopment.backend_settings = BackendSettings.beta_steam_playfab
 		end
 	else
 		Crashify.print_exception("Game Settings", "Vermintide 2. You need to have the Steam Client running to play the game.")

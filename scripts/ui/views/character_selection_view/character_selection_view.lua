@@ -2,6 +2,7 @@
 
 require("scripts/ui/views/hero_view/item_grid_ui")
 require("scripts/ui/views/character_selection_view/states/character_selection_state_character")
+require("scripts/ui/views/character_selection_view/states/character_selection_state_versus_loadouts")
 require("scripts/ui/views/menu_world_previewer")
 
 local definitions = local_require("scripts/ui/views/character_selection_view/character_selection_view_definitions")
@@ -32,6 +33,7 @@ CharacterSelectionView.init = function (self, ingame_ui_context)
 	self.local_player_id = ingame_ui_context.local_player_id
 	self.is_server = ingame_ui_context.is_server
 	self.is_in_inn = ingame_ui_context.is_in_inn
+	self.voting_manager = ingame_ui_context.voting_manager
 	self.world_manager = ingame_ui_context.world_manager
 
 	local world = self.world_manager:world("level_world")
@@ -263,11 +265,23 @@ CharacterSelectionView.update = function (self, dt, t)
 	self._machine:update(dt, t)
 
 	if not transitioning then
-		self:_handle_mouse_input(dt, t, input_service)
-		self:_handle_exit(dt, input_service)
+		if self:_has_active_level_vote() then
+			self:play_sound("play_gui_start_menu_button_click")
+			self:close_menu()
+		else
+			self:_handle_mouse_input(dt, t, input_service)
+			self:_handle_exit(dt, input_service)
+		end
 	end
 
 	self:draw(dt, input_service)
+end
+
+CharacterSelectionView._has_active_level_vote = function (self)
+	local voting_manager = self.voting_manager
+	local is_mission_vote = voting_manager:vote_in_progress() and voting_manager:is_mission_vote()
+
+	return is_mission_vote and not voting_manager:has_voted(Network.peer_id())
 end
 
 CharacterSelectionView.on_enter = function (self, params)
@@ -633,6 +647,10 @@ CharacterSelectionView._handle_exit = function (self, dt, input_service)
 			self:close_menu(not self.exit_to_game)
 		end
 	end
+end
+
+CharacterSelectionView.get_exit_button_widget = function (self)
+	return self._exit_button_widget
 end
 
 CharacterSelectionView.close_menu = function (self, return_to_main_screen)

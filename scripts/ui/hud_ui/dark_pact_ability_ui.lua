@@ -26,6 +26,8 @@ DarkPactAbilityUI.init = function (self, parent, ingame_ui_context)
 
 	self:_create_ui_elements()
 
+	self._ability_events = {}
+
 	local event_manager = Managers.state.event
 
 	event_manager:register(self, "input_changed", "event_input_changed")
@@ -48,62 +50,10 @@ DarkPactAbilityUI._create_ui_elements = function (self)
 	self._widgets = widgets
 	self._widgets_by_name = widgets_by_name
 	self._widgets_by_ability_name = {}
+	self._career_ability_widgets_by_name = {}
+	self._ability_hud_widgets_by_name = {}
 
 	UIRenderer.clear_scenegraph_queue(self._ui_renderer)
-end
-
-DarkPactAbilityUI._setup_abilities = function (self)
-	if self._ability_widgets then
-		for _, widget in ipairs(self._ability_widgets) do
-			UIRenderer.set_element_visible(self._ui_renderer, widget.element, false)
-		end
-	end
-
-	local definition = create_ability_widget()
-	local widget_width = 138
-	local spacing = 30
-	local total_width = 0
-	local career_extension = self:_get_extension("career_system")
-	local ability_amount = career_extension:ability_amount()
-	local default_icon = "dark_pact_ability_suicide"
-	local ability_widgets = {}
-
-	for index = 1, ability_amount do
-		local ability_data = career_extension:get_activated_ability_data(index)
-
-		if ability_data.show_in_hud then
-			local widget = UIWidget.init(definition)
-			local content = widget.content
-			local style = widget.style
-
-			ability_widgets[#ability_widgets + 1] = widget
-			widget.offset[1] = -total_width
-			total_width = total_width + widget_width + spacing
-
-			local input_action = ability_data.input_action
-			local hud_icon = ability_data.hud_icon or default_icon
-			local hud_icon_glow = hud_icon .. "_glow"
-			local hud_icon_settings = UIAtlasHelper.get_atlas_settings_by_texture_name(hud_icon)
-			local hud_icon_glow_settings = UIAtlasHelper.get_atlas_settings_by_texture_name(hud_icon_glow)
-			local hud_icon_size = hud_icon_settings.size
-			local hud_icon_glow_size = hud_icon_glow_settings.size
-
-			style.icon.texture_size[1] = hud_icon_glow_size[1]
-			style.icon.texture_size[2] = hud_icon_glow_size[2]
-			style.icon_disabled.texture_size[1] = hud_icon_glow_size[1]
-			style.icon_disabled.texture_size[2] = hud_icon_glow_size[2]
-			style.icon_cooldown.texture_size[1] = hud_icon_size[1]
-			style.icon_cooldown.texture_size[2] = hud_icon_size[2]
-			content.input_action = input_action
-			content.icon = hud_icon_glow
-			content.icon_cooldown = hud_icon
-			content.ability_id = index
-		end
-	end
-
-	self._ability_widgets = ability_widgets
-
-	self:event_input_changed()
 end
 
 DarkPactAbilityUI._setup_activated_ability = function (self)
@@ -122,9 +72,6 @@ DarkPactAbilityUI._setup_activated_ability = function (self)
 	end
 
 	self._career_name = career_name
-
-	self:_setup_abilities()
-
 	self._initialized = true
 end
 
@@ -138,121 +85,22 @@ end
 
 DarkPactAbilityUI._update_abilities = function (self, dt, t)
 	local career_extension = self:_get_extension("career_system")
+	local horde_ability_extension
+
+	horde_ability_extension = self:_get_extension("versus_horde_ability_system")
+
 	local career_name = career_extension and career_extension:career_name()
 	local ui_renderer = self._ui_renderer
 
 	if self._career_name ~= career_name then
+		table.clear(self._ability_hud_widgets_by_name)
+
 		self._initialized = false
 
 		return
 	end
 
-	local widgets_by_ability_name = self._widgets_by_ability_name
-	local ability_amount = career_extension:ability_amount()
-	local ability_templates = profile_ability_templates[career_name]
-
-	if not ability_templates then
-		return
-	end
-
-	local status_extension = self:_get_extension("status_system")
-	local is_dead = true
-
-	if status_extension and not status_extension:is_dead() then
-		is_dead = false
-	end
-
-	for ability_id = 1, ability_amount do
-		local ability_name = career_extension:ability_name_by_id(ability_id)
-		local ability_template = ability_templates[ability_name]
-
-		if ability_template then
-			local widgets = widgets_by_ability_name[ability_name]
-
-			if not widgets then
-				widgets = {}
-				widgets_by_ability_name[ability_name] = widgets
-
-				local widget_definitions = ability_template.widget_definitions
-
-				for widget_name, definition in pairs(widget_definitions) do
-					local widget = UIWidget.init(definition)
-
-					widgets[widget_name] = widget
-				end
-			end
-
-			local update_functions = ability_template.update_functions
-
-			for widget_name, widget in pairs(widgets) do
-				local update_function = update_functions[widget_name]
-
-				if update_function then
-					update_function(dt, t, ui_renderer, career_extension, ability_id, widget, is_dead)
-				end
-			end
-		end
-	end
-end
-
-DarkPactAbilityUI._sync_ability_cooldowns = function (self)
-	local career_extension = self:_get_extension("career_system")
-	local career_name = career_extension and career_extension:career_name()
-
-	if self._career_name ~= career_name then
-		self._initialized = false
-
-		return
-	end
-
-	local ability_widgets = self._ability_widgets
-
-	for _, widget in ipairs(ability_widgets) do
-		local content = widget.content
-		local ability_id = content.ability_id
-		local ability_cooldown, max_cooldown = career_extension:current_ability_cooldown(ability_id)
-		local ability_available = career_extension:can_use_activated_ability(ability_id)
-		local uses_cooldown = career_extension:uses_cooldown(ability_id)
-
-		if ability_cooldown then
-			local cooldown_fraction
-
-			if uses_cooldown then
-				cooldown_fraction = ability_cooldown / max_cooldown
-			else
-				cooldown_fraction = ability_available and 0 or 1
-			end
-
-			local update = cooldown_fraction ~= content.current_cooldown_fraction
-
-			if update then
-				self:_set_ability_cooldown_state(widget, cooldown_fraction, not content.current_cooldown_fraction)
-			end
-		end
-	end
-end
-
-DarkPactAbilityUI._set_ability_cooldown_state = function (self, widget, cooldown_fraction, initialize)
-	local content = widget.content
-	local style = widget.style
-
-	content.current_cooldown_fraction = cooldown_fraction
-
-	local on_cooldown = cooldown_fraction ~= 0
-
-	if widget.content.on_cooldown and not on_cooldown then
-		style.icon.color[1] = 0
-		style.icon_cooldown.color[2] = 255
-	elseif on_cooldown and not widget.content.on_cooldown then
-		style.icon_cooldown.color[1] = 255
-		style.icon_cooldown.color[2] = 0
-	end
-
-	style.cooldown_mask.color[1] = 255 * cooldown_fraction
-	widget.content.on_cooldown = on_cooldown
-
-	self:_set_widget_dirty(widget)
-	self:set_dirty()
+	self:_handle_career_abilities(dt, t, career_name, career_extension, horde_ability_extension, ui_renderer)
 end
 
 DarkPactAbilityUI.destroy = function (self)
@@ -260,6 +108,11 @@ DarkPactAbilityUI.destroy = function (self)
 
 	event_manager:unregister("input_changed", self)
 	event_manager:unregister("on_spectator_target_changed", self)
+
+	for event_name, _ in pairs(self._ability_events) do
+		event_manager:unregister(event_name, self)
+	end
+
 	self:set_visible(false)
 	print("[DarkPactAbilityUI] - Destroy")
 end
@@ -291,22 +144,7 @@ DarkPactAbilityUI._set_elements_visible = function (self, visible)
 end
 
 DarkPactAbilityUI._handle_gamepad = function (self)
-	local gamepad_active = Managers.input:is_device_active("gamepad") or not IS_WINDOWS
-
-	if (gamepad_active or UISettings.use_gamepad_hud_layout == "always") and UISettings.use_gamepad_hud_layout ~= "never" then
-		if self._retained_elements_visible then
-			self:_set_elements_visible(false)
-		end
-
-		return false
-	else
-		if not self._retained_elements_visible then
-			self:_set_elements_visible(true)
-			self:event_input_changed()
-		end
-
-		return true
-	end
+	return true
 end
 
 DarkPactAbilityUI.update = function (self, dt, t)
@@ -318,6 +156,10 @@ DarkPactAbilityUI.update = function (self, dt, t)
 	local ghost_mode_extension = ScriptUnit.has_extension(player_unit, "ghost_mode_system")
 	local is_in_ghost_mode = ghost_mode_extension and ghost_mode_extension:is_in_ghost_mode()
 
+	if is_in_ghost_mode then
+		return
+	end
+
 	if not self._initialized then
 		self:_setup_activated_ability()
 
@@ -328,23 +170,6 @@ DarkPactAbilityUI.update = function (self, dt, t)
 		return
 	end
 
-	local dirty = false
-	local ability_widgets = self._ability_widgets
-
-	for _, widget in ipairs(ability_widgets) do
-		local content = widget.content
-		local current_cooldown_fraction = content.current_cooldown_fraction
-
-		if current_cooldown_fraction == 0 and self:_update_ability_animations(widget, dt) then
-			dirty = true
-		end
-	end
-
-	if dirty then
-		self:set_dirty()
-	end
-
-	self:_sync_ability_cooldowns()
 	self:_handle_resolution_modified()
 	self:draw(dt, t)
 end
@@ -385,6 +210,12 @@ DarkPactAbilityUI.draw = function (self, dt, t)
 
 	for _, widget in ipairs(self._widgets) do
 		UIRenderer.draw_widget(ui_renderer, widget)
+	end
+
+	if self._career_ability_widgets_by_name then
+		for _, widget in pairs(self._career_ability_widgets_by_name) do
+			UIRenderer.draw_widget(ui_renderer, widget)
+		end
 	end
 
 	UIRenderer.end_pass(ui_renderer)
@@ -532,5 +363,164 @@ DarkPactAbilityUI.on_spectator_target_changed = function (self, spectated_player
 		self:set_visible(true)
 	else
 		self:set_visible(false)
+	end
+end
+
+DarkPactAbilityUI.event_on_warpfire_thrower_ammo_changed = function (self, unit, current_firing_time)
+	local ability_widgets = self._ability_hud_widgets_by_name and self._ability_hud_widgets_by_name[1]
+
+	if not ability_widgets then
+		return
+	end
+
+	local widget = ability_widgets.ammo
+
+	if not widget then
+		return
+	end
+
+	local content = widget.content
+	local style = widget.style
+
+	if not self._max_firing_time then
+		local breed = Unit.get_data(unit, "breed")
+
+		self._max_firing_time = breed.shoot_warpfire_max_flame_time
+	end
+
+	local current_firing_time_progress = current_firing_time / self._max_firing_time
+
+	if self._current_firing_time ~= current_firing_time_progress then
+		self._current_firing_time = current_firing_time_progress
+		content.progress = current_firing_time_progress
+		content.current_progress = current_firing_time_progress
+	end
+end
+
+DarkPactAbilityUI.event_on_dark_pact_ammo_changed = function (self, unit, current_ammo)
+	local ability_widgets = self._ability_hud_widgets_by_name and self._ability_hud_widgets_by_name[2]
+
+	if not ability_widgets then
+		return
+	end
+
+	local widget = ability_widgets.ammo
+
+	if not widget then
+		return
+	end
+
+	if not current_ammo then
+		local blackboard = BLACKBOARDS[unit]
+		local data = blackboard.attack_pattern_data or {}
+
+		if data.current_ammo then
+			current_ammo = data.current_ammo
+		else
+			local breed = Unit.get_data(unit, "breed")
+
+			current_ammo = breed.max_ammo
+		end
+	end
+
+	local remaining_ammo = 0
+	local content = widget.content
+	local ammo_empty = current_ammo + remaining_ammo == 0
+	local ammo_changed = false
+
+	if self._ammo_count ~= current_ammo then
+		self._ammo_count = current_ammo
+		content.current_ammo = tostring(current_ammo)
+		ammo_changed = true
+	end
+
+	if self._remaining_ammo ~= remaining_ammo then
+		local breed = Unit.get_data(unit, "breed")
+
+		remaining_ammo = breed.max_ammo
+		self._remaining_ammo = remaining_ammo
+		content.remaining_ammo = tostring(remaining_ammo)
+		ammo_changed = true
+	end
+end
+
+DarkPactAbilityUI._handle_career_abilities = function (self, dt, t, career_name, career_extension, horde_ability_extension, ui_renderer)
+	local player, player_unit = self:_get_player_unit()
+	local profile_index = player:profile_index()
+	local career_index = player:career_index()
+	local profile_settings = SPProfiles[profile_index]
+	local career_settings = profile_settings.careers[career_index]
+	local career_info_settings = career_settings.career_info_settings
+	local ability_amount = #career_info_settings
+	local career_name = career_extension and career_extension:career_name()
+	local widgets_by_ability_name = self._widgets_by_ability_name
+	local ability_templates = profile_ability_templates[career_name]
+	local status_extension = self:_get_extension("status_system")
+	local is_dead = true
+
+	if status_extension and not status_extension:is_dead() then
+		is_dead = false
+	end
+
+	local base_offset = -(80 * ability_amount * 0.5)
+
+	for i = 1, #ability_templates do
+		if not self._ability_hud_widgets_by_name[i] then
+			local ability_ui_data = ability_templates[i]
+			local widget_definitions = ability_ui_data.widget_definitions
+			local widgets = {}
+
+			for widget_name, widget_definition in pairs(widget_definitions) do
+				local widget = UIWidget.init(widget_definition)
+
+				if widget_name == "ability_icon" then
+					widget.content.settings = career_info_settings[i]
+					widget.offset[1] = base_offset + 80 * (i - 1)
+				end
+
+				widgets[widget_name] = widget
+			end
+
+			if ability_ui_data.events then
+				local ability_events = ability_ui_data.events
+
+				for event_name, call_back in pairs(ability_events) do
+					self._ability_events[#self._ability_events + 1] = {
+						event_name,
+						call_back,
+					}
+
+					Managers.state.event:register(self, event_name, call_back)
+				end
+			end
+
+			self._ability_hud_widgets_by_name[#self._ability_hud_widgets_by_name + 1] = widgets
+
+			local left_detail = self._widgets_by_name.abilities_detail_left
+			local right_detail = self._widgets_by_name.abilities_detail_right
+
+			left_detail.offset[1] = base_offset - 88 + 20
+			right_detail.offset[1] = base_offset + 80 * ability_amount - 20
+		end
+	end
+
+	for i = 1, #ability_templates do
+		local ability_ui_data = ability_templates[i]
+		local update_functions = ability_ui_data.update_functions
+		local ability_widgets = self._ability_hud_widgets_by_name[i]
+
+		for widget_name, widget in pairs(ability_widgets) do
+			local update_function = update_functions and update_functions[widget_name]
+
+			if update_function then
+				if ability_ui_data.ability_name then
+					local _, ability_id = career_extension:ability_by_name(ability_ui_data.ability_name)
+
+					update_function(dt, t, ui_renderer, career_extension, ability_id, widget, is_dead, player_unit, horde_ability_extension)
+				end
+			elseif not is_dead then
+				UIRenderer.draw_widget(ui_renderer, widget)
+			end
+		end
 	end
 end

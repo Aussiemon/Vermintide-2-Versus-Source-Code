@@ -10,7 +10,7 @@ VersusGameServerSlotReservationHandler.init = function (self, parties)
 	if num_slot_override then
 		printf("Modifying party definitions, num_players: %s", tostring(num_slot_override))
 
-		num_slot_override = string.split(num_slot_override, ",")
+		num_slot_override = string.split_deprecated(num_slot_override, ",")
 	end
 
 	local party_manager = Managers.party
@@ -280,6 +280,41 @@ VersusGameServerSlotReservationHandler.reservers = function (self)
 	return reservers
 end
 
+VersusGameServerSlotReservationHandler.peers = function (self, peers)
+	peers = peers or {}
+
+	local reserved_peers = self._reserved_peers
+
+	for party_id = 1, #reserved_peers do
+		local party_slots = reserved_peers[party_id]
+
+		for slot_index = 1, #party_slots do
+			local peer_id = party_slots[slot_index].peer_id
+
+			if peer_id then
+				peers[#peers + 1] = peer_id
+			end
+		end
+	end
+
+	return peers
+end
+
+VersusGameServerSlotReservationHandler.party_peers = function (self, party_id)
+	local peers = {}
+	local party_slots = self._reserved_peers[party_id]
+
+	for slot_index = 1, #party_slots do
+		local peer_id = party_slots[slot_index].peer_id
+
+		if peer_id then
+			peers[#peers + 1] = peer_id
+		end
+	end
+
+	return peers
+end
+
 VersusGameServerSlotReservationHandler.is_all_reserved_peers_joined = function (self, members_map)
 	local reserved_peers = self._reserved_peers
 
@@ -305,11 +340,13 @@ VersusGameServerSlotReservationHandler.party_id = function (self, peer_id)
 	for party_id = 1, #reserved_peers do
 		local party_slots = reserved_peers[party_id]
 
-		for slot_id = 1, #party_slots do
-			local slot = party_slots[slot_id]
+		if party_slots then
+			for slot_id = 1, #party_slots do
+				local slot = party_slots[slot_id]
 
-			if slot.peer_id == peer_id then
-				return party_id
+				if slot.peer_id == peer_id then
+					return party_id
+				end
 			end
 		end
 	end
@@ -394,7 +431,7 @@ VersusGameServerSlotReservationHandler._print_reservations = function (self)
 		result = result .. party_result
 	end
 
-	cprintf(result .. details)
+	cprint(result .. details)
 end
 
 VersusGameServerSlotReservationHandler._find_party_with_least_peers_and_enough_room = function (self, num_peers)
@@ -889,4 +926,39 @@ VersusGameServerSlotReservationHandler._is_state_waiting_for_fully_reserved = fu
 	local game_mode_state = game_mode and game_mode:game_mode_state()
 
 	return game_mode_state == "dedicated_server_waiting_for_fully_reserved"
+end
+
+VersusGameServerSlotReservationHandler.player_joined_party = function (self, peer_id, local_player_id, party_id, slot_id, is_bot)
+	if is_bot or party_id == 0 then
+		return
+	end
+
+	local current_party_id = self:party_id(peer_id)
+	local party = Managers.party:get_party(party_id)
+
+	if current_party_id and not party.game_participating then
+		local remove_safe = true
+
+		self:unreserve_slot(peer_id, nil, remove_safe)
+
+		return
+	end
+
+	if not current_party_id or current_party_id == party_id then
+		return
+	end
+
+	local ignore_assert = true
+
+	self:move_player(peer_id, party_id, ignore_assert)
+end
+
+VersusGameServerSlotReservationHandler.party_id_by_peer = function (self, peer_id)
+	local _, party_id = Managers.party:get_party_from_player_id(peer_id, 1)
+
+	if not party_id or party_id == 0 then
+		party_id = self:party_id(peer_id)
+	end
+
+	return party_id
 end

@@ -899,7 +899,7 @@ BTConditions.bot_should_heal = function (blackboard)
 	local low_on_perma_health = perma_health_percent <= template.bot_heal_threshold
 	local heavy_curse = blackboard.health_extension:get_max_health() <= 75
 	local target_unit = blackboard.target_unit
-	local is_safe = not target_unit or not (not template.fast_heal and not blackboard.is_healing_self) and #blackboard.proximite_enemies == 0 or target_unit ~= blackboard.priority_target_enemy and target_unit ~= blackboard.urgent_target_enemy and target_unit ~= blackboard.proximity_target_enemy and target_unit ~= blackboard.slot_target_enemy
+	local is_safe = not target_unit or (template.fast_heal or blackboard.is_healing_self) and #blackboard.proximite_enemies == 0 or target_unit ~= blackboard.priority_target_enemy and target_unit ~= blackboard.urgent_target_enemy and target_unit ~= blackboard.proximity_target_enemy and target_unit ~= blackboard.slot_target_enemy
 
 	return is_safe and (force_use_health_pickup or not has_no_permanent_health_from_item_buff and (hurt or wounded and (low_on_perma_health or heavy_curse)) or has_no_permanent_health_from_item_buff and hurt and wounded)
 end
@@ -1165,28 +1165,21 @@ BTConditions.cant_reach_ally = function (blackboard)
 	end
 
 	local self_unit = blackboard.unit
-	local level_settings = LevelHelper:current_level_settings()
-	local disable_bot_main_path_teleport_check = level_settings.disable_bot_main_path_teleport_check
-	local is_forwards
+	local conflict_director = Managers.state.conflict
+	local self_segment = conflict_director:get_player_unit_segment(self_unit)
+	local target_segment = conflict_director:get_player_unit_segment(follow_unit)
 
-	if not disable_bot_main_path_teleport_check then
-		local conflict_director = Managers.state.conflict
-		local self_segment = conflict_director:get_player_unit_segment(self_unit)
-		local target_segment = conflict_director:get_player_unit_segment(follow_unit)
-
-		if not self_segment or not target_segment then
-			return false
-		end
-
-		local is_backwards = target_segment < self_segment
-
-		if is_backwards then
-			return false
-		end
-
-		is_forwards = self_segment < target_segment
+	if not self_segment or not target_segment then
+		return false
 	end
 
+	local is_backwards = target_segment < self_segment
+
+	if is_backwards then
+		return false
+	end
+
+	local is_forwards = self_segment < target_segment
 	local bot_whereabouts_extension = ScriptUnit.extension(self_unit, "whereabouts_system")
 	local follow_unit_whereabouts_extension = ScriptUnit.extension(follow_unit, "whereabouts_system")
 	local self_position = bot_whereabouts_extension:last_position_on_navmesh()
@@ -1200,7 +1193,7 @@ BTConditions.cant_reach_ally = function (blackboard)
 	local navigation_extension = blackboard.navigation_extension
 	local fails, last_success = navigation_extension:successive_failed_paths()
 
-	return blackboard.moving_toward_follow_position and fails > (not (not disable_bot_main_path_teleport_check and not is_forwards) and 1 or 5) and t - last_success > 5
+	return blackboard.moving_toward_follow_position and fails > (is_forwards and 1 or 5) and t - last_success > 5
 end
 
 local FOLLOW_TELEPORT_DISTANCE_SQ = 1600
@@ -1213,17 +1206,12 @@ BTConditions.should_teleport = function (blackboard)
 	end
 
 	local self_unit = blackboard.unit
-	local level_settings = LevelHelper:current_level_settings()
-	local disable_bot_main_path_teleport_check = level_settings.disable_bot_main_path_teleport_check
+	local conflict_director = Managers.state.conflict
+	local self_segment = conflict_director:get_player_unit_segment(self_unit) or 1
+	local target_segment = conflict_director:get_player_unit_segment(follow_unit)
 
-	if not disable_bot_main_path_teleport_check then
-		local conflict_director = Managers.state.conflict
-		local self_segment = conflict_director:get_player_unit_segment(self_unit) or 1
-		local target_segment = conflict_director:get_player_unit_segment(follow_unit)
-
-		if not target_segment or target_segment < self_segment then
-			return false
-		end
+	if not target_segment or target_segment < self_segment then
+		return false
 	end
 
 	local has_priority_target = blackboard.target_unit and blackboard.target_unit == blackboard.priority_target_enemy

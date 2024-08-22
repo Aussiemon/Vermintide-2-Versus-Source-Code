@@ -39,6 +39,7 @@ local breed_data = {
 	flingable = true,
 	has_inventory = true,
 	has_running_attack = true,
+	height = 1.7,
 	hit_effect_template = "HitEffectsSkavenPlagueMonk",
 	hit_mass_count = 2.5,
 	hit_reaction = "ai_default",

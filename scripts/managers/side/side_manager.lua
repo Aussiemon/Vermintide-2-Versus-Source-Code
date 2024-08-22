@@ -2,6 +2,8 @@
 
 require("scripts/managers/side/side")
 
+local side_manager_testify = script_data.testify and require("scripts/managers/side/side_manager_testify")
+
 SideManager = class(SideManager)
 ALL_PLAYER_AND_BOT_UNITS = {}
 
@@ -185,10 +187,6 @@ SideManager.add_player_unit_to_side = function (self, player_unit, side_id)
 	end
 
 	self._player_units_lookup[player_unit] = true
-
-	local player = Managers.player:owner(player_unit)
-
-	Managers.state.event:trigger("on_player_joined_side", player:unique_id(), player:local_player_id(), side_id)
 end
 
 SideManager.remove_player_unit_from_side = function (self, player_unit)
@@ -573,4 +571,8 @@ SideManager.get_side_from_player_unique_id = function (self, unique_id)
 	local side = self.side_by_party[player_party]
 
 	return side
+end
+
+SideManager.update_testify = function (self, dt, t)
+	Testify:poll_requests_through_handler(side_manager_testify, self)
 end

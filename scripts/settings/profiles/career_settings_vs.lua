@@ -3,7 +3,7 @@
 local function local_is_unlocked_function(career, hero_name, hero_level)
 	local unlocked, reason = career:override_available_for_mechanism()
 
-	if unlocked ~= nil then
+	if not unlocked then
 		return unlocked, reason
 	end
 
@@ -30,11 +30,11 @@ local function local_override_available_for_mechanism(career)
 	local settings = Managers.mechanism:mechanism_setting_for_title("override_career_availability")
 	local career_name = career.display_name
 
-	if settings and settings[career_name] ~= nil then
-		return settings[career_name], "disabled_for_mechanism"
+	if settings and settings[career_name] == false then
+		return false, "disabled_for_mechanism"
 	end
 
-	return nil
+	return true
 end
 
 CareerActionNames.vs_gutter_runner = {}
@@ -42,9 +42,7 @@ CareerActionNames.vs_poison_wind_globadier = {}
 CareerActionNames.vs_packmaster = {}
 CareerActionNames.vs_ratling_gunner = {}
 CareerActionNames.vs_warpfire_thrower = {}
-CareerActionNames.vs_chaos_spawn = {}
-CareerActionNames.vs_stormfiend = {}
-CareerActionNames.vs_rat_ogre = {}
+CareerActionNames.vs_chaos_troll = {}
 CareerSettings.vs_undecided = {
 	description = "vs_pactsworn_undecided_desc",
 	display_name = "vs_undecided",
@@ -84,7 +82,6 @@ CareerSettings.vs_gutter_runner = {
 	attributes = {
 		base_critical_strike_chance = 0.05,
 		max_hp = 30,
-		max_hp_kd = 300,
 	},
 	video = {
 		material_name = "wh_zealot",
@@ -98,12 +95,18 @@ CareerSettings.vs_gutter_runner = {
 	career_info_settings = {
 		{
 			description = "vs_htp_gutter_pounce_description_line1",
-			icon = "htp_icon_gutter_runner_01",
+			gamepad_input = "action_one",
+			icon = "gutter_runner_01",
+			input_action = "action_one",
+			name = "pounce",
 			title = "vs_htp_gutter_pounce",
 		},
 		{
 			description = "vs_htp_gutter_smoke_description_line1",
-			icon = "htp_icon_gutter_runner_02",
+			gamepad_input = "ability",
+			icon = "gutter_runner_02",
+			input_action = "action_career",
+			name = "foff",
 			title = "vs_htp_gutter_smoke",
 		},
 	},
@@ -179,7 +182,6 @@ CareerSettings.vs_poison_wind_globadier = {
 	attributes = {
 		base_critical_strike_chance = 0.05,
 		max_hp = 30,
-		max_hp_kd = 300,
 	},
 	video = {
 		material_name = "dr_slayer",
@@ -193,7 +195,10 @@ CareerSettings.vs_poison_wind_globadier = {
 	career_info_settings = {
 		{
 			description = "vs_htp_globadier_globe_description_line2",
-			icon = "htp_icon_globardier_01",
+			gamepad_input = "action_one",
+			icon = "globadier_01",
+			input_action = "action_one",
+			name = "gas",
 			title = "vs_htp_globadier_globe",
 		},
 	},
@@ -240,7 +245,7 @@ CareerSettings.vs_poison_wind_globadier = {
 	},
 }
 CareerSettings.vs_packmaster = {
-	base_skin = "skaven_packmaster_skin_0000",
+	base_skin = "skaven_pack_master_skin_0000",
 	base_weapon = "vs_packmaster_claw",
 	category_image = "category_icon_vs_packmaster",
 	description = "vs_pactsworn_special_packmaster_desc",
@@ -265,8 +270,7 @@ CareerSettings.vs_packmaster = {
 	passive_ability = PassiveAbilitySettings.vs_packmaster,
 	attributes = {
 		base_critical_strike_chance = 0.05,
-		max_hp = 30,
-		max_hp_kd = 300,
+		max_hp = 50,
 	},
 	video = {
 		material_name = "dr_slayer",
@@ -280,13 +284,12 @@ CareerSettings.vs_packmaster = {
 	career_info_settings = {
 		{
 			description = "vs_htp_packmaster_hook_description_line1",
-			icon = "htp_icon_packmaster_01",
+			double_input = true,
+			gamepad_input = "action_one",
+			icon = "packmaster_01",
+			input_action = "action_one",
+			name = "grab",
 			title = "vs_htp_packmaster_hook",
-		},
-		{
-			description = "vs_htp_packmaster_hoist_description_line1",
-			icon = "htp_icon_packmaster_02",
-			title = "vs_htp_packmaster_hoist",
 		},
 	},
 	is_unlocked_function = local_is_unlocked_function,
@@ -360,8 +363,6 @@ CareerSettings.vs_ratling_gunner = {
 	attributes = {
 		base_critical_strike_chance = 0.05,
 		max_hp = 50,
-		max_hp_kd = 300,
-		movement_speed = 9,
 	},
 	video = {
 		material_name = "dr_slayer",
@@ -375,12 +376,17 @@ CareerSettings.vs_ratling_gunner = {
 	career_info_settings = {
 		{
 			description = "vs_htp_ratling_gun_description_line1",
-			icon = "htp_icon_ratling_gunner_01",
+			gamepad_input = "action_one",
+			icon = "ratling_gunner_01",
+			input_action = "action_one",
 			title = "vs_htp_ratling_rapidfire",
 		},
 		{
 			description = "vs_htp_ratling_reload_description_line1",
-			icon = "icons_placeholder",
+			gamepad_input = "weapon_reload_input",
+			icon = "ratling_gunner_03",
+			input_action = "weapon_reload_hold",
+			name = "fire",
 			title = "vs_htp_ratling_reload",
 		},
 	},
@@ -418,8 +424,6 @@ CareerSettings.vs_ratling_gunner = {
 		},
 	},
 	additional_character_states_list = {
-		"RatlingGunnerStateFiring",
-		"RatlingGunnerStateReloading",
 		"RatlingGunnerStateStanding",
 		"RatlingGunnerStateWalking",
 		"RatlingGunnerStateJumping",
@@ -451,9 +455,7 @@ CareerSettings.vs_warpfire_thrower = {
 	passive_ability = PassiveAbilitySettings.vs_warpfire_thrower,
 	attributes = {
 		base_critical_strike_chance = 0.05,
-		max_hp = 25,
-		max_hp_kd = 300,
-		movement_speed = 4.5,
+		max_hp = 50,
 	},
 	video = {
 		material_name = "dr_slayer",
@@ -467,7 +469,10 @@ CareerSettings.vs_warpfire_thrower = {
 	career_info_settings = {
 		{
 			description = "vs_htp_warpfire_blast_description_line1",
-			icon = "htp_icon_warpfire_thrower_01",
+			gamepad_input = "action_one",
+			icon = "warpfire_thrower_01",
+			input_action = "action_one",
+			name = "fire",
 			title = "vs_htp_wapfire_blast",
 		},
 	},
@@ -512,38 +517,60 @@ CareerSettings.vs_warpfire_thrower = {
 		"WarpfireThrowerStateFalling",
 	},
 }
-CareerSettings.vs_chaos_spawn = {
-	base_skin = "chaos_spawn_skin_0000",
-	description = "vs_pactsworn_special_chaos_spawn_desc",
-	display_name = "vs_chaos_spawn",
+CareerSettings.vs_chaos_troll = {
+	base_skin = "chaos_troll_skin_0000",
+	base_weapon = "vs_chaos_troll_axe",
+	category_image = "icons_placeholder",
+	description = "vs_pactsworn_special_chaos_troll_desc",
+	display_name = "vs_chaos_troll",
 	excluded_from_weave_loadouts = true,
 	icon = "icons_placeholder",
-	name = "vs_chaos_spawn",
+	name = "vs_chaos_troll",
 	package_name = "resource_packages/careers/dr_slayer",
-	playfab_name = "vs_chaos_spawn",
-	portrait_image = "unit_frame_portrait_vs_chaos_spawn",
+	picking_image = "medium_unit_frame_portrait_troll",
+	playfab_name = "vs_chaos_troll",
+	portrait_image = "unit_frame_portrait_vs_chaos_troll",
 	preview_animation = "idle",
 	preview_idle_animation = "idle",
 	preview_wield_slot = "melee",
-	profile_name = "vs_chaos_spawn",
+	profile_name = "vs_chaos_troll",
 	sort_order = 3,
 	sound_character = "dwarf_slayer",
 	talent_tree_index = 1,
-	breed = PlayerBreeds.vs_chaos_spawn,
+	breed = PlayerBreeds.vs_chaos_troll,
 	item_types = {},
-	activated_ability = ActivatedAbilitySettings.vs_chaos_spawn,
-	passive_ability = PassiveAbilitySettings.vs_chaos_spawn,
+	activated_ability = ActivatedAbilitySettings.vs_chaos_troll,
+	passive_ability = PassiveAbilitySettings.vs_chaos_troll,
 	attributes = {
 		base_critical_strike_chance = 0.05,
-		max_hp = 600,
-		max_hp_kd = 300,
-		movement_speed = 4.5,
+		max_hp = 750,
 	},
 	video = {
 		material_name = "dr_slayer",
 		resource = "video/career_videos/bardin/dr_slayer",
 	},
-	preview_items = {},
+	preview_items = {
+		{
+			item_name = "vs_chaos_troll_axe",
+		},
+	},
+	career_info_settings = {
+		{
+			description = "vs_htp_troll_melee_description_line1",
+			gamepad_input = "action_one",
+			icon = "troll_01",
+			input_action = "action_one",
+			title = "vs_htp_troll_melee",
+		},
+		{
+			description = "vs_htp_troll_vomit_description_line1",
+			gamepad_input = "ability",
+			icon = "troll_02",
+			input_action = "action_career",
+			name = "vomit",
+			title = "vs_htp_troll_vomit",
+		},
+	},
 	is_unlocked_function = local_is_unlocked_function,
 	is_dlc_unlocked = local_is_dlc_unlocked,
 	override_available_for_mechanism = local_override_available_for_mechanism,
@@ -578,154 +605,11 @@ CareerSettings.vs_chaos_spawn = {
 		},
 	},
 	additional_character_states_list = {
-		"ChaosSpawnStateStanding",
-		"ChaosSpawnStateWalking",
-		"ChaosSpawnJumping",
-		"ChaosSpawnFalling",
-	},
-}
-CareerSettings.vs_stormfiend = {
-	base_skin = "skaven_stormfiend_skin_0000",
-	description = "vs_pactsworn_special_stormfiend_desc",
-	display_name = "vs_stormfiend",
-	excluded_from_weave_loadouts = true,
-	icon = "icons_placeholder",
-	name = "vs_stormfiend",
-	package_name = "resource_packages/careers/dr_slayer",
-	playfab_name = "vs_stormfiend",
-	portrait_image = "unit_frame_portrait_vs_stormfiend",
-	preview_animation = "idle",
-	preview_idle_animation = "idle",
-	preview_wield_slot = "melee",
-	profile_name = "vs_stormfiend",
-	sort_order = 3,
-	sound_character = "dwarf_slayer",
-	talent_tree_index = 1,
-	breed = PlayerBreeds.vs_stormfiend,
-	item_types = {},
-	activated_ability = ActivatedAbilitySettings.vs_stormfiend,
-	passive_ability = PassiveAbilitySettings.vs_stormfiend,
-	attributes = {
-		base_critical_strike_chance = 0.05,
-		max_hp = 550,
-		max_hp_kd = 300,
-		movement_speed = 4.5,
-	},
-	video = {
-		material_name = "dr_slayer",
-		resource = "video/career_videos/bardin/dr_slayer",
-	},
-	preview_items = {},
-	is_unlocked_function = local_is_unlocked_function,
-	is_dlc_unlocked = local_is_dlc_unlocked,
-	override_available_for_mechanism = local_override_available_for_mechanism,
-	loadout_equipment_slots = {
-		"melee",
-		"melee",
-		"necklace",
-		"ring",
-		"trinket",
-	},
-	item_slot_types_by_slot_name = {
-		slot_melee = {
-			"melee",
-		},
-		slot_necklace = {
-			"necklace",
-		},
-		slot_ring = {
-			"ring",
-		},
-		slot_trinket_1 = {
-			"trinket",
-		},
-		slot_hat = {
-			"hat",
-		},
-		slot_skin = {
-			"skin",
-		},
-		slot_frame = {
-			"frame",
-		},
-	},
-	additional_character_states_list = {
-		"StormfiendStateStanding",
-		"StormfiendStateWalking",
-		"StormfiendStateJumping",
-		"StormfiendStateFalling",
-	},
-}
-CareerSettings.vs_rat_ogre = {
-	base_skin = "skaven_rat_ogre_skin_0000",
-	description = "vs_pactsworn_special_rat_ogre_desc",
-	display_name = "vs_rat_ogre",
-	excluded_from_weave_loadouts = true,
-	icon = "icons_placeholder",
-	name = "vs_rat_ogre",
-	package_name = "resource_packages/careers/dr_slayer",
-	playfab_name = "vs_rat_ogre",
-	portrait_image = "unit_frame_portrait_vs_rat_ogre",
-	preview_animation = "idle",
-	preview_idle_animation = "idle",
-	preview_wield_slot = "melee",
-	profile_name = "vs_rat_ogre",
-	sort_order = 3,
-	sound_character = "dwarf_slayer",
-	talent_tree_index = 1,
-	breed = PlayerBreeds.vs_rat_ogre,
-	item_types = {},
-	activated_ability = ActivatedAbilitySettings.vs_rat_ogre,
-	passive_ability = PassiveAbilitySettings.vs_rat_ogre,
-	attributes = {
-		base_critical_strike_chance = 0.05,
-		max_hp = 600,
-		max_hp_kd = 300,
-		movement_speed = 4.5,
-	},
-	video = {
-		material_name = "dr_slayer",
-		resource = "video/career_videos/bardin/dr_slayer",
-	},
-	preview_items = {},
-	is_unlocked_function = local_is_unlocked_function,
-	is_dlc_unlocked = local_is_dlc_unlocked,
-	override_available_for_mechanism = local_override_available_for_mechanism,
-	loadout_equipment_slots = {
-		"melee",
-		"melee",
-		"necklace",
-		"ring",
-		"trinket",
-	},
-	item_slot_types_by_slot_name = {
-		slot_melee = {
-			"melee",
-		},
-		slot_necklace = {
-			"necklace",
-		},
-		slot_ring = {
-			"ring",
-		},
-		slot_trinket_1 = {
-			"trinket",
-		},
-		slot_hat = {
-			"hat",
-		},
-		slot_skin = {
-			"skin",
-		},
-		slot_frame = {
-			"frame",
-		},
-	},
-	additional_character_states_list = {
-		"RatOgreStateStanding",
-		"RatOgreStateWalking",
-		"RatOgreStateJumping",
-		"RatOgreStateFalling",
+		"ChaosTrollStateStanding",
+		"ChaosTrollStateVomiting",
+		"ChaosTrollStateWalking",
+		"ChaosTrollStateJumping",
+		"ChaosTrollStateFalling",
 	},
 }
 CareerSettings.spectator = {

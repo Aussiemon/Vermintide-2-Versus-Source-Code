@@ -190,6 +190,7 @@ local skins = {
 	{
 		name = "we_longbow_skin_02_magic_01",
 		data = {
+			ammo_unit = "units/weapons/player/wpn_we_quiver_t1/wpn_we_arrow_t1",
 			description = "we_longbow_skin_02_magic_01_description",
 			display_name = "we_longbow_skin_02_magic_01_name",
 			display_unit = "units/weapons/weapon_display/display_bow",
@@ -284,6 +285,7 @@ local skins = {
 	{
 		name = "es_longbow_skin_04_magic_01",
 		data = {
+			ammo_unit = "units/weapons/player/wpn_emp_arrows/wpn_es_arrow_t1",
 			description = "es_longbow_skin_04_magic_01_description",
 			display_name = "es_longbow_skin_04_magic_01_name",
 			display_unit = "units/weapons/weapon_display/display_longbow",
@@ -310,6 +312,7 @@ local skins = {
 	{
 		name = "we_shortbow_skin_02_magic_01",
 		data = {
+			ammo_unit = "units/weapons/player/wpn_we_quiver_t1/wpn_we_arrow_t1",
 			description = "we_shortbow_skin_02_magic_01_description",
 			display_name = "we_shortbow_skin_02_magic_01_name",
 			display_unit = "units/weapons/weapon_display/display_bow",
@@ -323,6 +326,7 @@ local skins = {
 	{
 		name = "we_shortbow_hagbane_skin_02_magic_01",
 		data = {
+			ammo_unit = "units/weapons/player/wpn_we_quiver_t1/wpn_we_poison_arrow_t1",
 			description = "we_shortbow_hagbane_skin_02_magic_01_description",
 			display_name = "we_shortbow_hagbane_skin_02_magic_01_name",
 			display_unit = "units/weapons/weapon_display/display_bow",
@@ -561,6 +565,7 @@ local skins = {
 	{
 		name = "wh_crossbow_skin_06_magic_01",
 		data = {
+			ammo_unit = "units/weapons/player/wpn_crossbow_quiver/wpn_crossbow_bolt",
 			description = "wh_crossbow_skin_06_magic_01_description",
 			display_name = "wh_crossbow_skin_06_magic_01_name",
 			display_unit = "units/weapons/weapon_display/display_1h_crossbow",
@@ -574,6 +579,7 @@ local skins = {
 	{
 		name = "dw_crossbow_skin_03_magic_01",
 		data = {
+			ammo_unit = "units/weapons/player/wpn_crossbow_quiver/wpn_crossbow_bolt",
 			description = "dw_crossbow_skin_03_magic_01_description",
 			display_name = "dw_crossbow_skin_03_magic_01_name",
 			display_unit = "units/weapons/weapon_display/display_1h_crossbow",

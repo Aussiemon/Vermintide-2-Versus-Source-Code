@@ -2,6 +2,7 @@
 
 require("scripts/managers/unlock/unlock_clan")
 require("scripts/managers/unlock/unlock_dlc")
+require("scripts/managers/unlock/unlock_dlc_bundle")
 require("scripts/managers/unlock/unlock_game")
 require("scripts/managers/unlock/always_unlocked")
 require("scripts/settings/unlock_settings")
@@ -62,8 +63,9 @@ UnlockManager._init_unlocks = function (self)
 			local requires_restart = unlock_config.requires_restart
 			local cosmetic = unlock_config.cosmetic
 			local is_legacy_console_dlc = unlock_config.is_legacy_console_dlc
+			local bundle_contains = unlock_config.bundle_contains
 			local class = rawget(_G, class_name)
-			local instance = class:new(unlock_name, id, backend_reward_id, always_unlocked_game_app_ids, cosmetic, fallback_id, requires_restart, is_legacy_console_dlc)
+			local instance = class:new(unlock_name, id, backend_reward_id, always_unlocked_game_app_ids, cosmetic, fallback_id, requires_restart, is_legacy_console_dlc, bundle_contains)
 
 			unlocks[unlock_name] = instance
 			unlocks_indexed[i][unlock_name] = instance
@@ -657,22 +659,22 @@ UnlockManager._update_backend_unlocks = function (self, t)
 		if not self._handled_reminders_popups then
 			local new_dlcs_unlocks = SaveData.new_dlcs_unlocks or {}
 
-			for dlc_name, popup_settings in pairs(CommonPopupSettings) do
-				local first_time = new_dlcs_unlocks[dlc_name]
+			for dlc_name, first_time in pairs(new_dlcs_unlocks) do
+				local popup_settings = CommonPopupSettings[dlc_name]
 
-				if first_time or popup_settings.display_on_every_boot then
-					if popup_settings.popup_type == "reminder" then
+				if popup_settings then
+					if (first_time or popup_settings.display_on_every_boot) and popup_settings.popup_type == "reminder" then
 						Managers.state.event:trigger("ui_show_popup", dlc_name, "reminder")
-
-						self._handled_reminders_popups = true
 					else
 						new_dlcs_unlocks[dlc_name] = false
 					end
+				else
+					new_dlcs_unlocks[dlc_name] = false
 				end
 			end
-		end
 
-		if not self:_has_new_dlc() then
+			self._handled_reminders_popups = true
+		elseif not self:_has_new_dlc() then
 			self._state = "query_unlocked"
 		end
 	elseif self._state == "query_unlocked" then

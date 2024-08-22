@@ -228,6 +228,10 @@ InteractionDefinitions.revive = {
 				end
 
 				event_data.target_name = ScriptUnit.extension(interactable_unit, "dialogue_system").context.player_profile
+
+				local status_ext = ScriptUnit.extension(interactor_unit, "status_system")
+
+				status_ext:set_reviving(true, interactable_unit)
 			end
 
 			data.duration = duration
@@ -277,6 +281,10 @@ InteractionDefinitions.revive = {
 					first_person_extension:set_wanted_player_height("knocked_down", t)
 				end
 			end
+
+			local status_ext = ScriptUnit.extension(interactor_unit, "status_system")
+
+			status_ext:set_reviving(false, interactable_unit)
 		end,
 		get_progress = function (data, config, t)
 			local duration = data.duration
@@ -778,7 +786,9 @@ InteractionDefinitions.smartobject = {
 
 			data.start_time = nil
 
-			Unit.animation_event(interactor_unit, "interaction_end")
+			if Unit.has_animation_event(interactor_unit, "interaction_end") then
+				Unit.animation_event(interactor_unit, "interaction_end")
+			end
 
 			if result == InteractionResult.SUCCESS and Unit.get_data(interactable_unit, "interaction_data", "only_once") then
 				Unit.set_data(interactable_unit, "interaction_data", "used", true)
@@ -1101,19 +1111,21 @@ InteractionDefinitions.pickup_object = {
 					end
 				end
 
-				if local_bot_or_human then
+				if data.is_server then
+					local pickup_name = Unit.get_data(interactable_unit, "interaction_data", "item_name")
 					local dialogue_input = ScriptUnit.extension_input(interactor_unit, "dialogue_system")
 					local event_data = FrameTable.alloc_table()
 
-					event_data.pickup_name = Unit.get_data(interactable_unit, "interaction_data", "hud_description")
+					event_data.pickup_name = pickup_name
 
 					dialogue_input:trigger_dialogue_event("on_pickup", event_data)
 
-					local pickup_name = Unit.get_data(interactable_unit, "interaction_data", "hud_description")
 					local target_name = ScriptUnit.extension(interactor_unit, "dialogue_system").context.player_profile
 
 					SurroundingAwareSystem.add_event(interactor_unit, "on_other_pickup", DialogueSettings.default_view_distance, "pickup_name", pickup_name, "target_name", target_name)
+				end
 
+				if local_bot_or_human then
 					local buff_extension = ScriptUnit.extension(interactor_unit, "buff_system")
 
 					if pickup_settings.consumable_item and not data.is_server then
@@ -2226,6 +2238,28 @@ InteractionDefinitions.talents_access.client.can_interact = function (interactor
 end
 
 InteractionDefinitions.talents_access.client.hud_description = function (interactable_unit, data, config, fail_reason, interactor_unit)
+	return Unit.get_data(interactable_unit, "interaction_data", "hud_description"), "interaction_action_open"
+end
+
+InteractionDefinitions.loadout_access = InteractionDefinitions.loadout_access or table.clone(InteractionDefinitions.smartobject)
+InteractionDefinitions.loadout_access.config.swap_to_3p = false
+
+InteractionDefinitions.loadout_access.client.stop = function (world, interactor_unit, interactable_unit, data, config, t, result)
+	data.start_time = nil
+
+	if result == InteractionResult.SUCCESS and not data.is_husk then
+		Managers.ui:handle_transition("character_selection_force", {
+			menu_state_name = "loadouts",
+			use_fade = true,
+		})
+	end
+end
+
+InteractionDefinitions.loadout_access.client.can_interact = function (interactor_unit, interactable_unit, data, config)
+	return true
+end
+
+InteractionDefinitions.loadout_access.client.hud_description = function (interactable_unit, data, config, fail_reason, interactor_unit)
 	return Unit.get_data(interactable_unit, "interaction_data", "hud_description"), "interaction_action_open"
 end
 

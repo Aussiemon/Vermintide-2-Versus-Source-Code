@@ -471,10 +471,37 @@ MusicManager._update_boss_state = function (self, conflict_director)
 		return
 	end
 
-	local angry_boss = conflict_director:angry_boss() or conflict_director:boss_event_running()
-	local state = angry_boss and self:_get_combat_music_state(conflict_director) or "no_boss"
+	local is_versus = Managers.mechanism:current_mechanism_name() == "versus"
+	local state
+
+	if not is_versus then
+		local angry_boss = conflict_director:angry_boss() or conflict_director:boss_event_running()
+
+		state = angry_boss and self:_get_combat_music_state(conflict_director) or "no_boss"
+	else
+		state = self:_get_versus_combat_music_state()
+	end
 
 	self:set_music_group_state("combat_music", "boss_state", state)
+end
+
+MusicManager._get_versus_combat_music_state = function (self)
+	local side_manager = Managers.state.side
+	local side = side_manager:get_side(2)
+	local players_and_bots = side.PLAYER_AND_BOT_UNITS
+	local breed_combat_music = "no_boss"
+
+	for i = 1, #players_and_bots do
+		local player_breed = Unit.get_data(players_and_bots[i], "breed")
+
+		if player_breed.boss then
+			breed_combat_music = player_breed.combat_music_state
+
+			break
+		end
+	end
+
+	return breed_combat_music
 end
 
 MusicManager._get_combat_music_state = function (self, conflict_director)
@@ -618,7 +645,7 @@ MusicManager._update_game_state = function (self, dt, t, conflict_director)
 		local slot_data = party.occupied_slots[1]
 		local party_id = party.party_id
 
-		if slot_data and not party.name == "undecided" then
+		if slot_data and party.name ~= "undecided" then
 			local player = slot_data.player
 			local old_state_id = self._game_states[party_id]
 			local old_state = NetworkLookup.music_group_states[old_state_id]
@@ -646,7 +673,7 @@ end
 
 MusicManager._get_game_state_for_player = function (self, dt, t, conflict_director, party_id, old_state, player)
 	local game_mode_manager = Managers.state.game_mode
-	local round_about_to_end = game_mode_manager:game_mode().about_to_lose
+	local round_about_to_end = game_mode_manager:game_mode():is_about_to_end_game_early()
 	local game_mode_key = game_mode_manager:game_mode_key()
 	local is_survival = game_mode_key == "survival"
 
@@ -766,13 +793,13 @@ MusicManager._update_player_state = function (self, dt, t)
 		if Unit.alive(player_unit) then
 			local status_ext = ScriptUnit.extension(player_unit, "status_system")
 
-			state = Managers.state.game_mode:game_mode().about_to_lose and "normal" or status_ext:is_ready_for_assisted_respawn() and "normal" or status_ext:is_dead() and "dead" or status_ext:is_knocked_down() and "knocked_down" or status_ext:is_in_vortex() and "normal" or status_ext:is_disabled() and not status_ext:is_grabbed_by_chaos_spawn() and not status_ext:is_grabbed_by_corruptor() and "need_help" or self.last_man_standing and "last_man_standing" or status_ext.get_in_ghost_mode and status_ext:get_in_ghost_mode() and "ghost" or "normal"
+			state = Managers.state.game_mode:game_mode():is_about_to_end_game_early() and "normal" or status_ext:is_ready_for_assisted_respawn() and "normal" or status_ext:is_dead() and "dead" or status_ext:is_knocked_down() and "knocked_down" or status_ext:is_in_vortex() and "normal" or status_ext:is_disabled() and not status_ext:is_grabbed_by_chaos_spawn() and not status_ext:is_grabbed_by_corruptor() and "need_help" or self.last_man_standing and "last_man_standing" or status_ext.get_in_ghost_mode and status_ext:get_in_ghost_mode() and "ghost" or "normal"
 
 			music_player:set_group_state("player_state", state)
 		else
-			local side = self:_get_side()
+			local side_name = self:_get_side_name()
 
-			state = side:name() == "dark_pact" and "dead" or "normal"
+			state = side_name == "dark_pact" and "dead" or "normal"
 
 			music_player:set_group_state("player_state", state)
 		end
@@ -857,9 +884,11 @@ MusicManager._update_side_state = function (self, dt, t)
 		return
 	end
 
-	local side = self:_get_side()
+	local side_name = self:_get_side_name()
 
-	music_player:set_group_state("game_faction", side:name())
+	if side_name then
+		music_player:set_group_state("game_faction", side_name)
+	end
 end
 
 MusicManager._update_versus_game_state = function (self, music_player, dt, t)
@@ -875,8 +904,8 @@ MusicManager._update_versus_game_state = function (self, music_player, dt, t)
 		return
 	end
 
-	local side = self:_get_side()
-	local is_dark_pact = side:name() == "dark_pact"
+	local side_name = self:_get_side_name()
+	local is_dark_pact = side_name == "dark_pact"
 
 	if is_dark_pact then
 		local status = self._party_manager:get_status_from_unique_id(player:unique_id())
@@ -890,7 +919,7 @@ MusicManager._update_versus_game_state = function (self, music_player, dt, t)
 	local game_mode_key = game_mode_manager:game_mode_key()
 	local game_mode_state = game_mode:game_mode_state()
 
-	if game_mode_key == "inn_vs" or game_mode_state == "initial_state" or game_mode_state == "character_selection_state" then
+	if game_mode_key == "inn_vs" or game_mode:is_in_pre_match_state() then
 		music_player:set_group_state("versus_state", "menu")
 
 		return
@@ -913,7 +942,7 @@ MusicManager._update_versus_game_state = function (self, music_player, dt, t)
 
 	if side_close_to_winning then
 		local state
-		local side_name = side and side:name()
+		local side_name = self:_get_side_name()
 
 		state = side_name == side_close_to_winning and "close_to_win" or "time_is_running_out"
 
@@ -1030,16 +1059,16 @@ MusicManager._get_party = function (self)
 	return self._party
 end
 
-MusicManager._get_side = function (self)
+MusicManager._get_side_name = function (self)
 	if self._side then
-		return self._side
+		return self._side:name()
 	end
 
 	local party = self:_get_party()
 
 	self._side = self._side_manager.side_by_party[party]
 
-	return self._side
+	return self._side and self._side:name()
 end
 
 MusicManager.on_player_party_changed = function (self, player, is_local_player, old_party_id, new_party_id)

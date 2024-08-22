@@ -100,6 +100,13 @@ VoteManager.request_vote = function (self, name, vote_data, voter_peer_id, ignor
 
 				if script_data.debug_vote_manager then
 					Managers.state.network.network_transmit:send_rpc_all(server_start_vote_rpc, vote_type_id, sync_data, voters)
+				elseif DEDICATED_SERVER then
+					local voter_player = Managers.player:player_from_peer_id(voter_peer_id, 1)
+					local party = voter_player and voter_player:get_party() or nil
+
+					if party then
+						Managers.state.network.network_transmit:send_rpc_party_clients(server_start_vote_rpc, party, true, vote_type_id, sync_data, voters)
+					end
 				else
 					Managers.state.network.network_transmit:send_rpc_clients(server_start_vote_rpc, vote_type_id, sync_data, voters)
 				end
@@ -128,7 +135,7 @@ VoteManager.request_vote = function (self, name, vote_data, voter_peer_id, ignor
 		local sync_data = vote_template.pack_sync_data(vote_data)
 
 		Managers.matchmaking:set_local_quick_game(false)
-		Managers.matchmaking:set_quick_game(false)
+		Managers.matchmaking:set_quick_game(vote_data.quick_game or false)
 		Managers.state.network.network_transmit:send_rpc_server(client_start_vote_rpc, vote_type_id, sync_data)
 
 		if vote_template.initial_vote_func then

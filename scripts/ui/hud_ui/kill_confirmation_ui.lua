@@ -27,8 +27,8 @@ KillConfirmationUI.init = function (self, parent, ingame_ui_context)
 	self._badges_queue = {}
 
 	self:_create_ui_elements()
-	Managers.state.event:register(self, "add_kill_confirmation", "event_add_kill_confirmation")
-	Managers.state.event:register(self, "add_knock_confirmation", "event_add_knock_confirmation")
+	Managers.state.event:register(self, "add_player_kill_confirmation", "event_add_player_kill_confirmation")
+	Managers.state.event:register(self, "add_player_knock_confirmation", "event_add_player_knock_confirmation")
 end
 
 KillConfirmationUI.destroy = function (self)
@@ -36,8 +36,8 @@ KillConfirmationUI.destroy = function (self)
 
 	local event_manager = Managers.state.event
 
-	event_manager:unregister("add_kill_confirmation", self)
-	event_manager:unregister("add_knock_confirmation", self)
+	event_manager:unregister("add_player_kill_confirmation", self)
+	event_manager:unregister("add_player_knock_confirmation", self)
 
 	self.ui_animator = nil
 end
@@ -92,7 +92,7 @@ KillConfirmationUI._get_badge = function (self, badge_id)
 	return badge
 end
 
-KillConfirmationUI.event_add_kill_confirmation = function (self, side, victim_player)
+KillConfirmationUI.event_add_player_kill_confirmation = function (self, side, victim_player)
 	local badge_id = side == "dark_pact" and NetworkLookup.badges.kill_hero or NetworkLookup.badges.kill_pactsworn
 	local badge = self:_get_badge(badge_id)
 
@@ -101,7 +101,7 @@ KillConfirmationUI.event_add_kill_confirmation = function (self, side, victim_pl
 	self:add_badge(self._local_unique_id .. "_" .. badge_id, badge)
 end
 
-KillConfirmationUI.event_add_knock_confirmation = function (self, victim_player)
+KillConfirmationUI.event_add_player_knock_confirmation = function (self, victim_player)
 	local badge_id = NetworkLookup.badges.knock_down_hero
 	local badge = self:_get_badge(badge_id)
 

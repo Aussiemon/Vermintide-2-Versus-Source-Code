@@ -1046,7 +1046,7 @@ UITooltipPasses = {
 
 					if property_data then
 						local buff_name = property_data.buff_name
-						local buff_template = BuffTemplates[buff_name]
+						local buff_template = BuffUtils.get_buff_template(buff_name)
 						local buff_data = buff_template.buffs[1]
 						local has_multiplier = buff_data.variable_multiplier ~= nil
 						local text_id = "property_title_" .. index
@@ -2585,7 +2585,7 @@ UITooltipPasses = {
 				end
 
 				local can_wield_table = item_data and item_data.can_wield
-				local can_wield = can_wield_table and table.contains(can_wield_table, career_name)
+				local can_wield = can_wield_table and table.contains(can_wield_table, career_name) or pass_definition.disable_unsupported
 
 				if not can_wield then
 					text_style.text_color = text_style.disabled_text_color
@@ -2848,7 +2848,7 @@ UITooltipPasses = {
 				end
 
 				local can_wield_table = item_data and item_data.can_wield
-				local can_wield = can_wield_table and table.contains(can_wield_table, career_name)
+				local can_wield = can_wield_table and table.contains(can_wield_table, career_name) or pass_definition.disable_unsupported
 
 				if not can_wield then
 					text_style.text_color = text_style.disabled_text_color
@@ -3067,7 +3067,7 @@ UITooltipPasses = {
 			end
 
 			if item_template and item_template.buffs and item_template.buffs[1] then
-				local buff_template = BuffTemplates[item_template.buffs[1].name]
+				local buff_template = BuffUtils.get_buff_template(item_template.buffs[1].name)
 
 				if buff_template then
 					local buff = buff_template.buffs[1]
@@ -3200,7 +3200,7 @@ UITooltipPasses = {
 				end
 
 				local can_wield_table = item_data and item_data.can_wield
-				local can_wield = can_wield_table and table.contains(can_wield_table, career_name)
+				local can_wield = can_wield_table and table.contains(can_wield_table, career_name) or pass_definition.disable_unsupported
 
 				if not can_wield then
 					local text = ""

@@ -22,8 +22,6 @@ PlayFabMirrorDedicated.init = function (self, signin_result)
 			dlc:set_owned(true)
 		end
 	end
-
-	self:_request_server_inventory()
 end
 
 PlayFabMirrorDedicated.is_update_items_done = function (self)
@@ -49,7 +47,7 @@ end
 PlayFabMirrorDedicated.inventory_request_cb = function (self, result)
 	self._data_is_ready = true
 	self._unlocked_weapon_skins = self:_parse_unlocked_weapon_skins(result.FunctionResult)
-	self._unlocked_cosmetics = self:_parse_unlocked_cosmetics(result.FunctionResult)
+	self._unlocked_cosmetics = self:_parse_unlocked_cosmetics(result.FunctionResult.unlocked_cosmetics)
 
 	self.super.inventory_request_cb(self, result.FunctionResult)
 end

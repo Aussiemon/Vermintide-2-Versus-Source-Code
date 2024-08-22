@@ -31,8 +31,6 @@ WarpfireThrowerStateStanding.on_enter = function (self, unit, input, dt, context
 	self._fire_ability_id = self._career_extension:ability_id("fire")
 	self._left_wpn_particle_node_name = "p_fx"
 	self._left_wpn_particle_name = "fx/wpnfx_gunner_enemy_in_range_1p"
-
-	self:check_enemies_in_range_vfx()
 end
 
 WarpfireThrowerStateStanding.update = function (self, unit, input, dt, context, t)
@@ -41,8 +39,6 @@ WarpfireThrowerStateStanding.update = function (self, unit, input, dt, context, 
 	if handled then
 		return
 	end
-
-	self:check_enemies_in_range_vfx()
 
 	local csm = self._csm
 	local career_extension = self._career_extension

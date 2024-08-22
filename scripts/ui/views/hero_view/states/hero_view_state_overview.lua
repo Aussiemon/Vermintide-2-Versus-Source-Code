@@ -22,10 +22,12 @@ require("scripts/ui/views/hero_view/windows/hero_window_crafting_inventory_conso
 require("scripts/ui/views/hero_view/windows/hero_window_hero_power_console")
 require("scripts/ui/views/hero_view/windows/hero_window_cosmetics_loadout_console")
 require("scripts/ui/views/hero_view/windows/hero_window_cosmetics_loadout_inventory_console")
+require("scripts/ui/views/hero_view/windows/hero_window_loadout_selection_console")
 require("scripts/ui/views/hero_view/windows/hero_window_ingame_view")
 require("scripts/ui/views/hero_view/windows/hero_window_character_preview")
 require("scripts/ui/views/hero_view/windows/hero_window_item_customization")
 require("scripts/ui/views/hero_view/windows/hero_window_character_summary")
+DLCUtils.require_list("hero_view_windows")
 
 local definitions = local_require("scripts/ui/views/hero_view/states/definitions/hero_view_state_overview_definitions")
 local widget_definitions = definitions.widgets
@@ -329,6 +331,14 @@ HeroViewStateOverview._change_window = function (self, window_index, window_name
 	active_windows[window_index] = window
 end
 
+HeroViewStateOverview.get_selected_layout_name = function (self)
+	return self:get_layout_name()
+end
+
+HeroViewStateOverview.get_selected_layout_name = function (self)
+	return self:get_layout_name()
+end
+
 HeroViewStateOverview.get_layout_name = function (self)
 	local index = self._selected_game_mode_index
 
@@ -433,6 +443,32 @@ end
 
 HeroViewStateOverview._get_layout_setting = function (self, index)
 	return self._window_layouts[index]
+end
+
+HeroViewStateOverview.get_layout_setting_by_name = function (self, name)
+	local window_layouts = self._window_layouts
+
+	for i = 1, #window_layouts do
+		local layout_setting = window_layouts[i]
+		local layout_name = layout_setting.name
+
+		if name == layout_name then
+			return layout_setting
+		end
+	end
+end
+
+HeroViewStateOverview.get_layout_setting_by_name = function (self, name)
+	local window_layouts = self._window_layouts
+
+	for i = 1, #window_layouts do
+		local layout_setting = window_layouts[i]
+		local layout_name = layout_setting.name
+
+		if name == layout_name then
+			return layout_setting
+		end
+	end
 end
 
 HeroViewStateOverview._windows_update = function (self, dt, t)
@@ -1009,18 +1045,20 @@ HeroViewStateOverview._set_loadout_item = function (self, item, strict_slot_name
 	BackendUtils.set_loadout_item(backend_id, career_name, slot_name)
 
 	if not self:is_bot_career() then
-		if slot_type == "frame" then
-			local frame_data = ItemHelper.get_template_by_item_name(item_data.key)
-			local cosmetic_system = Managers.state.entity:system("cosmetic_system")
+		if not self.parent:is_loadout_dirty() then
+			if slot_type == "frame" then
+				local frame_data = ItemHelper.get_template_by_item_name(item_data.key)
+				local cosmetic_system = Managers.state.entity:system("cosmetic_system")
 
-			cosmetic_system:set_equipped_frame(unit, frame_data.name)
-		elseif slot_type ~= "skin" then
-			self._equip_request = {
-				slot_type = slot_type,
-				slot_name = slot_name,
-				backend_id = backend_id,
-				unit = unit,
-			}
+				cosmetic_system:set_equipped_frame(unit, frame_data.name)
+			elseif slot_type ~= "skin" then
+				self._equip_request = {
+					slot_type = slot_type,
+					slot_name = slot_name,
+					backend_id = backend_id,
+					unit = unit,
+				}
+			end
 		end
 	elseif slot_type == "hat" then
 		self.skin_sync_id = self.skin_sync_id + 1
@@ -1090,6 +1128,13 @@ HeroViewStateOverview.unequip_item_in_slot = function (self, slot_type)
 	return true
 end
 
+HeroViewStateOverview.update_full_loadout = function (self)
+	self.loadout_sync_id = self.loadout_sync_id + 1
+	self.inventory_sync_id = self.inventory_sync_id + 1
+	self.talent_sync_id = self.talent_sync_id + 1
+	self.skin_sync_id = self.skin_sync_id + 1
+end
+
 HeroViewStateOverview.update_inventory_items = function (self)
 	self.inventory_sync_id = self.inventory_sync_id + 1
 end
@@ -1102,4 +1147,8 @@ HeroViewStateOverview._get_slot_by_type = function (self, slot_type)
 			return slot
 		end
 	end
+end
+
+HeroViewStateOverview.set_loadout_dirty = function (self)
+	self.parent:set_loadout_dirty()
 end

@@ -7,9 +7,6 @@ MatchmakingStatePartyJoins.TIMEOUT = 30
 MatchmakingStatePartyJoins.init = function (self, params)
 	self._time = 0
 	self._peer_id = params.peer_id
-	self._disconnected_peers = {}
-
-	Managers.state.event:register(self, "friend_party_peer_left", "on_friend_party_peer_left")
 end
 
 MatchmakingStatePartyJoins.terminate = function (self)
@@ -33,7 +30,9 @@ MatchmakingStatePartyJoins.on_enter = function (self, state_context)
 	local reserved_lobby = state_context.reserved_lobby
 	local join_lobby_data = state_context.join_lobby_data
 	local search_config = state_context.search_config
-	local party_members = search_config.party_members
+	local party_lobby_host = search_config.party_lobby_host
+	local lobby_members = party_lobby_host:members()
+	local party_members = lobby_members:get_members()
 	local lobby_type, lobby_to_join
 
 	if reserved_lobby:is_dedicated_server() then
@@ -72,12 +71,6 @@ MatchmakingStatePartyJoins.on_enter = function (self, state_context)
 end
 
 MatchmakingStatePartyJoins.on_exit = function (self)
-	local event_manager = Managers.state.event
-
-	if event_manager then
-		event_manager:unregister("friend_party_peer_left", self)
-	end
-
 	local mechanism = Managers.mechanism:game_mechanism()
 	local server_id = mechanism and mechanism.get_server_id and mechanism:get_server_id()
 
@@ -92,12 +85,6 @@ MatchmakingStatePartyJoins.update = function (self, dt, t)
 	if self:_all_clients_have_left_lobby() then
 		mm_printf("Clients have left the party lobby")
 
-		if Managers.mechanism:current_mechanism_name() == "versus" then
-			self._state_context.profiles_data = {}
-
-			return MatchmakingStateJoinGame, self._state_context
-		end
-
 		return MatchmakingStateRequestProfiles, self._state_context
 	end
 
@@ -108,16 +95,14 @@ MatchmakingStatePartyJoins.update = function (self, dt, t)
 	end
 end
 
-MatchmakingStatePartyJoins.on_friend_party_peer_left = function (self, peer_id)
-	self._disconnected_peers[peer_id] = true
-end
-
 MatchmakingStatePartyJoins._all_clients_have_left_lobby = function (self)
 	local search_config = self._state_context.search_config
-	local party_members = search_config.party_members
+	local party_lobby_host = search_config.party_lobby_host
+	local lobby_members = party_lobby_host:members()
+	local party_members = lobby_members:get_members()
 
 	for _, peer_id in ipairs(party_members) do
-		if not self._disconnected_peers[peer_id] and peer_id ~= self._peer_id then
+		if peer_id ~= self._peer_id then
 			return false
 		end
 	end

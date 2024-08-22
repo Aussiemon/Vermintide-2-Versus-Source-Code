@@ -7,6 +7,13 @@ local function is_dark_pact_validate_function()
 	return side and side:name() == "dark_pact"
 end
 
+local function is_hero_validate_function()
+	local local_player_party = Managers.party:get_local_player_party()
+	local side = Managers.state.side.side_by_party[local_player_party]
+
+	return side and side:name() == "heroes"
+end
+
 local function is_dark_pact_or_spectator_validate_function()
 	local local_player_party = Managers.party:get_local_player_party()
 	local side = Managers.state.side.side_by_party[local_player_party]
@@ -22,8 +29,8 @@ end
 
 local components = {
 	{
-		class_name = "CareerHelpUI",
-		filename = "scripts/ui/hud_ui/career_help_ui_vs",
+		class_name = "VersusOnboardingUI",
+		filename = "scripts/ui/hud_ui/versus_onboarding_ui",
 		visibility_groups = {
 			"dead",
 			"alive",
@@ -215,6 +222,9 @@ local components = {
 			"alive",
 			"spectator",
 		},
+		validation_function = function ()
+			return not is_dark_pact_validate_function()
+		end,
 	},
 	{
 		class_name = "GamePadEquipmentUI",
@@ -223,6 +233,9 @@ local components = {
 		visibility_groups = {
 			"alive",
 		},
+		validation_function = function ()
+			return not is_dark_pact_validate_function()
+		end,
 	},
 	{
 		class_name = "AbilityUI",
@@ -465,8 +478,8 @@ local components = {
 		},
 	},
 	{
-		class_name = "VersusSocialWheelUI",
-		filename = "scripts/ui/social_wheel/versus_social_wheel_ui",
+		class_name = "SocialWheelUI",
+		filename = "scripts/ui/social_wheel/social_wheel_ui",
 		visibility_groups = {
 			"alive",
 			"realism",
@@ -490,6 +503,25 @@ local components = {
 		use_hud_scale = true,
 		visibility_groups = {
 			"dead",
+			"alive",
+		},
+	},
+	{
+		class_name = "ChallengeTrackerUI",
+		filename = "scripts/ui/hud_ui/challenge_tracker_ui",
+		use_hud_scale = true,
+		visibility_groups = {
+			"game_mode_disable_hud",
+			"dead",
+			"alive",
+		},
+		validation_function = is_hero_validate_function,
+	},
+	{
+		class_name = "PetUI",
+		filename = "scripts/ui/hud_ui/pet_ui",
+		use_hud_scale = true,
+		visibility_groups = {
 			"alive",
 		},
 	},
@@ -618,15 +650,26 @@ local visibility_groups = {
 	{
 		name = "dead",
 		validation_function = function (ingame_hud)
-			return ingame_hud:is_own_player_dead()
+			local player = Managers.player:local_player()
+			local side = Managers.state.side:get_side_from_player_unique_id(player:unique_id())
+			local is_hero = side and side:name() == "heroes"
+			local player_ready = true
+
+			if is_hero then
+				player_ready = Managers.state.game_mode:game_mode():player_ready()
+			end
+
+			return ingame_hud:is_own_player_dead() and player_ready
 		end,
 	},
 	{
 		name = "alive",
 		validation_function = function (ingame_hud)
-			local player_unit = Managers.player:local_player().player_unit
+			local local_player = Managers.player:local_player()
+			local player_unit = local_player.player_unit
+			local player_ready = Managers.state.game_mode:game_mode():player_ready()
 
-			return player_unit and Unit.alive(player_unit)
+			return player_unit and Unit.alive(player_unit) and player_ready
 		end,
 	},
 }

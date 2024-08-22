@@ -236,3 +236,7 @@ UIManager.handle_transition = function (self, new_transition, params)
 		end
 	end
 end
+
+UIManager.ingame_ui = function (self)
+	return self._ingame_ui
+end

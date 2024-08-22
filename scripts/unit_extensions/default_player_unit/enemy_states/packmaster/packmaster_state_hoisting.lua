@@ -19,10 +19,6 @@ PackmasterStateHoisting.on_enter = function (self, unit, input, dt, context, t, 
 	local drag_target_unit = self._drag_target_unit
 	local velocity = Vector3(0, 0, 0)
 
-	self._inventory_extension = ScriptUnit.extension(unit, "inventory_system")
-	self._locomotion_extension = ScriptUnit.extension(unit, "locomotion_system")
-	self._status_extension = ScriptUnit.extension(unit, "status_system")
-
 	self._locomotion_extension:set_forced_velocity(velocity)
 	self._locomotion_extension:set_wanted_velocity(Vector3.zero())
 	CharacterStateHelper.change_camera_state(self._player, "follow_third_person")
@@ -107,6 +103,16 @@ PackmasterStateHoisting.update = function (self, unit, input, dt, context, t)
 	if CharacterStateHelper.is_staggered(status_extension) then
 		self:release_dragged_target()
 		csm:change_state("staggered")
+
+		return true
+	end
+
+	if not self._locomotion_extension:is_on_ground() then
+		self:release_dragged_target()
+
+		local params = self._temp_params
+
+		csm:change_state("walking", params)
 
 		return true
 	end

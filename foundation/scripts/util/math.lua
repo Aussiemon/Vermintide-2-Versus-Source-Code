@@ -58,6 +58,12 @@ math.inv_lerp = function (a, b, v)
 	return (v - a) / (b - a)
 end
 
+math.inv_lerp_clamped = function (a, b, v)
+	v = math.clamp(v, a, b)
+
+	return math.inv_lerp(a, b, v)
+end
+
 math.remap = function (imin, imax, omin, omax, v)
 	return (v - imin) / (imax - imin) * (omax - omin) + omin
 end
@@ -81,7 +87,7 @@ end
 math.auto_lerp = function (index_1, index_2, val_1, val_2, val)
 	local t = (val - index_1) / (index_2 - index_1)
 
-	return math_lerp(val_1, val_2, t)
+	return math.clamp(math_lerp(val_1, val_2, t), val_1, val_2)
 end
 
 math.round_with_precision = function (value, precision)

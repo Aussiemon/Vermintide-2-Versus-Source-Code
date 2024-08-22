@@ -141,8 +141,6 @@ Boot.setup = function (self)
 		"resource_packages/game_scripts",
 		"resource_packages/level_scripts",
 		"resource_packages/levels/benchmark_levels",
-		"resource_packages/levels/honduras_levels",
-		"resource_packages/imgui/imgui",
 	}
 
 	local handles = {}
@@ -771,20 +769,6 @@ Boot.game_update = function (self, real_world_dt)
 	Managers.world:update(dt, t)
 	Managers.url_loader:update(dt)
 
-	if script_data.cat_tester_tools == nil and Managers.backend:get_backend_mirror() then
-		local title_settings = Managers.backend:get_title_settings()
-
-		script_data.cat_tester_tools = title_settings and not not title_settings.cat_tester_tools
-
-		if script_data.cat_tester_tools then
-			Managers.imgui = ImguiManager:new()
-		end
-	end
-
-	if IS_WINDOWS and Managers.imgui and not DEDICATED_SERVER then
-		Managers.imgui:update(t, dt)
-	end
-
 	if LEVEL_EDITOR_TEST and Keyboard.pressed(Keyboard.button_index("f5")) then
 		Application.console_send({
 			type = "stop_testing",
@@ -831,6 +815,10 @@ Boot.game_update = function (self, real_world_dt)
 	Managers.invite:update(dt, t)
 	Managers.admin:update(dt)
 
+	if Managers.ping then
+		Managers.ping:update(dt, t)
+	end
+
 	if Managers.account then
 		Managers.account:update(dt)
 	end
@@ -866,6 +854,14 @@ Boot.game_update = function (self, real_world_dt)
 		end
 	end
 
+	if script_data.testify then
+		Managers.mechanism:update_testify(dt, t)
+
+		if Managers.state.side then
+			Managers.state.side:update_testify(dt, t)
+		end
+	end
+
 	Testify:update(dt, t)
 	end_function_call_collection()
 	table.clear(Boot.flow_return_table)
@@ -882,10 +878,6 @@ Boot.game_update = function (self, real_world_dt)
 
 	self._machine:post_update(dt)
 	FrameTable.swap_and_clear()
-
-	if IS_WINDOWS and Managers.imgui and not DEDICATED_SERVER then
-		Managers.imgui:post_update(t, dt)
-	end
 
 	if self.quit_game then
 		local function save_cb(info)
@@ -982,6 +974,14 @@ Game.setup = function (self)
 	profile(p, "set frame times")
 	Framerate.set_playing()
 	profile(p, "set frame times")
+
+	if Development.parameter("network_log_spew") then
+		Network.log("spew")
+	elseif Development.parameter("network_log_messages") then
+		Network.log("messages")
+	elseif Development.parameter("network_log_messages") then
+		Network.log("info")
+	end
 
 	if GameSettingsDevelopment.remove_debug_stuff then
 		profile(p, "remove debug stuff")
@@ -1270,7 +1270,6 @@ end
 Game.require_game_scripts = function (self)
 	game_require("utils", "patches", "colors", "framerate", "global_utils", "function_call_stats", "loaded_dice", "deadlock_stack", "benchmark/benchmark_handler")
 	game_require("settings", "version_settings")
-	game_require("imgui", "imgui_manager")
 	game_require("ui", "views/show_cursor_stack", "ui_fonts")
 	game_require("settings", "demo_settings", "motion_control_settings", "game_settings_development", "controller_settings", "default_user_settings")
 	game_require("entity_system", "entity_system")
@@ -1278,7 +1277,7 @@ Game.require_game_scripts = function (self)
 	game_require("managers", "admin/admin_manager", "news_ticker/news_ticker_manager", "player/player_manager", "player/player_bot", "save/save_manager", "save/save_data", "perfhud/perfhud_manager", "music/music_manager", "network/party_manager", "network/lobby_manager", "transition/transition_manager", "debug/updator", "invite/invite_manager", "unlock/unlock_manager", "popup/popup_manager", "popup/simple_popup", "light_fx/light_fx_manager", "razer_chroma/razer_chroma_manager", "play_go/play_go_manager", "controller_features/controller_features_manager", "deed/deed_manager", "boon/boon_manager", "telemetry/telemetry_manager", "telemetry/telemetry_events", "telemetry/telemetry_reporters", "load_time/load_time_manager", "game_mode/game_mechanism_manager", "ui/ui_manager", "weave/weave_manager")
 
 	if IS_WINDOWS then
-		game_require("managers", "irc/irc_manager", "curl/curl_manager", "curl/curl_token", "twitch/twitch_manager")
+		game_require("managers", "irc/irc_manager", "curl/curl_manager", "curl/curl_token", "ping/ping_manager", "twitch/twitch_manager")
 
 		if rawget(_G, "Steam") then
 			game_require("managers", "steam/steam_manager")
@@ -1288,9 +1287,7 @@ Game.require_game_scripts = function (self)
 	elseif IS_PS4 then
 		game_require("managers", "irc/irc_manager", "twitch/twitch_manager", "rest_transport/rest_transport_manager", "system_dialog/system_dialog_manager")
 	elseif IS_LINUX then
-		game_require("managers", "irc/irc_manager", "curl/curl_manager", "curl/curl_token", "twitch/twitch_manager")
-	elseif IS_LINUX then
-		game_require("managers", "irc/irc_manager", "curl/curl_manager", "curl/curl_token", "twitch/twitch_manager")
+		game_require("managers", "irc/irc_manager", "curl/curl_manager", "curl/curl_token", "twitch/twitch_manager", "ping/ping_manager")
 	end
 
 	game_require("helpers", "effect_helper", "weapon_helper", "item_helper", "lorebook_helper", "ui_atlas_helper", "scoreboard_helper")
@@ -1515,6 +1512,7 @@ end
 Game._init_managers = function (self)
 	parse_item_master_list()
 
+	Managers.persistent_event = EventManager:new()
 	Managers.save = SaveManager:new(script_data.settings.disable_cloud_save)
 
 	if IS_XB1 then
@@ -1531,6 +1529,7 @@ Game._init_managers = function (self)
 	Managers.music = MusicManager:new()
 	Managers.transition = TransitionManager:new()
 	Managers.play_go = PlayGoManager:new()
+	Managers.ping = IS_WINDOWS and PingManager:new()
 
 	if IS_WINDOWS then
 		Managers.irc = IRCManager:new()

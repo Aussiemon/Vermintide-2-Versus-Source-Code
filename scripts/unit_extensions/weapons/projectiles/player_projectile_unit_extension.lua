@@ -76,7 +76,7 @@ PlayerProjectileUnitExtension.init = function (self, extension_init_context, uni
 
 	if impact_data.grenade and owner_buff_extension and owner_buff_extension:has_buff_perk("frag_fire_grenades") then
 		impact_data = table.shallow_copy(impact_data)
-		impact_data.aoe = ExplosionTemplates.frag_fire_grenade
+		impact_data.aoe = ExplosionUtils.get_template("frag_fire_grenade")
 	end
 
 	if impact_data then
@@ -215,6 +215,12 @@ PlayerProjectileUnitExtension.stop = function (self, hit_unit, hit_zone_name, hi
 
 		unit_set_local_position(unit, 0, real_pos)
 		unit_set_local_rotation(unit, 0, real_rot)
+	end
+
+	if self.projectile_info.rotation_on_hit then
+		local rotation = self.projectile_info.rotation_on_hit(unit)
+
+		unit_set_local_rotation(unit, 0, rotation)
 	end
 
 	local timed_data = self._timed_data
@@ -653,7 +659,7 @@ PlayerProjectileUnitExtension.hit_enemy = function (self, impact_data, hit_unit,
 		end
 	end
 
-	if breed.is_player then
+	if breed.is_player or breed.play_ranged_hit_reacts then
 		local husk = not self._owner_player.local_player
 
 		DamageUtils.add_hit_reaction(hit_unit, breed, husk, hit_direction, false)
@@ -708,6 +714,10 @@ PlayerProjectileUnitExtension.hit_enemy_damage = function (self, damage_profile,
 
 	if not action.ignore_shield_hit then
 		shield_blocked = AiUtils.attack_is_shield_blocked(hit_unit, owner_unit, trueflight_blocking, hit_direction)
+
+		if shield_blocked and breed and breed.blocking_hit_effect then
+			EffectHelper.player_ranged_block_hit_particles(self._world, breed.blocking_hit_effect, hit_position, hit_direction, hit_unit)
+		end
 	end
 
 	breed = AiUtils.unit_breed(hit_unit)
@@ -945,6 +955,7 @@ PlayerProjectileUnitExtension.hit_level_unit = function (self, impact_data, hit_
 			unit_set_flow_variable(hit_unit, "hit_actor", hit_actor)
 			unit_set_flow_variable(hit_unit, "hit_direction", hit_direction)
 			unit_set_flow_variable(hit_unit, "hit_position", hit_position)
+			Unit.flow_event(hit_unit, "lua_level_unit_hit_by_local_player_projectile")
 			Unit.flow_event(hit_unit, "lua_simple_damage")
 		end
 	end

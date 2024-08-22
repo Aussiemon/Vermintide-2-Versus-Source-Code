@@ -149,7 +149,7 @@ AdventureSpawning._unassign_data_from_slot = function (self, slot, data)
 	slot.game_mode_data = {}
 end
 
-AdventureSpawning.player_entered_game_session = function (self, peer_id, local_player_id, wanted_party_index)
+AdventureSpawning.player_entered_game_session = function (self, peer_id, local_player_id)
 	local party = Managers.party:get_party_from_player_id(peer_id, local_player_id)
 	local side_party = self._side.party
 
@@ -399,7 +399,7 @@ AdventureSpawning._add_client_to_party = function (self, peer_id, local_player_i
 	if peer_id ~= Network.peer_id() then
 		local update_safe = true
 		local party_id = 1
-		local removed_bot_player = Managers.state.game_mode:remove_bot(peer_id, local_player_id, update_safe)
+		local removed_bot_player = Managers.state.game_mode:remove_bot(party_id, peer_id, local_player_id, update_safe)
 		local status = Managers.party:get_player_status(peer_id, local_player_id)
 
 		if status.party_id ~= 1 then

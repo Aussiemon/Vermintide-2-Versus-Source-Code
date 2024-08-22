@@ -221,6 +221,8 @@ HeroViewStateAchievements._update_summary_quest_timers = function (self, dt)
 end
 
 HeroViewStateAchievements.create_ui_elements = function (self, params)
+	local category_tab_widget_definitions = definitions.create_category_tab_widgets_func()
+
 	self.ui_scenegraph = UISceneGraph.init_scenegraph(scenegraph_definition)
 	self._console_cursor_widget = UIWidget.init(console_cursor_definition)
 	self._widgets, self._widgets_by_name = UIUtils.create_widgets(widget_definitions)

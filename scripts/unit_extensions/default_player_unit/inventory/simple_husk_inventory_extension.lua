@@ -217,11 +217,13 @@ SimpleHuskInventoryExtension.add_equipment = function (self, slot_name, item_nam
 		id = slot_name,
 		skin = skin_name,
 		item_template = item_template,
+		item_template_name = item_template.name,
 	}
 end
 
 SimpleHuskInventoryExtension.add_equipment_limited_item = function (self, slot_name, item_name, spawner_unit, limited_item_id)
 	local item_data = ItemMasterList[item_name]
+	local item_template = BackendUtils.get_item_template(item_data)
 
 	self._equipment.slots[slot_name] = {
 		item_data = item_data,
@@ -230,6 +232,7 @@ SimpleHuskInventoryExtension.add_equipment_limited_item = function (self, slot_n
 			spawner_unit = spawner_unit,
 			id = limited_item_id,
 		},
+		item_template_name = item_template.name,
 	}
 end
 

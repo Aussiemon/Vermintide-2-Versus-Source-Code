@@ -311,6 +311,27 @@ LootItemUnitPreviewer._load_item_units = function (self, item)
 				material_settings = material_settings,
 			}
 		end
+	elseif slot_type == "frame" then
+		local unit = item_template.attachment_node.unit
+
+		if unit then
+			self:load_package(unit)
+		end
+
+		if item_template.texture_package_name then
+			self:load_package(item_template.texture_package_name)
+		end
+
+		local material_settings = item_template.material_settings
+
+		units_to_spawn_data[#units_to_spawn_data + 1] = {
+			unit_name = unit,
+			unit_attachment_node_linking = item_template.attachment_node.attachment_node,
+			material_settings = material_settings,
+			additional_packages = {
+				item_template.texture_package_name,
+			},
+		}
 	else
 		local unit = item_units.unit
 
@@ -358,6 +379,14 @@ LootItemUnitPreviewer._packages_loaded = function (self)
 	for index, package_data in ipairs(units_to_spawn) do
 		if not loaded_packages[package_data.unit_name] then
 			return false
+		end
+
+		if package_data.additional_packages then
+			for _, package in ipairs(package_data.additional_packages) do
+				if not loaded_packages[package] then
+					return false
+				end
+			end
 		end
 	end
 

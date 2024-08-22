@@ -163,8 +163,7 @@ EnemyCharacterStateLeaping._move_in_air = function (self, unit, dt, t)
 	local speed = starting_speed
 	local move_speed_multiplier = self._status_extension:current_move_speed_multiplier()
 
-	speed = speed * move_speed_multiplier
-	speed = speed * move_speed_multiplier
+	speed = speed * move_speed_multiplier^2
 	speed = speed * movement_settings_table.player_speed_scale
 
 	local zero_distance = total_distance * 0

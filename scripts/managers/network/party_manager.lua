@@ -85,7 +85,7 @@ PartyManager.has_party_lobby = function (self)
 end
 
 PartyManager.store_lobby = function (self, lobby_or_data)
-	debug_printf("Party lobby has been stored")
+	debug_printf("Party lobby has been stored '%s'", lobby_or_data)
 	self:_free_lobby()
 
 	self._party_lobby_or_data = lobby_or_data
@@ -214,6 +214,18 @@ PartyManager.register_parties = function (self, party_definitions)
 		end
 	end
 
+	local consecutive_game_participating = true
+
+	for i = 1, self._num_parties do
+		local party = self._parties[i]
+
+		if party.game_participating then
+			assert(consecutive_game_participating, "Game participating parties may not be separated by non participating ones.")
+		else
+			consecutive_game_participating = false
+		end
+	end
+
 	self._cleared = false
 end
 
@@ -337,6 +349,21 @@ PartyManager.request_join_party = function (self, peer_id, local_player_id, part
 		end
 
 		if slot_empty then
+			local mechanism_slot_id = Managers.mechanism:preferred_slot_id(party_id, peer_id, local_player_id)
+
+			if mechanism_slot_id then
+				if self:is_slot_bot(party, mechanism_slot_id) then
+					local bot_peer_id, bot_local_player_id = self:slot_peer_id(party, mechanism_slot_id)
+					local status = Managers.party:get_player_status(bot_peer_id, bot_local_player_id)
+
+					self:remove_peer_from_party(status.peer_id, status.local_player_id, status.party_id)
+
+					optional_slot_id = mechanism_slot_id
+				elseif self:is_slot_empty(party, mechanism_slot_id) then
+					optional_slot_id = mechanism_slot_id
+				end
+			end
+
 			local is_bot = false
 
 			if party.num_used_slots < party.num_slots then
@@ -350,7 +377,7 @@ PartyManager.request_join_party = function (self, peer_id, local_player_id, part
 
 					status = Managers.party:get_player_status(bot_peer_id, bot_local_player_id)
 				else
-					status = self:_get_last_added_bot_for_party(party_id)
+					status = self:get_last_added_bot_for_party(party_id)
 				end
 
 				self:remove_peer_from_party(status.peer_id, status.local_player_id, status.party_id)
@@ -481,13 +508,12 @@ PartyManager.assign_peer_to_party = function (self, peer_id, local_player_id, wa
 
 	debug_printf("Player (%s:%d) was put into party %s (%d)", peer_id, local_player_id, party.name, party_id)
 
-	local slot_id = optional_slot_id or Managers.mechanism:preferred_slot_id(party_id, peer_id, local_player_id)
+	local slot_id = optional_slot_id or self:find_first_empty_slot_id(party)
 
 	if PartyManager._find_slot_index(party, slot_id) then
 		slot_id = nil
 	end
 
-	slot_id = slot_id or self:find_first_empty_slot_id(party)
 	party.slots[slot_id] = player_status
 	party.occupied_slots[#party.occupied_slots + 1] = player_status
 	player_status.party_id = party_id
@@ -505,18 +531,24 @@ PartyManager.assign_peer_to_party = function (self, peer_id, local_player_id, wa
 		self:_send_rpc_to_clients("rpc_peer_assigned_to_party", peer_id, local_player_id, party_id, slot_id, is_bot)
 	end
 
-	if Managers.state.game_mode then
-		Managers.state.game_mode:player_joined_party(peer_id, local_player_id, party_id, slot_id)
-	end
-
-	if Managers.state.event then
-		Managers.state.event:trigger("on_player_joined_party", peer_id, local_player_id, party_id, slot_id)
-	end
-
 	local player = Managers.player:player(peer_id, local_player_id)
 	local is_local_player = player and player.local_player
 
 	Managers.state.event:trigger("player_party_changed", player, is_local_player, old_party_id, party_id)
+
+	if Managers.state.game_mode then
+		Managers.state.game_mode:player_joined_party(peer_id, local_player_id, party_id, slot_id, old_party_id)
+	end
+
+	if Managers.state.event then
+		Managers.state.event:trigger("on_player_joined_party", peer_id, local_player_id, party_id, slot_id, is_bot)
+	end
+
+	if Managers.venture.challenge then
+		Managers.venture.challenge:on_player_joined_party(peer_id, local_player_id, party_id, slot_id, is_bot)
+	end
+
+	Managers.mechanism:player_joined_party(peer_id, local_player_id, party_id, slot_id, is_bot)
 
 	return player_status
 end
@@ -543,9 +575,13 @@ PartyManager.remove_peer_from_party = function (self, peer_id, local_player_id, 
 	end
 
 	if Managers.state.event then
-		local slot_id = player_status.slot_id
-
 		Managers.state.event:trigger("on_player_left_party", peer_id, local_player_id, party_id, slot_id)
+	end
+
+	if Managers.venture.challenge then
+		local is_bot = player_status.is_bot
+
+		Managers.venture.challenge:on_player_left_party(peer_id, local_player_id, party_id, slot_id, is_bot)
 	end
 
 	player_status.party_id = nil
@@ -623,6 +659,16 @@ PartyManager.is_slot_bot = function (self, party, slot_id)
 	return slot and slot.is_bot
 end
 
+PartyManager.slot_peer_id = function (self, party, slot_id)
+	local slot = party.slots[slot_id]
+
+	if slot then
+		return slot.peer_id, slot.local_player_id
+	end
+
+	return nil, nil
+end
+
 PartyManager.find_first_empty_slot_id = function (self, party)
 	local num_slots = party.num_slots
 
@@ -677,7 +723,7 @@ PartyManager.is_player_in_party = function (self, unique_id, party_id)
 	return party_id == player_status.party_id
 end
 
-PartyManager._get_last_added_bot_for_party = function (self, party_id)
+PartyManager.get_last_added_bot_for_party = function (self, party_id)
 	local party = self._parties[party_id]
 	local slot_id = party.bot_add_order[party.num_bots]
 	local status = party.slots[slot_id]
@@ -793,12 +839,6 @@ PartyManager.rpc_remove_peer_from_party = function (self, channel_id, peer_id, l
 end
 
 PartyManager.rpc_set_client_friend_party = function (self, channel_id, peers)
-	for i = 1, #peers do
-		if peers[i] == "" then
-			peers[i] = nil
-		end
-	end
-
 	self:_client_set_friend_party(peers)
 end
 
@@ -1025,53 +1065,6 @@ PartyManager.any_party_has_free_slots = function (self, num_slots)
 	return false
 end
 
-PartyManager.friend_parties = function (self)
-	return self._friend_parties
-end
-
-PartyManager._server_generate_friend_party_id = function (self)
-	if not self._num_friend_party_ids then
-		self._num_friend_party_ids = 0
-	end
-
-	self._num_friend_party_ids = self._num_friend_party_ids + 1
-
-	return self._num_friend_party_ids
-end
-
-PartyManager._server_remove_friend_party = function (self, friend_party_id)
-	self._friend_parties[friend_party_id] = nil
-end
-
-PartyManager._server_set_client_friend_party = function (self, friend_party_id)
-	local friend_party = self._friend_parties[friend_party_id]
-
-	assert(friend_party, "[Party Manager:server_update_client_friend_parties()] tried to update client friend parties of nonexistant friend party id " .. friend_party_id)
-
-	local max_friend_party_size = 4
-	local friend_party_peers = Script.new_array(max_friend_party_size)
-
-	table.fill(friend_party_peers, max_friend_party_size, "")
-
-	for i = 1, #friend_party.peers do
-		friend_party_peers[i] = friend_party.peers[i]
-	end
-
-	self:_server_send_rpc_to_friend_party("rpc_set_client_friend_party", friend_party_id, friend_party_peers)
-end
-
-PartyManager._server_send_rpc_to_friend_party = function (self, rpc_name, friend_party_id, ...)
-	local friend_party = self._friend_parties[friend_party_id]
-
-	for _, peer_id in pairs(friend_party.peers) do
-		local channel_id = PEER_ID_TO_CHANNEL[peer_id]
-
-		if channel_id then
-			RPC[rpc_name](channel_id, ...)
-		end
-	end
-end
-
 PartyManager.server_update_all_client_friend_parties = function (self)
 	for friend_party_id, friend_party in pairs(self._friend_parties) do
 		self:_server_set_client_friend_party(friend_party_id)
@@ -1101,6 +1094,8 @@ PartyManager.server_create_friend_party = function (self, peers, leader, overrid
 	for i = 1, #peers do
 		self._friend_party_lookup[peers[i]] = friend_party_id
 	end
+
+	self:_server_set_client_friend_party(friend_party_id)
 end
 
 PartyManager.server_remove_friend_party_peer = function (self, peer_id)
@@ -1132,6 +1127,8 @@ PartyManager.server_remove_friend_party_peer = function (self, peer_id)
 
 	party.num_peers = party.num_peers - 1
 	party.leader = party.peers[1]
+
+	self:_server_set_client_friend_party(friend_party_id)
 end
 
 PartyManager.server_add_friend_party_peer = function (self, friend_party_id, peer_id)
@@ -1139,6 +1136,8 @@ PartyManager.server_add_friend_party_peer = function (self, friend_party_id, pee
 
 	friend_party.num_peers = friend_party.num_peers + 1
 	friend_party.peers[friend_party.num_peers] = peer_id
+
+	self:_server_set_client_friend_party(friend_party_id)
 end
 
 PartyManager.server_add_friend_party_peer_from_invitee = function (self, peer_id, invitee)
@@ -1149,30 +1148,20 @@ PartyManager.server_add_friend_party_peer_from_invitee = function (self, peer_id
 	end
 end
 
-PartyManager.server_get_friend_party_from_peer = function (self, peer_id)
-	local friend_party_id = self._friend_party_lookup[peer_id]
-
-	return self._friend_parties[friend_party_id]
-end
-
 PartyManager.server_get_friend_party_id_from_peer = function (self, peer_id)
 	return self._friend_party_lookup[peer_id]
 end
 
+PartyManager.server_get_friend_party_from_peer = function (self, peer_id)
+	local id = self:server_get_friend_party_id_from_peer(peer_id)
+
+	if id then
+		return self:server_get_friend_party(id)
+	end
+end
+
 PartyManager.server_get_friend_party = function (self, friend_party_id)
 	return self._friend_parties[friend_party_id]
-end
-
-PartyManager.server_get_friend_parties = function (self)
-	return self._friend_parties
-end
-
-PartyManager.server_get_friend_party_leader = function (self, friend_party_id)
-	local friend_party = self._friend_parties[friend_party_id]
-
-	if friend_party then
-		return friend_party.leader
-	end
 end
 
 PartyManager.server_get_friend_parties_sorted = function (self)
@@ -1197,7 +1186,7 @@ PartyManager.server_has_room_for_friend_party = function (self, reserved_slots, 
 
 	fake_friend_party.num_peers = num_peers
 
-	local friend_parties = table.values(self:friend_parties(), FrameTable.alloc_table())
+	local friend_parties = table.values(self._friend_parties, FrameTable.alloc_table())
 
 	friend_parties[#friend_parties + 1] = fake_friend_party
 
@@ -1244,7 +1233,7 @@ PartyManager.can_kick_to_fill_server = function (self, reserved_slots, num_peers
 
 	fake_friend_party.num_peers = num_peers
 
-	local friend_parties = table.values(self:friend_parties(), FrameTable.alloc_table())
+	local friend_parties = table.values(self._friend_parties, FrameTable.alloc_table())
 
 	friend_parties[#friend_parties + 1] = fake_friend_party
 
@@ -1293,6 +1282,64 @@ PartyManager.can_kick_to_fill_server = function (self, reserved_slots, num_peers
 	end
 
 	return parties_to_kick
+end
+
+PartyManager._server_generate_friend_party_id = function (self)
+	if not self._num_friend_party_ids then
+		self._num_friend_party_ids = 0
+	end
+
+	self._num_friend_party_ids = self._num_friend_party_ids + 1
+
+	return self._num_friend_party_ids
+end
+
+PartyManager._server_remove_friend_party = function (self, friend_party_id)
+	self._friend_parties[friend_party_id] = nil
+end
+
+PartyManager._server_set_client_friend_party = function (self, friend_party_id)
+	local friend_party = self._friend_parties[friend_party_id]
+
+	assert(friend_party, "[Party Manager:server_update_client_friend_parties()] tried to update client friend parties of nonexistant friend party id " .. friend_party_id)
+
+	local max_friend_party_size = 4
+	local friend_party_peers = Script.new_array(max_friend_party_size)
+	local peers = friend_party.peers
+	local num_party_peers = #peers
+
+	if max_friend_party_size < num_party_peers then
+		table.dump(peers, "friend party peers")
+		Crashify.print_exception("[PartyManager]", "Friend party stragglers found. Party size: %s", num_party_peers)
+	end
+
+	for i = 1, num_party_peers do
+		local peer = peers[i]
+
+		if PEER_ID_TO_CHANNEL[peer] then
+			local next_idx = #friend_party_peers + 1
+
+			if max_friend_party_size < next_idx then
+				print("Too many peers in the same party:", peer)
+			else
+				friend_party_peers[next_idx] = peers[i]
+			end
+		end
+	end
+
+	self:_server_send_rpc_to_friend_party("rpc_set_client_friend_party", friend_party_id, friend_party_peers)
+end
+
+PartyManager._server_send_rpc_to_friend_party = function (self, rpc_name, friend_party_id, ...)
+	local friend_party = self._friend_parties[friend_party_id]
+
+	for _, peer_id in pairs(friend_party.peers) do
+		local channel_id = PEER_ID_TO_CHANNEL[peer_id]
+
+		if channel_id then
+			RPC[rpc_name](channel_id, ...)
+		end
+	end
 end
 
 PartyManager._client_set_friend_party = function (self, peers)

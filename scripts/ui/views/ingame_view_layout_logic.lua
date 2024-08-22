@@ -35,9 +35,7 @@ IngameViewLayoutLogic.setup_button_layout = function (self, layout_data)
 			local transition = data.transition
 			local transition_state = data.transition_state
 			local transition_sub_state = data.transition_sub_state
-			local disable_when_matchmaking = data.disable_when_matchmaking
-			local disable_when_matchmaking_ready = data.disable_when_matchmaking_ready
-			local disable_when_matchmaking_in_versus = data.disable_when_matchmaking_in_versus
+			local disable_for_mechanism = data.disable_for_mechanism
 			local requires_player_unit = data.requires_player_unit
 			local fade = data.fade
 			local force_open = data.force_open
@@ -50,9 +48,7 @@ IngameViewLayoutLogic.setup_button_layout = function (self, layout_data)
 				transition = transition,
 				transition_state = transition_state,
 				transition_sub_state = transition_sub_state,
-				disable_when_matchmaking = disable_when_matchmaking,
-				disable_when_matchmaking_ready = disable_when_matchmaking_ready,
-				disable_when_matchmaking_in_versus = disable_when_matchmaking_in_versus,
+				disable_for_mechanism = disable_for_mechanism,
 				requires_player_unit = requires_player_unit,
 				fade = fade,
 				force_open = force_open,
@@ -108,19 +104,25 @@ IngameViewLayoutLogic._update_menu_options_enabled_states = function (self)
 		local player_ready_for_game = self.ingame_ui:is_local_player_ready_for_game()
 		local is_game_matchmaking = Managers.matchmaking:is_game_matchmaking()
 		local is_server = self.is_server
-		local is_matchmaking_versus = Managers.matchmaking:is_matchmaking_versus()
 		local player_manager = Managers.player
 		local local_player = player_manager:local_player()
 		local has_player = local_player and local_player.player_unit ~= nil
+		local mechanism_name = Managers.mechanism:current_mechanism_name()
 
 		for index, menu_option in ipairs(active_button_data) do
-			local disable_when_matchmaking = menu_option.disable_when_matchmaking
-			local disable_when_matchmaking_ready = menu_option.disable_when_matchmaking_ready
+			local disable_when_matchmaking, disable_when_matchmaking_ready, disable_not_matchmaking
+			local disable_for_mechanism = menu_option.disable_for_mechanism and menu_option.disable_for_mechanism[mechanism_name]
+
+			if disable_for_mechanism then
+				disable_when_matchmaking = disable_for_mechanism.matchmaking
+				disable_when_matchmaking_ready = disable_for_mechanism.matchmaking_ready
+				disable_not_matchmaking = disable_for_mechanism.not_matchmaking
+			end
+
 			local requires_player_unit = menu_option.requires_player_unit
 			local transition_not_allowed = player_ready_for_game and disable_when_matchmaking_ready or is_game_matchmaking and disable_when_matchmaking or requires_player_unit and not has_player
-			local disable_when_matchmaking_in_versus = menu_option.disable_when_matchmaking_in_versus
 
-			transition_not_allowed = transition_not_allowed or disable_when_matchmaking_in_versus and is_matchmaking_versus
+			transition_not_allowed = transition_not_allowed or disable_not_matchmaking and not is_game_matchmaking
 
 			if transition_not_allowed and not menu_option.disabled then
 				menu_option.disabled = true

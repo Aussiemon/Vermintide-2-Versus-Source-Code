@@ -109,6 +109,7 @@ StateInGameRunning.on_enter = function (self, params)
 	event_manager:register(self, "conflict_director_setup_done", "event_conflict_director_setup_done")
 	event_manager:register(self, "close_ingame_menu", "event_close_ingame_menu")
 	event_manager:register(self, "end_screen_ui_complete", "event_end_screen_ui_complete")
+	event_manager:register(self, "player_session_scores_synced", "player_session_scores_synced")
 
 	if IS_PS4 then
 		event_manager:register(self, "realtime_multiplay", "event_realtime_multiplay")
@@ -253,12 +254,13 @@ StateInGameRunning._setup_end_of_level_UI = function (self)
 	elseif not Managers.state.game_mode:setting("skip_level_end_view") then
 		local game_won = not self.game_lost
 		local game_mode_key = Managers.state.game_mode:game_mode_key()
+		local mechanism_name = Managers.mechanism:current_mechanism_name()
+		local is_versus = mechanism_name == "versus"
 		local hero_name
 		local peer_id = Network.peer_id()
-		local local_player_id = self.local_player_id
-		local profile_index = self.profile_synchronizer:profile_by_peer(peer_id, local_player_id)
+		local profile_index = self.profile_synchronizer:get_persistent_profile_index_reservation(peer_id)
 
-		if profile_index then
+		if profile_index and profile_index ~= 0 then
 			local profile = SPProfiles[profile_index]
 
 			hero_name = profile.display_name
@@ -278,12 +280,15 @@ StateInGameRunning._setup_end_of_level_UI = function (self)
 		level_end_view_context.weave_personal_best_achieved = self._weave_personal_best_achieved
 		level_end_view_context.completed_weave = self._completed_weave
 		level_end_view_context.profile_synchronizer = self.profile_synchronizer
-		level_end_view_context.party_composition = Managers.party:get_party_composition()
+
+		if is_versus then
+			level_end_view_context.party_composition = Managers.party:get_party_composition()
+		end
 
 		if self.is_server then
 			local players_session_score = Managers.mechanism:get_players_session_score(self.statistics_db, self.profile_synchronizer, self._saved_scoreboard_stats)
 
-			Managers.mechanism:sync_players_session_score(self.statistics_db, self.profile_synchronizer, players_session_score)
+			Managers.mechanism:sync_players_session_score(players_session_score)
 
 			level_end_view_context.players_session_score = players_session_score
 		end
@@ -293,26 +298,27 @@ StateInGameRunning._setup_end_of_level_UI = function (self)
 
 		if not self._booted_eac_untrusted then
 			local level, start_experience, start_experience_pool = self.rewards:get_level_start()
+			local versus_level, versus_start_experience = self.rewards:get_versus_level_start()
 			local win_track_start_experience = self.rewards:get_win_track_experience_start()
-			local mechanism_name = Managers.mechanism:current_mechanism_name()
 			local rewards, end_of_level_rewards_arguments = self.rewards:get_rewards()
+			local win_conditions = mechanism_name == "versus" and Managers.mechanism:game_mechanism():win_conditions()
 
 			level_end_view_context.rewards = {
-				end_of_level_rewards = mechanism_name == "versus" and {} or table.clone(rewards),
-				level_start = mechanism_name == "versus" and {} or {
+				end_of_level_rewards = rewards and table.clone(rewards) or {},
+				level_start = {
 					level,
 					start_experience,
 					start_experience_pool,
 				},
-				mission_results = mechanism_name == "versus" and {} or table.clone(self.rewards:get_mission_results()),
-				win_track_start_experience = mechanism_name == "versus" and {} or win_track_start_experience,
+				versus_level_start = {
+					versus_level,
+					versus_start_experience,
+				},
+				mission_results = table.clone(self.rewards:get_mission_results()),
+				win_track_start_experience = win_track_start_experience,
+				team_scores = win_conditions and win_conditions:get_total_scores(),
 			}
-
-			if end_of_level_rewards_arguments then
-				level_end_view_context.end_of_level_rewards_arguments = table.clone(end_of_level_rewards_arguments)
-			else
-				level_end_view_context.end_of_level_rewards_arguments = {}
-			end
+			level_end_view_context.end_of_level_rewards_arguments = end_of_level_rewards_arguments and table.clone(end_of_level_rewards_arguments) or {}
 		end
 
 		level_end_view_context.level_end_view = Managers.mechanism:get_level_end_view()
@@ -410,17 +416,6 @@ StateInGameRunning.check_invites = function (self)
 
 			self.popup_id = Managers.popup:queue_popup(Localize("popup_join_blocked_by_joining_player"), Localize("popup_invite_not_installed_header"), "not_installed", Localize("menu_ok"))
 		elseif self._lobby_client or not self.is_in_inn then
-			local mechanism = invite_data.mechanism
-			local is_matchmaking = invite_data.matchmaking
-
-			if mechanism == "versus" and is_matchmaking then
-				local status_message = "matchmaking_status_join_game_failed_" .. "match_in_progress"
-
-				Managers.matchmaking:send_system_chat_message(status_message)
-
-				return
-			end
-
 			self._invite_lobby_data = invite_data
 		elseif not self.popup_id then
 			Managers.matchmaking:request_join_lobby(invite_data, {
@@ -501,6 +496,12 @@ StateInGameRunning.event_end_screen_ui_complete = function (self)
 end
 
 StateInGameRunning.gm_event_end_conditions_met = function (self, reason, checkpoint_available, percentages_completed)
+	if not self.is_server and self.game_mode_key == "versus" and Managers.mechanism:is_final_round() and not self._player_session_score_synced then
+		self._player_session_score_synced_cb = callback(self, "gm_event_end_conditions_met", reason, checkpoint_available, percentages_completed)
+
+		return
+	end
+
 	if not self._game_has_started then
 		Managers.transition:hide_loading_icon()
 		Managers.transition:fade_out(GameSettings.transition_fade_in_speed)
@@ -547,6 +548,8 @@ StateInGameRunning.gm_event_end_conditions_met = function (self, reason, checkpo
 	local stats_interface = Managers.backend:get_interface("statistics")
 	local register_statistics = true
 	local is_final_objective = Managers.mechanism:is_final_round()
+
+	Managers.mechanism:load_end_screen_resources()
 
 	if game_mode_key == "survival" then
 		if game_won then
@@ -610,6 +613,10 @@ StateInGameRunning.gm_event_end_conditions_met = function (self, reason, checkpo
 			end
 
 			StatisticsUtil.register_complete_level(statistics_db, game_mode_key)
+
+			if game_mode_key == "versus" and not self.is_in_inn then
+				StatisticsUtil.register_versus_game_won(statistics_db, player, game_won)
+			end
 		end
 
 		if is_final_objective and Managers.mechanism.on_final_round_won then
@@ -631,6 +638,10 @@ StateInGameRunning.gm_event_end_conditions_met = function (self, reason, checkpo
 				end
 
 				StatisticsUtil.register_complete_level(statistics_db, game_mode_key)
+
+				if not self.is_in_inn then
+					StatisticsUtil.register_versus_game_won(statistics_db, player, game_won)
+				end
 			end
 		else
 			is_final_objective = true
@@ -644,6 +655,20 @@ StateInGameRunning.gm_event_end_conditions_met = function (self, reason, checkpo
 
 		statistics_db:reset_persistant_stats()
 		StatisticsUtil.reset_mission_streak(player, statistics_db, stats_id)
+		stats_interface:save()
+	end
+
+	if game_mode_key == "versus" then
+		if self.is_server then
+			local players_session_score = Managers.mechanism:get_players_session_score(self.statistics_db, self.profile_synchronizer, self._saved_scoreboard_stats)
+
+			if is_final_objective then
+				Managers.mechanism:sync_players_session_score(players_session_score)
+			else
+				self.parent.parent.loading_context.saved_scoreboard_stats = players_session_score
+			end
+		end
+
 		stats_interface:save()
 	end
 
@@ -723,14 +748,8 @@ StateInGameRunning.gm_event_end_conditions_met = function (self, reason, checkpo
 end
 
 StateInGameRunning._award_end_of_level_rewards = function (self, statistics_db, stats_id, game_won, difficulty_key)
-	if self.game_mode_key == "versus" then
-		return
-	end
-
-	local profile_synchronizer = self.profile_synchronizer
 	local peer_id = Network.peer_id()
-	local local_player_id = self.local_player_id
-	local profile_index = profile_synchronizer:profile_by_peer(peer_id, local_player_id)
+	local profile_index, career_index = self.profile_synchronizer:get_persistent_profile_index_reservation(peer_id)
 	local profile = SPProfiles[profile_index]
 	local hero_name = profile.display_name
 	local game_time = math.floor(Managers.time:time("game"))
@@ -832,6 +851,11 @@ StateInGameRunning.update = function (self, dt, t)
 	if ingame_ui then
 		local ui_ready = not ingame_ui.survey_active and not self.has_setup_end_of_level and ingame_ui:end_screen_active() and ingame_ui:end_screen_fade_in_complete()
 		local rewards_ready = self._booted_eac_untrusted or self.rewards:rewards_generated() and not self.rewards:consuming_deed() and self.chests_package_name and Managers.package:has_loaded(self.chests_package_name, "global")
+		local mechanism_name = Managers.mechanism:current_mechanism_name()
+
+		if mechanism_name == "versus" then
+			rewards_ready = true
+		end
 
 		if ui_ready then
 			local mechanism_manager = Managers.mechanism
@@ -840,6 +864,8 @@ StateInGameRunning.update = function (self, dt, t)
 			if is_final_round and rewards_ready then
 				self:_setup_end_of_level_UI()
 			end
+		elseif ui_ready and rewards_ready then
+			self:_setup_end_of_level_UI()
 		end
 	end
 
@@ -1411,4 +1437,14 @@ StateInGameRunning.rpc_follow_to_lobby = function (self, channel_id, lobby_type,
 	}
 
 	Managers.matchmaking:request_join_lobby(lobby_join_data, state_context_params)
+end
+
+StateInGameRunning.player_session_scores_synced = function (self)
+	self._player_session_score_synced = true
+
+	if self._player_session_score_synced_cb then
+		self._player_session_score_synced_cb()
+
+		self._player_session_score_synced_cb = nil
+	end
 end

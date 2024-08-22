@@ -3,14 +3,11 @@
 local definitions = local_require("scripts/ui/views/versus_mission_objective_ui_definitions")
 local animation_definitions = definitions.animation_definitions
 local scenegraph_definition = definitions.scenegraph_definition
-local create_objective_count_widget = definitions.create_objective_count_widget
-local create_score_widget = definitions.create_score_widget
 local side_colors = definitions.side_colors
 local OBJECTIVE_MOVE_DURATION = 0.8
 local MAX_VISIBLE_OBJECTIVE = 3
 local OBJECTIVE_WIDTH_SPACING = 120
 local BONUS_TIME_DURATION = 1
-local OBJECTIVE_SEGMENT_TEXTURE_NAME = "versus_objective_sub_node_win"
 local DO_RELOAD = false
 local RPCS = {
 	"rpc_update_start_round_countdown_timer",
@@ -114,12 +111,10 @@ VersusMissionObjectiveUI._create_ui_elements = function (self)
 		widgets[#widgets + 1] = widget
 	end
 
+	self._objective_text_widget = UIWidget.init(definitions.objective_text)
 	self._widgets_by_name = widgets_by_name
 	self._widgets = widgets
-
-	local obj_text_widget = self._widgets_by_name.objective_text
-
-	obj_text_widget.content.visible = false
+	self._objective_text_widget.content.visible = false
 	DO_RELOAD = false
 
 	UIRenderer.clear_scenegraph_queue(self._ui_renderer)
@@ -163,8 +158,7 @@ VersusMissionObjectiveUI._update_objectives = function (self, dt, t)
 
 		self._num_main_objective = num_main_objectives
 
-		self:_set_objective_widgets(num_main_objectives, is_hero)
-		self:_set_active_scoring_team()
+		self:_set_active_scoring_side_color(is_hero)
 
 		self._objectives_initialized = true
 	end
@@ -173,56 +167,43 @@ VersusMissionObjectiveUI._update_objectives = function (self, dt, t)
 	local num_completed_main_objectives = self._objective_system:num_completed_main_objectives()
 
 	if current_objective_index > self._selected_objective_index then
-		self:_calculate_objective_bar_progress(current_objective_index, self._selected_objective_index)
-
 		self._selected_objective_index = current_objective_index
 
 		self:_update_current_objective(current_objective_index)
 
 		local description = "n/a"
 
-		if self:_is_dark_pact() then
-			description = Localize("level_objective_pactsworn")
-		else
+		if not self:_is_dark_pact() then
 			description = self._objective_system:current_objective_description()
-		end
 
-		self:_set_objective_text(description)
+			self:_set_objective_text(description)
+
+			local params = {
+				render_settings = self._render_settings,
+			}
+			local objective_widget = self._objective_text_widget
+
+			self._ui_animator:start_animation("mission_start", objective_widget, scenegraph_definition, params)
+		else
+			description = Localize("level_objective_pactsworn")
+
+			self:_set_objective_text(description)
+		end
 	end
 
-	self:_update_objective_status(current_objective_index)
 	self:_update_objective_progress()
 end
 
-VersusMissionObjectiveUI._set_objective_widgets = function (self, num_objectives, is_hero)
-	local active_side_color = is_hero and Colors.get_color_table_with_alpha("local_player_team", 255) or Colors.get_color_table_with_alpha("opponent_team", 255)
-	local objective_widgets = {}
-
-	for i = 1, num_objectives do
-		local scenegraph_id = "objective_detail"
-		local offset_x = (i - 1) * 23
-		local widget_def = create_detailed_objective_widgets(scenegraph_id, active_side_color)
-		local widget = UIWidget.init(widget_def)
-
-		widget.offset[1] = offset_x
-		objective_widgets[#objective_widgets + 1] = widget
-	end
-
-	self._objectives_widgets = objective_widgets
-
-	local node_size = num_objectives * 18
-
-	self._ui_scenegraph.objective_detail.size[1] = node_size
-	self._ui_scenegraph.objective_detail.position[1] = -(node_size * 0.5)
-
-	UISceneGraph.update_scenegraph(self._ui_scenegraph)
-
+VersusMissionObjectiveUI._set_active_scoring_side_color = function (self, is_hero)
+	local active_side_color = is_hero and Colors.get_color_table_with_alpha("local_player_team_lighter", 255) or Colors.get_color_table_with_alpha("opponent_team_lighter", 255)
 	local objective_widget = self._widgets_by_name.objective
 
+	objective_widget.content.is_hero = is_hero
 	objective_widget.style.progress_bar.color = active_side_color
+	objective_widget.style.objective_icon.color = active_side_color
 end
 
-VersusMissionObjectiveUI._update_current_objective = function (self, current_objective_index)
+VersusMissionObjectiveUI._update_current_objective = function (self)
 	local objective_widget = self._widgets_by_name.objective
 	local objective_icon = self._objective_system:current_objective_icon()
 
@@ -267,11 +248,10 @@ end
 VersusMissionObjectiveUI._update_score = function (self)
 	local local_player_party_id = self:_get_local_player_party_id()
 	local opponent_party_id = self:_get_opponent_party_id()
-	local score_widget_1 = self._widgets_by_name.team_1_score
-	local score_widget_2 = self._widgets_by_name.team_2_score
+	local objective_widget = self._widgets_by_name.objective
 
-	score_widget_1.content.score = self._win_conditions:get_total_score(local_player_party_id)
-	score_widget_2.content.score = self._win_conditions:get_total_score(opponent_party_id)
+	objective_widget.content.team_1_score = self._win_conditions:get_total_score(local_player_party_id)
+	objective_widget.content.team_2_score = self._win_conditions:get_total_score(opponent_party_id)
 end
 
 VersusMissionObjectiveUI._get_party_side_name = function (self, party_id)
@@ -307,16 +287,6 @@ end
 
 VersusMissionObjectiveUI._set_objective_bar_end = function (self, fraction)
 	self._widgets_by_name.progress_bar.content.disabled_progress_bar = fraction
-end
-
-VersusMissionObjectiveUI._calculate_objective_bar_progress = function (self, current_index, previous_index)
-	current_index = current_index - 1
-	previous_index = previous_index and previous_index - 1 or 0
-
-	local num_main_objectives = self._objective_system:num_main_objectives()
-
-	self._previous_progress_bar_fraction = previous_index / num_main_objectives
-	self._current_progress_bar_fraction = current_index / num_main_objectives
 end
 
 VersusMissionObjectiveUI._play_sound = function (self, event)
@@ -357,7 +327,7 @@ VersusMissionObjectiveUI._set_pre_round_timer = function (self, time_left)
 
 	widget.content.pre_round_timer = time_left
 
-	if time_left <= 5 then
+	if time_left <= 10 then
 		self:_play_sound("versus_round_start_safe_zone_countdown_tick")
 	end
 
@@ -396,6 +366,12 @@ VersusMissionObjectiveUI._draw = function (self, dt)
 		UIRenderer.draw_all_widgets(ui_renderer, self._objectives_widgets)
 	end
 
+	if self._objective_text_widget then
+		render_settings.alpha_multiplier = self._objective_text_widget.alpha_multiplier or alpha_multiplier
+
+		UIRenderer.draw_widget(ui_renderer, self._objective_text_widget)
+	end
+
 	UIRenderer.end_pass(ui_renderer)
 
 	render_settings.alpha_multiplier = alpha_multiplier
@@ -403,9 +379,16 @@ end
 
 VersusMissionObjectiveUI._set_objective_text = function (self, text)
 	local widgets_by_name = self._widgets_by_name
-	local widget = widgets_by_name.objective_text
+	local widget = self._objective_text_widget
+	local content = widget.content
+	local style = widget.style
 
-	widget.content.text = text
+	content.area_text_content = text
+
+	local ui_renderer = self.ui_renderer
+	local max_width, max_height = 287.5, 40
+
+	content.text_height = 45
 end
 
 VersusMissionObjectiveUI._format_timer = function (self, time)
@@ -496,11 +479,13 @@ VersusMissionObjectiveUI.cb_world_marker_spawned = function (self, objective_ind
 end
 
 VersusMissionObjectiveUI.rpc_update_start_round_countdown_timer = function (self, channel_id, time_left)
-	self:_set_pre_round_timer(time_left)
+	Managers.state.event:trigger("ui_update_start_round_counter", time_left)
+	Managers.state.event:trigger("ui_tab_update_start_round_counter", time_left)
 end
 
 VersusMissionObjectiveUI.rpc_ui_round_started = function (self, channel_id)
 	self:_on_round_started()
+	Managers.state.event:trigger("ui_tab_round_started")
 end
 
 VersusMissionObjectiveUI._on_round_started = function (self)
@@ -508,7 +493,7 @@ VersusMissionObjectiveUI._on_round_started = function (self)
 
 	local round_start_timer_widget = self._widgets_by_name.round_start_timer
 	local round_starting_text_widget = self._widgets_by_name.round_starting_text
-	local obj_text_widget = self._widgets_by_name.objective_text
+	local obj_text_widget = self._objective_text_widget
 	local objective_widget = self._widgets_by_name.objective
 
 	round_start_timer_widget.content.visible = false
@@ -516,6 +501,12 @@ VersusMissionObjectiveUI._on_round_started = function (self)
 	obj_text_widget.content.visible = true
 	objective_widget.content.pre_round_timer_done = true
 
+	local params = {
+		wwise_world = self._wwise_world,
+		render_settings = self._render_settings,
+	}
+
+	self._ui_animator:start_animation("mission_start", obj_text_widget, scenegraph_definition, params)
 	self:_play_sound("menu_versus_match_start")
 end
 
@@ -560,18 +551,4 @@ VersusMissionObjectiveUI._update_objective_progress = function (self)
 	if progress == 1 then
 		return true
 	end
-end
-
-VersusMissionObjectiveUI._set_active_scoring_team = function (self)
-	local local_player_party_id = self:_get_local_player_party_id()
-	local opponent_party_id = self:_get_opponent_party_id()
-	local local_player_side_name = self:_get_party_side_name(local_player_party_id)
-	local opponent_side_name = self:_get_party_side_name(opponent_party_id)
-	local local_player_is_hero = local_player_side_name == "heroes"
-	local opponent_is_hero = opponent_side_name == "heroes"
-	local score_widget_1 = self._widgets_by_name.team_1_score
-	local score_widget_2 = self._widgets_by_name.team_2_score
-
-	score_widget_1.content.disabled_background.is_hero = local_player_is_hero
-	score_widget_2.content.disabled_background.is_hero = opponent_is_hero
 end

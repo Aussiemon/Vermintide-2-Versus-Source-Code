@@ -166,7 +166,7 @@ DamageBlobTemplates.warpfire_thrower_fire_init_vs = function (self, t)
 			local fp_extension = ScriptUnit.has_extension(warpfire_thrower_unit, "first_person_system")
 
 			if fp_extension and fp_extension:first_person_mode_active() then
-				particle_name = "fx/chr_warp_fire_flamethrower_01_1p"
+				particle_name = "fx/chr_warp_fire_flamethrower_01_1p_versus"
 			end
 
 			local node_name = "p_fx"
@@ -185,6 +185,9 @@ DamageBlobTemplates.warpfire_thrower_fire_init_vs = function (self, t)
 	end
 end
 
+local INDEX_DISTANCE = 2
+local INDEX_ACTOR = 4
+
 DamageBlobTemplates.warpfire_thrower_fire_update_vs = function (self, t, dt, target_unit, physics_world)
 	local warpfire_gun_unit = self._warpfire_gun_unit
 	local particle_id = self._warpfire_particle_id
@@ -201,13 +204,34 @@ DamageBlobTemplates.warpfire_thrower_fire_update_vs = function (self, t, dt, tar
 		local network_manager = Managers.state.network
 		local game = network_manager:game()
 		local aim_direction = GameSession.game_object_field(game, go_id, "aim_direction")
-		local raycast_filter = "filter_in_line_of_sight_no_players_no_enemies"
-		local max_length = self._attack_range * 2
-		local _, _, length = PhysicsWorld.raycast(physics_world, muzzle_pos, aim_direction, max_length, "all", "types", "both", "closest", "collision_filter", raycast_filter)
+		local raycast_filter = "filter_bot_ranged_line_of_sight_no_allies"
+		local ray_length = self._attack_range * 2
+		local hit_results = PhysicsWorld.raycast(physics_world, muzzle_pos, aim_direction, ray_length, "all", "types", "both", "all", "collision_filter", raycast_filter)
+		local length = self._attack_range
 
-		length = length or max_length
+		if hit_results then
+			for i = 1, #hit_results do
+				local actor = hit_results[i][INDEX_ACTOR]
+				local hit_unit = Actor.unit(actor)
+				local breed = hit_unit and Unit.get_data(hit_unit, "breed")
+				local is_boss_or_los = not breed or breed.boss
+
+				if is_boss_or_los and length > hit_results[i][INDEX_DISTANCE] then
+					length = hit_results[i][INDEX_DISTANCE]
+
+					break
+				end
+			end
+		end
 
 		local particle_name = "fx/chr_warp_fire_flamethrower_01"
+		local warpfire_thrower_unit = self._source_unit
+		local fp_extension = ScriptUnit.has_extension(warpfire_thrower_unit, "first_person_system")
+
+		if fp_extension and fp_extension:first_person_mode_active() then
+			particle_name = "fx/chr_warp_fire_flamethrower_01_1p_versus"
+		end
+
 		local effect_variable_id = World.find_particles_variable(world, particle_name, "firepoint_1")
 
 		World.set_particles_variable(world, particle_id, effect_variable_id, firepoint_1_pos + aim_direction * 0.1)
@@ -218,7 +242,7 @@ DamageBlobTemplates.warpfire_thrower_fire_update_vs = function (self, t, dt, tar
 
 		effect_variable_id = World.find_particles_variable(world, particle_name, "firelife_1")
 
-		local lifetime = length / 4
+		local lifetime = length * 0.5
 		local particle_life_time_vector = self._particle_life_time:unbox()
 
 		particle_life_time_vector.x = lifetime

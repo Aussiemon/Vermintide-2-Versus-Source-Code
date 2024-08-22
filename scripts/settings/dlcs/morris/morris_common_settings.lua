@@ -330,6 +330,7 @@ settings.matchmaking_types = {
 	"inn_deus",
 	"map_deus",
 	"deus",
+	"deus_weekly",
 }
 settings.game_mode = "scripts/settings/dlcs/morris/game_mode_settings_morris"
 settings.end_view = {
@@ -562,7 +563,6 @@ settings.game_object_extractors = {
 
 		local extension_init_data = {
 			buff_system = {
-				breed = "n/a",
 				initial_buff_names = initial_buff_names,
 			},
 		}
@@ -624,7 +624,6 @@ settings.game_object_extractors = {
 				is_husk = true,
 			},
 			buff_system = {
-				breed = "n/a",
 				initial_buff_names = initial_buff_names,
 			},
 			timed_spawner_system = {
@@ -657,7 +656,6 @@ settings.game_object_extractors = {
 				explosion_template_name = NetworkLookup.explosion_templates[explosion_template_name],
 			},
 			buff_system = {
-				breed = "n/a",
 				initial_buff_names = initial_buff_names,
 			},
 		}
@@ -886,6 +884,9 @@ settings.death_reactions = {
 	"scripts/settings/dlcs/morris/morris_death_reactions",
 }
 settings.dot_type_lookup = {
+	boon_career_ability_bleed_aoe = "poison_dot",
+	boon_career_ability_burning_aoe = "burning_dot",
+	boon_career_ability_poison_aoe = "poison_dot",
 	burning_magma_dot = "burning_dot",
 	we_deus_01_dot = "burning_dot",
 	we_deus_01_dot_charged = "burning_dot",
@@ -895,14 +896,15 @@ settings.dot_type_lookup = {
 settings.end_view_state = {
 	"scripts/ui/views/level_end/states/end_view_state_summary_deus",
 }
-settings.network_packages = {
-	"resource_packages/mutators/mutator_curse_blood_storm",
-	"resource_packages/mutators/mutator_curse_bolt_of_change",
-	"resource_packages/mutators/mutator_curse_corrupted_flesh",
-	"resource_packages/mutators/mutator_curse_egg_of_tzeentch",
-	"resource_packages/mutators/mutator_curse_greed_pinata",
-	"resource_packages/mutators/mutator_curse_khorne_champions",
-	"resource_packages/mutators/mutator_curse_rotten_miasma",
-	"resource_packages/mutators/mutator_curse_skulls_of_fury",
-}
 settings.loading_tips_file = "scripts/settings/dlcs/morris/morris_loading_tips"
+settings.drone_templates = {
+	deus_damage_drone = {
+		impact_sfx = "Play_boon_drone_impact",
+		impact_vfx = "fx/skulls_2024/boons_drone_projectile_impact_fx",
+		spawn_sfx = "Play_boon_drone_spawn",
+		linked_vfx = {
+			destroy_policy = "stop",
+			name = "fx/skulls_2024/boons_drone_projectile_fx",
+		},
+	},
+}

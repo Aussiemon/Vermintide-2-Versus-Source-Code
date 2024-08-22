@@ -224,6 +224,48 @@ function flow_callback_switchcase_unit(params)
 	return flow_return_table
 end
 
+function flow_callback_switch_event_to_number_0(params)
+	return {
+		out_number = 0,
+	}
+end
+
+function flow_callback_switch_event_to_number_1(params)
+	return {
+		out_number = 1,
+	}
+end
+
+function flow_callback_switch_event_to_number_2(params)
+	return {
+		out_number = 2,
+	}
+end
+
+function flow_callback_switch_event_to_number_3(params)
+	return {
+		out_number = 3,
+	}
+end
+
+function flow_callback_switch_event_to_number_4(params)
+	return {
+		out_number = 4,
+	}
+end
+
+function flow_callback_switch_event_to_number_5(params)
+	return {
+		out_number = 5,
+	}
+end
+
+function flow_callback_switch_event_to_number_6(params)
+	return {
+		out_number = 6,
+	}
+end
+
 function flow_callback_relay_trigger(params)
 	return {
 		out = true,
@@ -277,6 +319,10 @@ function flow_callback_select_output_by_number(params)
 	}
 
 	return ret
+end
+
+function flow_callback_set_simple_animation_speed(params)
+	Unit.set_simple_animation_speed(params.unit, params.speed, params.group)
 end
 
 function flow_query_number_of_active_players(params)
@@ -1372,6 +1418,19 @@ function flow_callback_get_random_player(params)
 	return nil
 end
 
+function flow_callback_get_local_player_unit(params)
+	local player = Managers.player:local_player()
+	local player_unit = player and player.player_unit
+
+	if player_unit and Unit.alive(player_unit) then
+		flow_return_table.localplayer = player_unit
+	else
+		flow_return_table.localplayer = nil
+	end
+
+	return flow_return_table
+end
+
 function flow_callback_get_random_player_or_global_observer(params)
 	local players = Managers.player:human_and_bot_players()
 	local surrounding_aware_system = Managers.state.entity:system("surrounding_aware_system")
@@ -1456,6 +1515,95 @@ function flow_callback_trigger_dialogue_event(params)
 		dialogue_input:trigger_dialogue_event(params.concept, event_table, params.identifier)
 	else
 		print(string.format("[flow_callback_trigger_dialogue_event] No extension found belonging to system \"dialogue_system\" for unit %s", tostring(unit)))
+	end
+end
+
+function flow_callback_trigger_networked_dialogue_event(params)
+	local unit = params.source
+
+	fassert(unit, "Calling flow_callback_trigger_dialogue_event without passing unit")
+
+	if ScriptUnit.has_extension(unit, "dialogue_system") then
+		local dialogue_input = ScriptUnit.extension_input(unit, "dialogue_system")
+		local event_table = FrameTable.alloc_table()
+
+		if params.argument1_name then
+			event_table[params.argument1_name] = tonumber(params.argument1) or params.argument1
+		end
+
+		if params.argument2_name then
+			event_table[params.argument2_name] = tonumber(params.argument2) or params.argument2
+		end
+
+		if params.argument3_name then
+			event_table[params.argument3_name] = tonumber(params.argument3) or params.argument3
+		end
+
+		dialogue_input:trigger_networked_dialogue_event(params.concept, event_table, params.identifier)
+	else
+		print(string.format("[flow_callback_trigger_networked_dialogue_event] No extension found belonging to system \"dialogue_system\" for unit %s", tostring(unit)))
+	end
+end
+
+function flow_callback_trigger_ensured_dialogue_event(params)
+	local is_server = Managers.player.is_server
+
+	if not is_server then
+		return
+	end
+
+	local unit = params.source
+
+	fassert(unit, "Calling flow_callback_trigger_dialogue_event without passing unit")
+
+	if ScriptUnit.has_extension(unit, "dialogue_system") then
+		local event_table = {}
+
+		if params.argument1_name then
+			event_table[params.argument1_name] = tonumber(params.argument1) or params.argument1
+		end
+
+		if params.argument2_name then
+			event_table[params.argument2_name] = tonumber(params.argument2) or params.argument2
+		end
+
+		if params.argument3_name then
+			event_table[params.argument3_name] = tonumber(params.argument3) or params.argument3
+		end
+
+		local dialogue_system = Managers.state.entity:system("dialogue_system")
+
+		dialogue_system:queue_ensured_dialogue_event(unit, params.concept, event_table, params.identifier)
+	else
+		print(string.format("[flow_callback_trigger_networked_dialogue_event] No extension found belonging to system \"dialogue_system\" for unit %s", tostring(unit)))
+	end
+end
+
+function flow_callback_trigger_ensured_dialogue_event_on_players(params)
+	local players = Managers.player:players()
+
+	for _, player in pairs(players) do
+		local unit = player.player_unit
+
+		if ALIVE[unit] then
+			params.source = unit
+
+			flow_callback_trigger_ensured_dialogue_event(params)
+		end
+	end
+end
+
+function flow_callback_trigger_dialogue_event_on_players(params)
+	local players = Managers.player:players()
+
+	for _, player in pairs(players) do
+		local unit = player.player_unit
+
+		if ALIVE[unit] then
+			params.source = unit
+
+			flow_callback_trigger_dialogue_event(params)
+		end
 	end
 end
 
@@ -1572,10 +1720,6 @@ function flow_callback_ussingen_barrel_challenge(params)
 
 			return flow_return_table
 		end
-
-		if false then
-			-- Nothing
-		end
 	end
 
 	flow_return_table.is_valid_barrel = 0
@@ -1604,10 +1748,6 @@ function flow_callback_ussingen_barrel_challenge_completed(params)
 					local statistics_db = Managers.player:statistics_db()
 
 					statistics_db:increment_stat_and_sync_to_clients(stat_names[i])
-				end
-
-				if false then
-					-- Nothing
 				end
 			end
 		end
@@ -2276,7 +2416,7 @@ function flow_callback_get_health_player_bot_ai(params)
 		local health_extension = ScriptUnit.extension(unit, "health_system")
 		local status_extension = ScriptUnit.has_extension(unit, "status_system")
 
-		current_health = status_extension and not (not status_extension:is_knocked_down() and not status_extension:is_ready_for_assisted_respawn()) and 0 or health_extension:current_health()
+		current_health = status_extension and (status_extension:is_knocked_down() or status_extension:is_ready_for_assisted_respawn()) and 0 or health_extension:current_health()
 	end
 
 	flow_return_table.currenthealth = current_health
@@ -2480,7 +2620,7 @@ function flow_callback_trigger_explosion(params)
 
 	fassert(explosion_template_name, "Trigger Explosion unit flow node is missing explosion_template_name")
 
-	local explosion_template = ExplosionTemplates[explosion_template_name]
+	local explosion_template = ExplosionUtils.get_template(explosion_template_name)
 
 	fassert(explosion_template.explosion.level_unit_damage, "The explosion_template must have level_unit_damage set to true when using this flow node")
 
@@ -3522,6 +3662,23 @@ function flow_callback_chr_enemy_inventory_send_event(params)
 	end
 end
 
+function flow_callback_unit_spawner_spawn_local_unit(params)
+	local unit = params.unit
+	local position = params.position or Vector3(0, 0, 0)
+	local rotation = params.rotation or Quaternion.identity()
+	local scale = params.scale or Vector3(1, 1, 1)
+	local spawn_pose = Matrix4x4.from_quaternion_position(rotation, position)
+
+	Matrix4x4.set_scale(spawn_pose, scale)
+
+	local spawned_unit = Managers.state.unit_spawner:spawn_local_unit(unit, spawn_pose)
+
+	return {
+		spawned = true,
+		spawned_unit = spawned_unit,
+	}
+end
+
 function flow_callback_unit_spawner_mark_for_deletion(params)
 	if not unit_alive(params.unit) then
 		return
@@ -3997,6 +4154,14 @@ function flow_callback_barrel_explode(params)
 
 	health_extension:set_max_health(1)
 	health_extension:add_damage(unit, 1, "full", "grenade", Unit.world_position(unit, 0), Vector3(1, 0, 0))
+end
+
+function flow_callback_kill_unit(params)
+	local unit = params.unit
+	local health_extension = ScriptUnit.extension(unit, "health_system")
+
+	health_extension:set_max_health(1)
+	health_extension:add_damage(unit, 1, "full", "forced", Unit.local_position(unit, 0), Vector3(0, 0, 1))
 end
 
 function flow_callback_set_mutator_active(params)
@@ -4683,6 +4848,92 @@ function flow_callback_set_player_invincibility(params)
 	end
 end
 
+function flow_callback_switch_player_class(params)
+	local player_unit = params.player_unit
+	local profile_name = params.profile_name
+
+	if not profile_name then
+		local player = Managers.player:unit_owner(player_unit)
+		local peer_id = player:network_id()
+		local local_player_id = player:local_player_id()
+		local party_manager = Managers.party
+		local party = party_manager:get_party_from_player_id(peer_id, local_player_id)
+		local side = Managers.state.side.side_by_party[party]
+		local available_profiles = side.available_profiles
+
+		available_profiles = available_profiles or PROFILES_BY_AFFILIATION.heroes
+
+		for k = 1, #available_profiles do
+			profile_name = available_profiles[k]
+
+			break
+		end
+	end
+
+	if profile_name then
+		local profile_index = FindProfileIndex(profile_name)
+		local careers = SPProfiles[profile_index].careers
+		local career = careers[script_data.wanted_career_index] or careers[1]
+		local force_respawn = true
+
+		if career.display_name == "vs_undecided" then
+			return
+		end
+
+		Managers.state.network:request_profile(1, profile_name, career.display_name, force_respawn)
+	end
+end
+
+function flow_callback_switch_player_party(params)
+	local party_id = params.party_id
+
+	if party_id then
+		party_id = tonumber(party_id)
+
+		local party = Managers.party:get_party(party_id)
+
+		if party and party.num_open_slots + party.num_bots > 0 then
+			print("Debug switching wanted party to:", party_id)
+
+			local player = Managers.player:local_player()
+			local local_player_id = player:local_player_id()
+			local peer_id = player:network_id()
+			local mechanism_name = Managers.mechanism:current_mechanism_name()
+			local side = Managers.state.side.side_by_party[party]
+
+			Managers.party:request_join_party(peer_id, local_player_id, party_id)
+
+			if player and player:needs_despawn() then
+				Managers.state.spawn:delayed_despawn(player)
+			end
+
+			local camera_system = Managers.state.entity:system("camera_system")
+
+			if party.name == "spectators" then
+				local profile = PROFILES_BY_NAME.spectator
+
+				camera_system:initialize_camera_states(player, profile.index, 1)
+			else
+				local profile_index = FindProfileIndex("witch_hunter")
+
+				camera_system:initialize_camera_states(player, profile_index, 1)
+			end
+
+			local sides = Managers.state.side:sides()
+			local object_set_name, enable
+
+			for i = 1, #sides do
+				local current_side = sides[i]
+
+				object_set_name = string.format("%s_%s", mechanism_name, current_side:name())
+				enable = current_side == side
+
+				Managers.state.game_mode:set_object_set_enabled(object_set_name, enable)
+			end
+		end
+	end
+end
+
 function flow_callback_set_player_in_hanging_cage(params)
 	local idle_animation = params.idle_animation
 	local falling_animation = params.falling_animation
@@ -5062,6 +5313,39 @@ function flow_callback_hazard_push_damage_player_and_husks(params)
 	end
 end
 
+function flow_callback_push_nearby_players(params)
+	local source_unit = params.source_unit
+	local source_pos = Unit.local_position(source_unit, 0)
+	local radius_sq = (params.range or 5)^2
+	local magnitude = params.force or 5
+	local local_player_only = params.local_player_only
+	local direction = Quaternion.forward(Unit.local_rotation(source_unit, 0))
+	local velocity = direction * magnitude
+
+	if local_player_only then
+		local player = Managers.player:local_player()
+		local player_unit = player and player.player_unit
+
+		if player_unit and radius_sq > Vector3.distance_squared(POSITION_LOOKUP[player_unit], source_pos) then
+			local locomotion_extension = ScriptUnit.extension(player_unit, "locomotion_system")
+
+			locomotion_extension:add_external_velocity(velocity, magnitude)
+		end
+	else
+		local players = Managers.player:players()
+
+		for _, player in pairs(players) do
+			local player_unit = player.player_unit
+
+			if player_unit and radius_sq > Vector3.distance_squared(POSITION_LOOKUP[player_unit], source_pos) then
+				local locomotion_extension = ScriptUnit.extension(player_unit, "locomotion_system")
+
+				locomotion_extension:add_external_velocity(velocity, magnitude)
+			end
+		end
+	end
+end
+
 function flow_callback_start_disrupt_ritual(params)
 	fassert(params.unit, "[flow_callbacks] DISRUPT RITUAL: No level unit name provided [required]")
 	fassert(params.volume_name, "[flow_callbacks] DISRUPT RITUAL: No volume name provided [required]")
@@ -5311,10 +5595,6 @@ function flow_callback_trigger_event_on_sub_level(params)
 		if sub_level then
 			Level.trigger_event(sub_level, event_name)
 		end
-
-		if false then
-			-- Nothing
-		end
 	end
 end
 
@@ -5534,4 +5814,184 @@ function flow_callback_set_global_context(params)
 	local dialogue_system = Managers.state.entity:system("dialogue_system")
 
 	dialogue_system:set_global_context(params.key, params.value)
+end
+
+function flow_callback_lock_available_hero(params)
+	local locked_profile_index = Managers.state.game_mode:lock_available_hero()
+
+	assert(locked_profile_index, "[flow_callback_lock_available_hero] Couldn't find any available hero")
+
+	flow_return_table.locked_profile_index = locked_profile_index
+
+	return flow_return_table
+end
+
+function flow_callback_whaling_village_buboes_destroyed(params)
+	local achievement_manager = Managers.state.achievement
+
+	achievement_manager:trigger_event("dwarf_feculent_buboes")
+end
+
+function flow_callback_whaling_village_statue_emote(params)
+	Managers.state.achievement:trigger_event("dwarf_statue_emote", params.is_inside)
+end
+
+function flow_callback_whaling_village_go_fish(params)
+	local achievement_manager = Managers.state.achievement
+
+	achievement_manager:trigger_event("dwarf_go_fish")
+end
+
+function flow_callback_whaling_village_elevator_speedrun(params)
+	local achievement_manager = Managers.state.achievement
+
+	achievement_manager:trigger_event("dwarf_elevator_speedrun")
+end
+
+function flow_callback_register_combination_puzzle(params)
+	local group_name_id = params.puzzle_group
+	local puzzle_id = params.puzzle_name or ""
+	local puzzle_combination = params.puzzle_combination
+	local ordered = params.ordered
+	local completed_level_event = params.completed_level_event
+	local hot_join_sync_completion = params.hot_join_sync_completion
+
+	if not group_name_id or not puzzle_combination then
+		return
+	end
+
+	local entity_manager = Managers.state.entity
+	local puzzle_system = entity_manager and entity_manager:system("puzzle_system")
+
+	if puzzle_system then
+		puzzle_system:register_puzzle(group_name_id, puzzle_id, puzzle_combination, ordered, completed_level_event, hot_join_sync_completion)
+	else
+		ferror("Puzzle '%s' was registered before systems were created", group_name_id)
+	end
+end
+
+function flow_callback_register_random_match_puzzle(params)
+	local group_name_id = params.puzzle_group
+	local puzzle_id = params.puzzle_name or ""
+	local possible_values = params.possible_values
+	local num_needed_matches = params.num_needed_matches
+	local completed_level_event = params.completed_level_event
+	local hot_join_sync_completion = params.hot_join_sync_completion
+
+	if not group_name_id or not possible_values or not num_needed_matches then
+		return
+	end
+
+	local max_needed = 6
+
+	possible_values = string.split_deprecated(possible_values, ",")
+
+	local seed = Managers.mechanism:get_level_seed() + HashUtils.fnv32_hash(group_name_id) + HashUtils.fnv32_hash(puzzle_id)
+	local combination = FrameTable.alloc_table()
+
+	for i = 1, math.min(num_needed_matches, max_needed) do
+		local index
+
+		seed, index = Math.next_random(seed, 1, #possible_values)
+
+		local start_index
+
+		if table.contains(combination, possible_values[index]) then
+			start_index = index
+
+			repeat
+				index = math.index_wrapper(index + 1, #possible_values)
+			until not table.contains(combination, possible_values[index]) or index == start_index
+		end
+
+		combination[i] = possible_values[index]
+		flow_return_table["chosen_value" .. i] = possible_values[index]
+	end
+
+	for i = num_needed_matches + 1, max_needed do
+		flow_return_table["chosen_value" .. i] = ""
+	end
+
+	combination = table.concat(combination, ",")
+
+	local ordered = false
+	local entity_manager = Managers.state.entity
+	local puzzle_system = entity_manager and entity_manager:system("puzzle_system")
+
+	if puzzle_system then
+		puzzle_system:register_puzzle(group_name_id, puzzle_id, combination, ordered, completed_level_event, hot_join_sync_completion)
+	end
+
+	return flow_return_table
+end
+
+function flow_callback_string_to_numeric(params)
+	local value = tonumber(params.string)
+
+	flow_return_table.value = value or 0
+	flow_return_table.success = not not value
+
+	return flow_return_table
+end
+
+local bool_lut = {
+	FALSE = false,
+	False = false,
+	TRUE = true,
+	True = true,
+	["false"] = false,
+	["true"] = true,
+}
+
+function flow_callback_string_to_bool(params)
+	local value = bool_lut[params.string]
+
+	flow_return_table.value = value or false
+	flow_return_table.success = value ~= nil
+
+	return flow_return_table
+end
+
+function flow_callback_string_to_bool(params)
+	local value = bool_lut[params.string]
+
+	flow_return_table.value = value or false
+	flow_return_table.success = value ~= nil
+
+	return flow_return_table
+end
+
+function flow_callback_get_mechanism_name(params)
+	local name = Managers.mechanism:current_mechanism_name()
+
+	flow_return_table.name = name
+
+	return flow_return_table
+end
+
+function flow_callbacks_flow_helper_register_check_unit_line_of_sight(params)
+	if not Managers.state then
+		return
+	end
+
+	local owner_unit = params.owner_unit
+	local source_unit = params.raycast_from_unit
+	local unit_to_check = params.unit_to_check
+	local flow_event_enter = params.flow_event_enter
+	local flow_event_leave = params.flow_event_leave
+	local collision_filter = params.collision_filter
+	local debug_draw = params.debug_draw
+
+	Managers.state.flow_helper:register_line_of_sight_check(owner_unit, source_unit, unit_to_check, flow_event_enter, flow_event_leave, collision_filter, debug_draw)
+end
+
+function flow_callbacks_flow_helper_unregister_check_unit_line_of_sight(params)
+	if not Managers.state then
+		return
+	end
+
+	local owner_unit = params.owner_unit
+	local unit_to_check = params.unit_to_check
+
+	Managers.state.flow_helper:unregister_line_of_sight_check(owner_unit, unit_to_check)
 end

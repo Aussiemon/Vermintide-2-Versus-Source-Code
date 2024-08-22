@@ -9,6 +9,7 @@ local breed_data = {
 	death_sound_event = "chaos_sorcerer_corrupt_death",
 	debug_spawn_category = "Specials",
 	dialogue_source_name = "chaos_corruptor_sorcerer",
+	height = 1.8,
 	is_always_spawnable = true,
 	is_of_interest_func = "is_of_interest_to_corruptor",
 	is_resurrectable = false,

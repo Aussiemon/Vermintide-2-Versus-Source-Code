@@ -261,7 +261,7 @@ StateLoading._setup_first_time_ui = function (self)
 		local params = {}
 		local next_level_key = Managers.level_transition_handler:get_current_level_key()
 
-		params.is_prologue = next_level_key == "prologue"
+		params.is_prologue = self._switch_to_tutorial_backend == true
 
 		local platform = PLATFORM
 
@@ -271,7 +271,7 @@ StateLoading._setup_first_time_ui = function (self)
 
 			local level_settings = LevelSettings[level_name]
 
-			auto_skip = not level_settings.hub_level
+			auto_skip = not level_settings.hub_level and not params.is_prologue
 			auto_skip = loading_context.join_lobby_data or Development.parameter("auto_join") or auto_skip or Development.parameter("skip_splash")
 
 			if not auto_skip and Development.parameter("weave_name") then
@@ -665,7 +665,7 @@ StateLoading.update = function (self, dt, t)
 	end
 
 	Network.update_receive(dt, self._network_event_delegate.event_table)
-	self:_update_network(dt)
+	self:_update_network(dt, t)
 
 	local level_transition_handler = Managers.level_transition_handler
 
@@ -789,9 +789,9 @@ StateLoading.update = function (self, dt, t)
 	return self:_try_next_state(dt)
 end
 
-StateLoading._update_network = function (self, dt)
+StateLoading._update_network = function (self, dt, t)
 	if self._network_server then
-		self._network_server:update(dt)
+		self._network_server:update(dt, t)
 
 		local disconnected = self._network_server:disconnected()
 
@@ -806,7 +806,7 @@ StateLoading._update_network = function (self, dt)
 			self:_destroy_lobby_host()
 		end
 	elseif self._network_client then
-		self._network_client:update(dt)
+		self._network_client:update(dt, t)
 
 		if self._network_client:is_in_post_game() and not self._in_post_game_popup_id and not self._in_post_game_popup_shown then
 			self._in_post_game_popup_id = Managers.popup:queue_popup(Localize("popup_is_in_post_game"), Localize("matchmaking_status_waiting_for_host"), "return_to_inn", Localize("return_to_inn"))
@@ -854,7 +854,7 @@ end
 StateLoading._get_lost_connection_text_id = function (self)
 	local text_id
 
-	text_id = not (not IS_WINDOWS and not IS_LINUX) and (rawget(_G, "Steam") and "failure_start_no_steam" or "broken_connection") or IS_XB1 and (not Network.xboxlive_client_exists() and "failure_start_xbox_live_client" or "failure_start_xbox_lobby_create") or IS_PS4 and "failure_psn_client_error" or "failure_start"
+	text_id = (IS_WINDOWS or IS_LINUX) and (rawget(_G, "Steam") and "failure_start_no_steam" or "broken_connection") or IS_XB1 and (not Network.xboxlive_client_exists() and "failure_start_xbox_live_client" or "failure_start_xbox_lobby_create") or IS_PS4 and "failure_psn_client_error" or "failure_start"
 
 	return text_id
 end
@@ -914,7 +914,7 @@ StateLoading._update_lobbies = function (self, dt, t)
 		elseif self._lobby_host.state == LobbyState.FAILED and not self._popup_id then
 			local text_id
 
-			text_id = not (not IS_WINDOWS and not IS_LINUX) and (rawget(_G, "Steam") and (Steam.connected() and "failure_start_steam_lobby_create" or "failure_start_no_steam") or "failure_start_no_lan") or IS_XB1 and (not Network.xboxlive_client_exists() and "failure_start_xbox_live_client" or "failure_start_xbox_lobby_create") or IS_PS4 and "failure_start_psn_lobby_create" or "failure_start"
+			text_id = (IS_WINDOWS or IS_LINUX) and (rawget(_G, "Steam") and (Steam.connected() and "failure_start_steam_lobby_create" or "failure_start_no_steam") or "failure_start_no_lan") or IS_XB1 and (not Network.xboxlive_client_exists() and "failure_start_xbox_live_client" or "failure_start_xbox_lobby_create") or IS_PS4 and "failure_start_psn_lobby_create" or "failure_start"
 
 			if self._network_server then
 				self._network_server:disconnect_all_peers("unknown_error")
@@ -944,7 +944,7 @@ StateLoading._update_lobbies = function (self, dt, t)
 		end
 	end
 
-	if IS_XB1 and self._waiting_for_cleanup and Managers.account:all_lobbies_freed() and t > self._cleanup_wait_time then
+	if IS_XB1 and self._waiting_for_cleanup and Managers.account:all_sessions_cleaned_up() and t > self._cleanup_wait_time then
 		self._cleanup_done_func()
 
 		self._waiting_for_cleanup = nil
@@ -1049,7 +1049,7 @@ StateLoading._verify_joined_lobby = function (self, dt, t)
 			local failure_start_join_server_difficulty_requirement_failed = Localize("failure_start_join_server_difficulty_requirements_failed")
 
 			self:create_popup(failure_start_join_server_difficulty_requirement_failed, "popup_error_topic", "restart_as_server", "menu_accept", difficulty_error_message)
-		elseif client_network_hash == lobby_network_hash then
+		elseif client_network_hash == lobby_network_hash or Development.parameter("ignore_network_hash") or Managers.mechanism:setting("ignore_network_hash") then
 			if self._handle_new_lobby_connection then
 				self:setup_network_client(self._joined_matchmaking_lobby)
 
@@ -1271,7 +1271,7 @@ StateLoading._update_loading_screen = function (self, dt, t)
 		if lobby_host and lobby_host:is_joined() and self._network_server:waiting_to_enter_game() then
 			permission_to_go_to_next_state = true
 		end
-	elseif self._network_client and self._network_client.state == "waiting_enter_game" then
+	elseif self._network_client and self._network_client.state == NetworkClientStates.waiting_enter_game then
 		permission_to_go_to_next_state = true
 	end
 
@@ -1918,7 +1918,7 @@ StateLoading.load_current_level = function (self)
 	self._already_loaded_once = true
 
 	if self._network_client then
-		self._network_client:set_state("loading")
+		self._network_client:set_state(NetworkClientStates.loading)
 	end
 
 	local level_transition_handler = Managers.level_transition_handler
@@ -1964,7 +1964,7 @@ StateLoading._update_loadout_resync = function (self)
 		-- Nothing
 	end
 
-	if state == states.CHECK_RESYNC and self:has_joined() and Managers.mechanism:can_resync_loadout() then
+	if state == states.CHECK_RESYNC and self:has_joined() and Managers.mechanism:can_resync_loadout() and Managers.backend:is_mirror_ready() and not Managers.backend:is_pending_request() then
 		local level_transition_handler = Managers.level_transition_handler
 		local level_key = level_transition_handler:get_current_level_key()
 		local game_mode = level_transition_handler:get_current_game_mode()
@@ -1976,6 +1976,7 @@ StateLoading._update_loadout_resync = function (self)
 
 		loadout_changed = loadout_changed or talents_changed
 
+		Managers.backend:get_interface("talents"):make_dirty()
 		print("[StateLoading] loadout_changed:", loadout_changed, "old_loadout:", old_loadout, "new_loadout:", new_loadout, "level_key:", level_key, "game_mode:", game_mode)
 		Managers.mechanism:update_loadout()
 
@@ -1998,8 +1999,9 @@ StateLoading._update_loadout_resync = function (self)
 		if profile_synchronizer then
 			local peer_id = Network.peer_id()
 			local local_player_id = 1
+			local is_bot = false
 
-			profile_synchronizer:resync_loadout(peer_id, local_player_id)
+			profile_synchronizer:resync_loadout(peer_id, local_player_id, is_bot)
 
 			state = states.RESYNCING
 
@@ -2081,7 +2083,9 @@ StateLoading._destroy_network = function (self, application_shutdown)
 		if Managers.party:has_party_lobby() then
 			local lobby = Managers.party:steal_lobby()
 
-			LobbyInternal.leave_lobby(lobby)
+			if type(lobby) ~= "table" then
+				LobbyInternal.leave_lobby(lobby)
+			end
 		end
 
 		LobbyInternal.shutdown_client()
@@ -2212,7 +2216,7 @@ StateLoading.waiting_for_cleanup = function (self)
 end
 
 StateLoading.setup_join_lobby = function (self, optional_wait_time, setup_voip)
-	if IS_XB1 and (not Managers.account:all_lobbies_freed() or optional_wait_time) then
+	if IS_XB1 and (not Managers.account:all_sessions_cleaned_up() or optional_wait_time) then
 		self._waiting_for_cleanup = true
 		self._cleanup_done_func = callback(self, "setup_join_lobby")
 
@@ -2253,12 +2257,9 @@ StateLoading.setup_join_lobby = function (self, optional_wait_time, setup_voip)
 	end
 
 	if setup_voip then
-		local voip_params = {
-			is_server = false,
-			lobby = self._lobby_client,
-		}
+		local is_server = false
 
-		self._voip = Voip:new(voip_params)
+		self._voip = Voip:new(is_server, self._lobby_client)
 	end
 end
 
@@ -2312,7 +2313,7 @@ StateLoading.setup_lobby_finder = function (self, lobby_joined_callback, lobby_t
 end
 
 StateLoading.setup_lobby_host = function (self, wait_for_joined_callback, platform_lobby, xbox_lobby_session_name, xbox_session_template_name)
-	if IS_XB1 and not Managers.account:all_lobbies_freed() then
+	if IS_XB1 and not Managers.account:all_sessions_cleaned_up() then
 		self._waiting_for_cleanup = true
 		self._cleanup_done_func = callback(self, "setup_lobby_host", wait_for_joined_callback, platform_lobby, xbox_lobby_session_name, xbox_session_template_name)
 		self._cleanup_wait_time = 0
@@ -2336,11 +2337,11 @@ StateLoading.setup_lobby_host = function (self, wait_for_joined_callback, platfo
 	local level_transition_handler = Managers.level_transition_handler
 
 	if not level_transition_handler:has_next_level() then
-		local level_key = Managers.mechanism:default_level_key()
+		local level_key = "carousel_hub"
 		local level_settings = rawget(LevelSettings, level_key)
 		local conflict_settings = level_settings and level_settings.conflict_settings
 
-		level_transition_handler:set_next_level(Managers.mechanism:default_level_key(), nil, nil, nil, nil, conflict_settings)
+		level_transition_handler:set_next_level(level_key, nil, nil, nil, nil, conflict_settings)
 	end
 
 	level_transition_handler:promote_next_level_data()
@@ -2541,7 +2542,7 @@ StateLoading.setup_network_client = function (self, clear_peer_state, lobby_clie
 
 	local host = self._lobby_client:lobby_host()
 	local wanted_profile_index = self.parent.loading_context.wanted_profile_index
-	local wanted_party_index = self.parent.loading_context.wanted_party_index or 0
+	local wanted_party_index = self.parent.loading_context.wanted_party_index
 
 	self._network_client = NetworkClient:new(host, wanted_profile_index, wanted_party_index, clear_peer_state, self._lobby_client, self._voip)
 	self._network_transmit = NetworkTransmit:new(false, self._network_client.server_peer_id)
@@ -2623,6 +2624,8 @@ StateLoading.set_lobby_host_data = function (self, level_key)
 			stored_lobby_host_data.matchmaking_type = IS_PS4 and "custom" or NetworkLookup.matchmaking_types.custom
 		elseif Managers.level_transition_handler:get_current_mechanism() == "versus" then
 			stored_lobby_host_data.matchmaking_type = IS_PS4 and "versus" or NetworkLookup.matchmaking_types.versus
+		elseif matchmaking_type == "event" then
+			stored_lobby_host_data.matchmaking_type = IS_PS4 and "event" or NetworkLookup.matchmaking_types.event
 		elseif Development.parameter("auto_host_level") then
 			stored_lobby_host_data.matchmaking_type = IS_PS4 and "custom" or NetworkLookup.matchmaking_types.custom
 		end

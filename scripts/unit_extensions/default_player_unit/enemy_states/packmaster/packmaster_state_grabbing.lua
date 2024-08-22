@@ -20,24 +20,12 @@ PackmasterStateGrabbing.on_enter = function (self, unit, input, dt, context, t, 
 
 	self._breed = breed
 	self._hook_range = breed.grab_hook_range
-	self._grab_movement_speed = breed.grab_movement_speed
+	self._grab_movement_speed_multiplier_initial = breed.grab_movement_speed_multiplier_initial
+	self._grab_movement_speed_multiplier_target = breed.grab_movement_speed_multiplier_target
 	self._move_slow_lerp_constant = 0.5
 	self._dot_threshold = breed.grab_hook_cone_dot
 	self._physics_world = World.physics_world(self._world)
 	self.highest_dot_value = 0
-
-	local velocity = Vector3(0, 0, 0)
-
-	self._locomotion_extension:set_forced_velocity(velocity)
-	self._locomotion_extension:set_wanted_velocity(Vector3.zero())
-
-	self._first_person_extension = ScriptUnit.has_extension(unit, "first_person_system")
-	self._status_extension = ScriptUnit.extension(unit, "status_system")
-	self._career_extension = ScriptUnit.extension(unit, "career_system")
-	self._buff_extension = ScriptUnit.extension(unit, "buff_system")
-	self._locomotion_extension = ScriptUnit.extension(unit, "locomotion_system")
-	self._input_extension = ScriptUnit.has_extension(unit, "input_system")
-	self._inventory_extension = ScriptUnit.has_extension(unit, "inventory_system")
 
 	local first_person_extension = self._first_person_extension
 
@@ -115,17 +103,20 @@ PackmasterStateGrabbing.update = function (self, unit, input, dt, context, t)
 			CharacterStateHelper.play_animation_event_first_person(first_person_extension, "claw_closed")
 		end
 
-		if grab_target then
+		local ghost_mode_extension = ScriptUnit.extension(unit, "ghost_mode_system")
+		local is_in_ghost_mode = ghost_mode_extension:is_in_ghost_mode()
+
+		if grab_target and not is_in_ghost_mode then
 			local dialogue_input = ScriptUnit.extension_input(unit, "dialogue_system")
 			local event_data = FrameTable.alloc_table()
 
-			dialogue_input:trigger_dialogue_event("hook_success", event_data)
+			dialogue_input:trigger_networked_dialogue_event("hook_success", event_data)
 			csm:change_state("packmaster_dragging", grab_target)
 		elseif t >= grab_grace_period.after then
 			local dialogue_input = ScriptUnit.extension_input(unit, "dialogue_system")
 			local event_data = FrameTable.alloc_table()
 
-			dialogue_input:trigger_dialogue_event("hook_fail", event_data)
+			dialogue_input:trigger_networked_dialogue_event("hook_fail", event_data)
 			csm:change_state("walking")
 		end
 	end
@@ -157,8 +148,10 @@ PackmasterStateGrabbing._update_movement = function (self, unit, t, dt)
 	local current_movement_speed_scale = self.current_movement_speed_scale
 
 	if not self.is_bot then
-		local move_acceleration_up_dt = movement_settings_table.move_acceleration_up * dt
-		local move_acceleration_down_dt = movement_settings_table.move_acceleration_down * dt
+		local breed_move_acceleration_up = self._breed and self._breed.breed_move_acceleration_up
+		local breed_move_acceleration_down = self._breed and self._breed.breed_move_acceleration_down
+		local move_acceleration_up_dt = breed_move_acceleration_up * dt or movement_settings_table.move_acceleration_up * dt
+		local move_acceleration_down_dt = breed_move_acceleration_down * dt or movement_settings_table.move_acceleration_down * dt
 
 		if is_moving then
 			current_movement_speed_scale = math.min(1, current_movement_speed_scale + move_acceleration_up_dt)
@@ -169,8 +162,8 @@ PackmasterStateGrabbing._update_movement = function (self, unit, t, dt)
 		current_movement_speed_scale = is_moving and 1 or 0
 	end
 
-	local movement_speed = math.lerp(self._grab_movement_speed, 1, self._move_slow_lerp_constant * dt)
-	local current_max_move_speed = movement_speed
+	local movement_speed_multiplier = math.lerp(self._grab_movement_speed_multiplier_initial, self._grab_movement_speed_multiplier_target, self._move_slow_lerp_constant * dt)
+	local current_max_move_speed = movement_settings_table.move_speed * movement_speed_multiplier
 	local buffed_move_speed = buff_extension:apply_buffs_to_value(current_max_move_speed, "movement_speed")
 	local final_move_speed = buffed_move_speed * current_movement_speed_scale * movement_settings_table.player_speed_scale
 	local movement = Vector3(0, 0, 0)

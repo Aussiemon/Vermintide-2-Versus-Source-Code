@@ -390,12 +390,30 @@ local quickplay_description_style = {
 		2,
 	},
 }
+local eac_untrusted_disclaimer_text_style = {
+	font_size = 28,
+	font_type = "hell_shark_header",
+	horizontal_alignment = "center",
+	localize = false,
+	upper_case = false,
+	use_shadow = true,
+	vertical_alignment = "center",
+	word_wrap = true,
+	text_color = Colors.get_color_table_with_alpha("red", 255),
+	offset = {
+		0,
+		-50,
+		2,
+	},
+}
 local disable_with_gamepad = true
 local widget_definitions = {
 	quickplay_description_background = UIWidgets.create_rect_with_outer_frame("quickplay_background", scenegraph_definition.quickplay_background.size, "frame_outer_fade_02", nil, UISettings.console_start_game_menu_rect_color),
-	quickplay_title = UIWidgets.create_simple_text("Versus", "quickplay_title", nil, nil, quickplay_title_style),
-	quickplay_description = UIWidgets.create_simple_text("In Versus, two teams compete against each other across multiple rounds. The team with the most points at the end of the match wins.\n\nPress 'Play' to queue up for a Versus match against random opponents.\n\nTo team with up to 3 friends, join the same party before starting the queue.", "quickplay_description", nil, nil, quickplay_description_style),
-	play_button = UIWidgets.create_start_game_deus_play_button("play_button", scenegraph_definition.play_button.size, Localize("start_game_window_play"), 34, disable_with_gamepad),
+	quickplay_title = UIWidgets.create_simple_text(Localize("vs_quick_play_title"), "quickplay_title", nil, nil, quickplay_title_style),
+	quickplay_description = UIWidgets.create_simple_text(Localize("vs_quick_play_description"), "quickplay_description", nil, nil, quickplay_description_style),
+	quickplay_divider = UIWidgets.create_simple_texture("divider_01_top", "quickplay_divider"),
+	play_button = UIWidgets.create_start_game_deus_play_button("play_button", scenegraph_definition.play_button.size, Localize("start_game_window_play"), 34),
+	eac_untrusted_disclaimer = UIWidgets.create_simple_text("*Versus quickplay disabled in modded realm", "play_button", nil, nil, eac_untrusted_disclaimer_text_style),
 }
 local selector_input_definitions = {
 	{
@@ -403,7 +421,7 @@ local selector_input_definitions = {
 		enter_requirements = function (self)
 			local gamepad_active = Managers.input:is_device_active("gamepad")
 
-			return not gamepad_active
+			return gamepad_active and not self.gamepad_active_last_frame
 		end,
 		on_enter = function (self, dt, t)
 			local selection_widgets_by_name = self._widgets_by_name

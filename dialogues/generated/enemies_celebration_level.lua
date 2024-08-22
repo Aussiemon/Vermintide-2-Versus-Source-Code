@@ -2667,7 +2667,7 @@ return function ()
 				[1] = "ecr_gameplay_fall",
 			},
 			sound_events_duration = {
-				[1] = 3.5791234374046,
+				[1] = 3.1496770977974,
 			},
 		},
 		ecr_gameplay_fleeing_celebration_level = {
@@ -2982,14 +2982,14 @@ return function ()
 				"ecr_gameplay_running_towards_players_alone_08",
 			},
 			sound_events_duration = {
-				1.7922794222832,
-				2.0397656559944,
-				2.6266366839409,
-				2.0784459710121,
-				1.7603061795235,
-				1.7603061795235,
-				1.7603061795235,
-				1.7703519463539,
+				1.6190377473831,
+				1.8738412857056,
+				2.0356508493424,
+				1.4628485441208,
+				1.3138682842255,
+				1.2950078248978,
+				1.2950078248978,
+				1.3484325408936,
 			},
 		},
 		ecr_gameplay_running_towards_players_celebration_level = {
@@ -4902,7 +4902,7 @@ return function ()
 				[1] = "esr_gameplay_fall",
 			},
 			sound_events_duration = {
-				[1] = 3.5635517239571,
+				[1] = 3.1496770977974,
 			},
 		},
 		esr_gameplay_land_celebration_level = {

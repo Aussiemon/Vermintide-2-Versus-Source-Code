@@ -30,7 +30,6 @@ CareerSettings.bw_necromancer = {
 	attributes = {
 		base_critical_strike_chance = 0.05,
 		max_hp = 100,
-		max_hp_kd = 300,
 	},
 	video = {
 		material_name = "bw_necromancer",
@@ -77,7 +76,7 @@ CareerSettings.bw_necromancer = {
 	is_unlocked_function = function (career, hero_name, hero_level)
 		local unlocked, reason = career:override_available_for_mechanism()
 
-		if unlocked ~= nil then
+		if not unlocked then
 			return unlocked, reason
 		end
 
@@ -102,11 +101,11 @@ CareerSettings.bw_necromancer = {
 		local settings = Managers.mechanism:mechanism_setting_for_title("override_career_availability")
 		local career_name = career.display_name
 
-		if settings and settings[career_name] ~= nil then
-			return settings[career_name], "disabled_for_mechanism"
+		if settings and settings[career_name] == false then
+			return false, "disabled_for_mechanism"
 		end
 
-		return nil
+		return true
 	end,
 	requires_packages = {
 		trapped_soul_skull = {

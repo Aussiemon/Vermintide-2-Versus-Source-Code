@@ -300,10 +300,6 @@ QuestSettings.send_completed_message = function (challenge_stat_id)
 
 			break
 		end
-
-		if false then
-			-- Nothing
-		end
 	end
 
 	if has_not_completed_challenge then
@@ -314,10 +310,6 @@ QuestSettings.send_completed_message = function (challenge_stat_id)
 			local localize_parameters = false
 
 			Managers.chat:send_system_chat_message(1, message, 1, localize_parameters, true)
-		end
-
-		if false then
-			-- Nothing
 		end
 	end
 end
@@ -564,26 +556,6 @@ QuestSettings.check_ratling_gunner_killed_while_shooting = function (blackboard,
 		local stat_name = "ratling_gunner_killed_while_shooting"
 
 		increment_stat(killer_unit, stat_name)
-	end
-end
-
-QuestSettings.check_ratling_gunner_blocked_shot = function (unit, attacking_unit)
-	local blackboard = BLACKBOARDS[attacking_unit]
-
-	if blackboard then
-		local is_ratling_gunner = blackboard.breed.name == "skaven_ratling_gunner"
-
-		if is_ratling_gunner then
-			blackboard.has_completed_block_challenge_units = blackboard.has_completed_block_challenge_units or {}
-
-			if not blackboard.has_completed_block_challenge_units[unit] then
-				local stat_name = "ratling_gunner_blocked_shot"
-
-				increment_stat(unit, stat_name)
-
-				blackboard.has_completed_block_challenge_units[unit] = true
-			end
-		end
 	end
 end
 

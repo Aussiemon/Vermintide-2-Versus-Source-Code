@@ -94,7 +94,7 @@ end
 
 PlayerHuskLocomotionExtension.set_forced_velocity = function (self, velocity_forced)
 	if not self.disabled then
-		if self.is_server then
+		if self.is_server or DEDICATED_SERVER then
 			Managers.state.network.network_transmit:send_rpc("rpc_set_forced_velocity", self.player:network_id(), self.id, velocity_forced)
 		else
 			Managers.state.network.network_transmit:send_rpc_server("rpc_set_forced_velocity", self.id, velocity_forced)
@@ -349,8 +349,14 @@ PlayerHuskLocomotionExtension.rpc_animation_set_variable = function (self, index
 end
 
 PlayerHuskLocomotionExtension.hot_join_sync = function (self, sender)
-	local player_object_id = self.id
 	local unit = self.unit
+	local is_marked_for_deletion = Managers.state.unit_spawner:is_marked_for_deletion(unit)
+
+	if is_marked_for_deletion then
+		return
+	end
+
+	local player_object_id = self.id
 	local channel_id = PEER_ID_TO_CHANNEL[sender]
 
 	RPC.rpc_sync_anim_state_3(channel_id, player_object_id, Unit.animation_get_state(unit))
@@ -373,11 +379,16 @@ PlayerHuskLocomotionExtension.move_to_non_intersecting_position = function (self
 	end
 end
 
-PlayerHuskLocomotionExtension.teleport_to = function (self, pos, rot)
+PlayerHuskLocomotionExtension.teleport_to = function (self, pos, optional_rot)
 	local unit = self.unit
 	local mover = Unit.mover(unit)
 
 	Mover.set_position(mover, pos)
 	Unit.set_local_position(unit, 0, pos)
+
+	if optional_rot then
+		Unit.set_local_rotation(unit, 0, optional_rot)
+	end
+
 	self:move_to_non_intersecting_position()
 end

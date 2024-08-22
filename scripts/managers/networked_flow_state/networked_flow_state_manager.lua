@@ -52,7 +52,7 @@ NetworkedFlowStateManager.init = function (self, world, is_server, network_event
 	self._canceled_stories = {}
 	self._object_states = {}
 	self._num_states = 0
-	self._max_states = 256
+	self._max_states = 512
 
 	if is_server then
 		self._is_client = false

@@ -256,7 +256,7 @@ StateLoadingRestartNetwork.update = function (self, dt, t)
 		end
 	elseif self._server_created and self._lobby_joined then
 		return StateLoadingRunning
-	elseif Managers.account:all_lobbies_freed() and not self._creating_lobby then
+	elseif IS_CONSOLE and Managers.account:all_sessions_cleaned_up() and not self._creating_lobby then
 		self.parent:setup_lobby_host(callback(self, "cb_server_created"))
 
 		self._creating_lobby = true

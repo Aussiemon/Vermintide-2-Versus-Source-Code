@@ -147,7 +147,7 @@ StateTitleScreenInitNetwork._update_host_lobby = function (self, dt, t)
 		end
 	end
 
-	self._network_server:update(dt)
+	self._network_server:update(dt, t)
 end
 
 StateTitleScreenInitNetwork._update_lobby_client = function (self, dt, t)
@@ -176,9 +176,9 @@ StateTitleScreenInitNetwork._update_lobby_client = function (self, dt, t)
 	end
 
 	if self._network_client then
-		self._network_client:update(dt)
+		self._network_client:update(dt, t)
 
-		if self._network_client.state == "denied_enter_game" and not self._popup_id then
+		if self._network_client.state == NetworkClientStates.denied_enter_game and not self._popup_id then
 			local error_message = "failure_start_join_server"
 			local fail_reason = self._network_client.fail_reason
 
@@ -327,7 +327,9 @@ StateTitleScreenInitNetwork.on_exit = function (self, application_shutdown)
 		if Managers.party:has_party_lobby() then
 			local lobby = Managers.party:steal_lobby()
 
-			LobbyInternal.leave_lobby(lobby)
+			if type(lobby) ~= "table" then
+				LobbyInternal.leave_lobby(lobby)
+			end
 		end
 
 		if self._lobby_finder then

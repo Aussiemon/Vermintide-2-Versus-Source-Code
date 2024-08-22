@@ -2,13 +2,6 @@
 
 local settings = DLCSettings.geheimnisnacht_2021
 
-settings.live_events_packages = {
-	geheimnisnacht_2021 = {
-		resource_packages = {
-			"resource_packages/dlcs/geheimnisnacht_2021_event",
-		},
-	},
-}
 settings.anim_lookup = {
 	"idle_pray_01",
 	"idle_pray_02",
@@ -22,9 +15,6 @@ settings.unlock_settings = {}
 settings.dialogue_lookup = {}
 settings.dialogue_settings = {}
 settings.auto_load_files = {}
-settings.network_packages = {
-	"resource_packages/dlcs/geheimnisnacht_2021_event",
-}
 settings.network_sound_events = {
 	"enemy_skaven_halloween_ritual_loop",
 	"enemy_skaven_halloween_ritual_loop_stop",

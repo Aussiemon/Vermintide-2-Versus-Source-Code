@@ -112,6 +112,8 @@ PropsSystem.rpc_thorn_bush_trigger_despawn = function (self, channel_id, unit_id
 end
 
 PropsSystem.rpc_sync_rotating_hazard = function (self, channel_id, go_id, is_level_unit, start_t, pause_t, state, seed)
+	seed = tonumber(seed)
+
 	local unit = Managers.state.network:game_object_or_level_unit(go_id, is_level_unit)
 	local extension = self._extensions[unit]
 

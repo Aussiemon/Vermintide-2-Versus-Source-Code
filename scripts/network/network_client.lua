@@ -4,6 +4,7 @@ require("scripts/game_state/components/profile_synchronizer")
 require("scripts/game_state/components/network_state")
 require("scripts/utils/profile_requester")
 
+NetworkClientStates = table.enum("connecting", "connected", "loading", "loaded", "waiting_enter_game", "game_started", "is_ingame", "denied_enter_game", "lost_connection_to_host", "eac_match_failed")
 NetworkClient = class(NetworkClient)
 
 local NUM_PROFILES = #PROFILES_BY_AFFILIATION.heroes
@@ -18,7 +19,7 @@ local function network_printf(format, ...)
 end
 
 NetworkClient.init = function (self, server_peer_id, wanted_profile_index, wanted_party_index, clear_peer_states, lobby_client, voip)
-	self:set_state("connecting")
+	self:set_state(NetworkClientStates.connecting)
 
 	self.server_peer_id = server_peer_id
 	self._network_state = NetworkState:new(false, self, server_peer_id, Network.peer_id())
@@ -30,7 +31,15 @@ NetworkClient.init = function (self, server_peer_id, wanted_profile_index, wante
 	self.profile_synchronizer = ProfileSynchronizer:new(false, lobby_client, self._network_state)
 	self._profile_requester = ProfileRequester:new(false, nil, self.profile_synchronizer)
 	self.wanted_profile_index = FindProfileIndex(Development.parameter("wanted_profile")) or wanted_profile_index or SaveData.wanted_profile_index or 1
-	self.wanted_party_index = Development.parameter("wanted_party_index") or wanted_party_index or 0
+	self.wanted_party_index = tonumber(Development.parameter("wanted_party_index")) or wanted_party_index
+
+	if self.wanted_profile_index then
+		local profile = SPProfiles[self.wanted_profile_index]
+
+		if profile and profile.affiliation == "dark_pact" then
+			self.wanted_party_index = 2
+		end
+	end
 
 	Managers.mechanism:set_profile_synchronizer(self.profile_synchronizer)
 
@@ -62,24 +71,25 @@ NetworkClient.init = function (self, server_peer_id, wanted_profile_index, wante
 	if voip then
 		self.voip = voip
 	else
-		local voip_params = {
-			is_server = is_server,
-			lobby = lobby_client,
-		}
-
-		self.voip = Voip:new(voip_params)
+		self.voip = Voip:new(is_server, lobby_client)
 	end
 
 	self.connecting_timeout = 0
+	self._already_connected_to_dedicated = PEER_ID_TO_CHANNEL[Managers.mechanism:dedicated_server_peer_id()]
 
-	EAC.before_join()
+	if not self._already_connected_to_dedicated then
+		EAC.before_join()
+	end
 
 	self._eac_state_determined = false
 	self._eac_can_play = false
 end
 
 NetworkClient.destroy = function (self)
-	EAC.after_leave()
+	if not self._already_connected_to_dedicated then
+		EAC.after_leave()
+	end
+
 	Managers.level_transition_handler:deregister_network_state()
 
 	if self._network_event_delegate then
@@ -129,7 +139,7 @@ NetworkClient.rpc_connection_failed = function (self, channel_id, reason)
 	self.fail_reason = NetworkLookup.connection_fails[reason]
 
 	network_printf("rpc_connection_failed due to %s", self.fail_reason)
-	self:set_state("denied_enter_game")
+	self:set_state(NetworkClientStates.denied_enter_game)
 	network_printf("Connection to server failed with reason %s", self.fail_reason)
 end
 
@@ -137,19 +147,20 @@ NetworkClient.rpc_notify_connected = function (self, channel_id)
 	if not self._notification_sent then
 		local channel_id = PEER_ID_TO_CHANNEL[self.server_peer_id]
 
-		EAC.set_host(channel_id)
+		if not self._already_connected_to_dedicated then
+			EAC.set_host(channel_id)
+			EAC.validate_host()
+		end
 
 		self._eac_has_set_host = true
 
-		EAC.validate_host()
-
 		local channel_id = PEER_ID_TO_CHANNEL[self.server_peer_id]
 
-		RPC.rpc_notify_lobby_joined(channel_id, self.wanted_profile_index, self.wanted_career_index, self.wanted_party_index, Application.user_setting("clan_tag") or "0", Managers.account:account_id() or "0")
+		RPC.rpc_notify_lobby_joined(channel_id, self.wanted_profile_index, self.wanted_career_index, self.wanted_party_index or 0, Application.user_setting("clan_tag") or "0", Managers.account:account_id() or "0")
 
 		self._notification_sent = true
 
-		self:set_state("connected")
+		self:set_state(NetworkClientStates.connected)
 		self._network_state:full_sync()
 
 		if self.loaded_level_name then
@@ -164,6 +175,11 @@ end
 
 NetworkClient.is_fully_synced = function (self)
 	local own_id = Network.peer_id()
+	local mechanism_synced = Managers.mechanism:is_peer_fully_synced(own_id)
+
+	if not mechanism_synced then
+		return false
+	end
 
 	return self._network_state:is_peer_fully_synced(own_id)
 end
@@ -197,8 +213,8 @@ end
 NetworkClient.rpc_loading_synced = function (self, channel_id)
 	network_printf("rpc_loading_synced. State: %q", self.state)
 
-	if self.state ~= "game_started" then
-		self:set_state("waiting_enter_game")
+	if self.state ~= NetworkClientStates.game_started then
+		self:set_state(NetworkClientStates.waiting_enter_game)
 	else
 		self._rpc_loading_synced = true
 	end
@@ -247,11 +263,11 @@ end
 NetworkClient.has_bad_state = function (self)
 	local state = self.state
 
-	return state == "denied_enter_game" or state == "lost_connection_to_host" or state == "eac_match_failed", state
+	return state == NetworkClientStates.denied_enter_game or state == NetworkClientStates.lost_connection_to_host or state == NetworkClientStates.eac_match_failed, state
 end
 
 NetworkClient.on_game_entered = function (self)
-	self:set_state("is_ingame")
+	self:set_state(NetworkClientStates.is_ingame)
 
 	local channel_id = PEER_ID_TO_CHANNEL[self.server_peer_id]
 
@@ -275,14 +291,14 @@ NetworkClient.rpc_game_started = function (self, channel_id, round_id)
 	end
 
 	network_printf("rpc_game_started")
-	self:set_state("game_started")
+	self:set_state(NetworkClientStates.game_started)
 	Managers.state.event:trigger("game_started")
 end
 
 NetworkClient.on_level_loaded = function (self, level_name)
 	network_printf("on_level_loaded %s", level_name)
 
-	if self.state ~= "connecting" then
+	if self.state ~= NetworkClientStates.connecting then
 		local channel_id = PEER_ID_TO_CHANNEL[self.server_peer_id]
 
 		if channel_id then
@@ -308,37 +324,37 @@ NetworkClient._update_connections = function (self)
 
 			printf("broken_connection to %s", self.server_peer_id)
 			Crashify.print_exception("Disconnected", "broken connection to server: " .. tostring(reason))
-			self:set_state("lost_connection_to_host")
+			self:set_state(NetworkClientStates.lost_connection_to_host)
 		end
 
 		self._server_channel_state = channel_state
 	end
 end
 
-NetworkClient.update = function (self, dt)
+NetworkClient.update = function (self, dt, t)
 	self._profile_requester:update(dt)
 	self.profile_synchronizer:update()
 	self:_update_connections()
 
-	if not self.wait_for_state_loading and self.state == "loading" then
+	if not self.wait_for_state_loading and self.state == NetworkClientStates.loading then
 		local level_transition_handler = Managers.level_transition_handler
 
 		if Managers.level_transition_handler:all_packages_loaded() then
 			network_printf("All level packages loaded!")
 
 			if self._rpc_loading_synced then
-				self:set_state("waiting_enter_game")
+				self:set_state(NetworkClientStates.waiting_enter_game)
 
 				self._rpc_loading_synced = false
 			else
-				self:set_state("loaded")
+				self:set_state(NetworkClientStates.loaded)
 			end
 
 			self:on_level_loaded(level_transition_handler:get_current_level_keys())
 		end
 	end
 
-	if self.state == "connecting" then
+	if self.state == NetworkClientStates.connecting then
 		self.connecting_timeout = self.connecting_timeout + dt
 
 		if self.connecting_timeout > CONNECTION_TIMEOUT then
@@ -346,18 +362,18 @@ NetworkClient.update = function (self, dt)
 			self.fail_reason = "broken_connection"
 
 			network_printf("connection timeout leading to broken_connection")
-			self:set_state("denied_enter_game")
+			self:set_state(NetworkClientStates.denied_enter_game)
 		end
 	end
 
 	local state = self.state
-	local bad_state = state == "lost_connection_to_host" or state == "denied_enter_game" or state == "eac_match_failed"
+	local bad_state = state == NetworkClientStates.lost_connection_to_host or state == NetworkClientStates.denied_enter_game or state == NetworkClientStates.eac_match_failed
 
 	if not bad_state then
 		self:_update_eac_match(dt)
 	end
 
-	self.voip:update(dt)
+	self.voip:update(dt, t)
 end
 
 NetworkClient.eac_allowed_to_play = function (self)
@@ -381,7 +397,7 @@ NetworkClient._update_eac_match = function (self, dt)
 
 		self.fail_reason = "eac_authorize_failed"
 
-		self:set_state("eac_match_failed")
+		self:set_state(NetworkClientStates.eac_match_failed)
 	end
 end
 
@@ -426,11 +442,11 @@ NetworkClient._eac_host_check = function (self)
 end
 
 NetworkClient.can_enter_game = function (self)
-	return self.state == "waiting_enter_game"
+	return self.state == NetworkClientStates.waiting_enter_game
 end
 
 NetworkClient.is_ingame = function (self)
-	return self.state == "is_ingame" or self.state == "game_started"
+	return self.state == NetworkClientStates.is_ingame or self.state == NetworkClientStates.game_started
 end
 
 NetworkClient.set_wait_for_state_loading = function (self, wait)

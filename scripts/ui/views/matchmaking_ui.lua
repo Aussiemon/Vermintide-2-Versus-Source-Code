@@ -633,37 +633,6 @@ MatchmakingUI.update_debug = function (self)
 	debug_text = debug_text .. "\nHero: " .. Managers.matchmaking.debug.hero
 	debug_text = debug_text .. "\nProgression: " .. Managers.matchmaking.debug.progression
 	debug_text = debug_text .. "\n"
-
-	local witch_hunter_player, wood_elf_player, dwarf_ranger_player, bright_wizard_player, empire_soldier_player
-	local profiles_data = self.matchmaking_manager.debug.profiles_data
-
-	if profiles_data then
-		witch_hunter_player = profiles_data.player_slot_1 or "available"
-		bright_wizard_player = profiles_data.player_slot_2 or "available"
-		dwarf_ranger_player = profiles_data.player_slot_3 or "available"
-		wood_elf_player = profiles_data.player_slot_4 or "available"
-		empire_soldier_player = profiles_data.player_slot_5 or "available"
-	else
-		witch_hunter_player = lobby:lobby_data("player_slot_1") or "available"
-		bright_wizard_player = lobby:lobby_data("player_slot_2") or "available"
-		dwarf_ranger_player = lobby:lobby_data("player_slot_3") or "available"
-		wood_elf_player = lobby:lobby_data("player_slot_4") or "available"
-		empire_soldier_player = lobby:lobby_data("player_slot_5") or "available"
-	end
-
-	if rawget(_G, "Steam") and GameSettingsDevelopment.network_mode == "steam" then
-		witch_hunter_player = witch_hunter_player and witch_hunter_player ~= "available" and Steam.user_name(witch_hunter_player) or "available"
-		bright_wizard_player = bright_wizard_player and bright_wizard_player ~= "available" and Steam.user_name(bright_wizard_player) or "available"
-		dwarf_ranger_player = dwarf_ranger_player and dwarf_ranger_player ~= "available" and Steam.user_name(dwarf_ranger_player) or "available"
-		wood_elf_player = wood_elf_player and wood_elf_player ~= "available" and Steam.user_name(wood_elf_player) or "available"
-		empire_soldier_player = empire_soldier_player and empire_soldier_player ~= "available" and Steam.user_name(empire_soldier_player) or "available"
-	end
-
-	debug_text = debug_text .. "\nWitch hunter: \t" .. witch_hunter_player
-	debug_text = debug_text .. "\nBright wizard: \t" .. bright_wizard_player
-	debug_text = debug_text .. "\nDwarf ranger: \t" .. dwarf_ranger_player
-	debug_text = debug_text .. "\nWood elf: \t\t" .. wood_elf_player
-	debug_text = debug_text .. "\nEmpire Soldier: \t" .. empire_soldier_player
 	self.debug_box_widget.content.debug_text = debug_text
 end
 

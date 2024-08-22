@@ -26,7 +26,7 @@ local buff_tweak_data = {
 		range = 10,
 	},
 	markus_questing_knight_charged_attacks_increased_power = {
-		multiplier = 0.25,
+		multiplier = 0.3,
 	},
 	markus_questing_knight_crit_can_insta_kill = {
 		boss_damage_multiplier = 2,
@@ -37,7 +37,7 @@ local buff_tweak_data = {
 	markus_questing_knight_kills_buff_power_stacking_buff = {
 		duration = 10,
 		max_stacks = 3,
-		multiplier = 0.1,
+		multiplier = 0.08,
 	},
 	markus_questing_knight_passive_improved_reward = {
 		display_multiplier = 0.5,
@@ -308,7 +308,7 @@ local talents = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.bloodlust.buffs[1].multiplier,
+				value = BuffUtils.get_buff_template("bloodlust", "adventure").buffs[1].multiplier,
 			},
 		},
 		buffs = {
@@ -324,7 +324,7 @@ local talents = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.conqueror.buffs[1].multiplier,
+				value = BuffUtils.get_buff_template("conqueror", "adventure").buffs[1].multiplier,
 			},
 		},
 		buffs = {
@@ -393,18 +393,18 @@ local talents = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.tank_unbalance_buff.buffs[1].bonus,
+				value = BuffUtils.get_buff_template("tank_unbalance_buff", "adventure").buffs[1].bonus,
 			},
 			{
-				value = BuffTemplates.tank_unbalance_buff.buffs[1].duration,
-			},
-			{
-				value_type = "percent",
-				value = BuffTemplates.tank_unbalance.buffs[1].display_multiplier,
+				value = BuffUtils.get_buff_template("tank_unbalance_buff", "adventure").buffs[1].duration,
 			},
 			{
 				value_type = "percent",
-				value = BuffTemplates.tank_unbalance.buffs[1].max_display_multiplier,
+				value = BuffUtils.get_buff_template("tank_unbalance", "adventure").buffs[1].display_multiplier,
+			},
+			{
+				value_type = "percent",
+				value = BuffUtils.get_buff_template("tank_unbalance", "adventure").buffs[1].max_display_multiplier,
 			},
 		},
 		buffs = {
@@ -420,11 +420,11 @@ local talents = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.smiter_unbalance.buffs[1].display_multiplier,
+				value = BuffUtils.get_buff_template("smiter_unbalance", "adventure").buffs[1].display_multiplier,
 			},
 			{
 				value_type = "percent",
-				value = BuffTemplates.smiter_unbalance.buffs[1].max_display_multiplier,
+				value = BuffUtils.get_buff_template("smiter_unbalance", "adventure").buffs[1].max_display_multiplier,
 			},
 		},
 		buffs = {
@@ -440,7 +440,7 @@ local talents = {
 		description_values = {
 			{
 				value_type = "percent",
-				value = BuffTemplates.power_level_unbalance.buffs[1].multiplier,
+				value = BuffUtils.get_buff_template("power_level_unbalance", "adventure").buffs[1].multiplier,
 			},
 		},
 		buffs = {

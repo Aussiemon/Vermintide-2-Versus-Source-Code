@@ -34,6 +34,7 @@ local breed_data = {
 	has_inventory = true,
 	has_running_attack = true,
 	headshot_coop_stamina_fatigue_type = "headshot_special",
+	height = 1.6,
 	hit_effect_template = "HitEffectsStormVermin",
 	hit_mass_count = 5,
 	hit_mass_count_block = 10,

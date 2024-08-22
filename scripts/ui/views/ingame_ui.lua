@@ -29,6 +29,7 @@ require("scripts/ui/views/friends_ui_component")
 require("scripts/ui/text_popup/text_popup_ui")
 require("scripts/ui/weave_tutorial/weave_ui_onboarding_tutorial")
 require("scripts/ui/dlc_upsell/common_popup_handler")
+require("scripts/ui/hint_ui/hint_ui_handler")
 DLCUtils.map_list("ui_views", function (view)
 	local file = view.file
 
@@ -109,6 +110,7 @@ IngameUI.init = function (self, ingame_ui_context)
 	self.weave_onboarding = WeaveUIOnboardingTutorial:new(ingame_ui_context)
 	self.popup_handler = CommonPopupHandler:new(ingame_ui_context)
 	self.text_popup_ui = TextPopupUI:new(ingame_ui_context)
+	self.hint_ui_handler = HintUIHandler:new(ingame_ui_context)
 
 	if GameSettingsDevelopment.help_screen_enabled then
 		self.help_screen = HelpScreenUI:new(ingame_ui_context)
@@ -294,6 +296,12 @@ IngameUI.destroy = function (self)
 		self.popup_handler = nil
 	end
 
+	if self.hint_ui_handler then
+		self.hint_ui_handler:destroy()
+
+		self.hint_ui_handler = nil
+	end
+
 	printf("[IngameUI] destroy")
 end
 
@@ -311,7 +319,17 @@ IngameUI.weaves_requirements_fulfilled = function (self)
 	local twitch_connection = Managers.twitch and (Managers.twitch:is_connected() or Managers.twitch:is_activated())
 
 	if twitch_connection then
+		Managers.state.event:trigger("weave_tutorial_message", WeaveUITutorials.twitch_not_supported_for_weaves)
+
 		return false
+	elseif not Managers.player.is_server then
+		local lobby = Managers.state.network:lobby()
+
+		if lobby:lobby_data("twitch_enabled") == "true" then
+			Managers.state.event:trigger("weave_tutorial_message", WeaveUITutorials.twitch_not_supported_for_weaves_client)
+
+			return false
+		end
 	end
 
 	local player_manager = Managers.player
@@ -319,10 +337,12 @@ IngameUI.weaves_requirements_fulfilled = function (self)
 	local player = player_manager:local_player()
 	local stats_id = player:stats_id()
 
-	for _, level_key in pairs(MainGameLevels) do
+	for _, level_key in pairs(HelmgartLevels) do
 		local level_settings = LevelSettings[level_key]
 
-		if level_settings.game_mode == "adventure" and statistics_db:get_persistent_stat(stats_id, "completed_levels", level_key) < 1 then
+		if level_settings.mechanism == "adventure" and statistics_db:get_persistent_stat(stats_id, "completed_levels", level_key) < 1 then
+			Managers.state.event:trigger("weave_tutorial_message", WeaveUITutorials.requirements_not_met)
+
 			return false
 		end
 	end
@@ -332,7 +352,9 @@ IngameUI.weaves_requirements_fulfilled = function (self)
 	for _, level_key in pairs(scorpion_dlc_levels) do
 		local level_settings = LevelSettings[level_key]
 
-		if level_settings.game_mode == "adventure" and statistics_db:get_persistent_stat(stats_id, "completed_levels", level_key) < 1 then
+		if level_settings.mechanism == "adventure" and statistics_db:get_persistent_stat(stats_id, "completed_levels", level_key) < 1 then
+			Managers.state.event:trigger("weave_tutorial_message", WeaveUITutorials.requirements_not_met)
+
 			return false
 		end
 	end
@@ -400,16 +422,21 @@ IngameUI.handle_menu_hotkeys = function (self, dt, input_service, hotkeys_enable
 				end
 			end
 		else
-			local disable_when_matchmaking = mapping_data.disable_when_matchmaking
-			local disable_when_matchmaking_ready = mapping_data.disable_when_matchmaking_ready
-			local cat_disabled = mapping_data.cat_disabled
+			local disable_when_matchmaking, disable_when_matchmaking_ready, disable_not_matchmaking
+			local mechanism_name = Managers.mechanism:current_mechanism_name()
+			local disable_for_mechanism = mapping_data.disable_for_mechanism and mapping_data.disable_for_mechanism[mechanism_name]
+
+			if disable_for_mechanism then
+				disable_when_matchmaking = disable_for_mechanism.matchmaking
+				disable_when_matchmaking_ready = disable_for_mechanism.matchmaking_ready
+				disable_not_matchmaking = disable_for_mechanism.not_matchmaking
+			end
+
 			local is_matchmaking_versus = Managers.matchmaking:is_matchmaking_versus()
 			local vote_blocked = table.contains(hotkeys_blocked_during_vote, input)
 			local transition_not_allowed = player_ready_for_game and disable_when_matchmaking_ready or is_game_matchmaking and disable_when_matchmaking or vote_blocked and currently_voting
-			local disable_when_matchmaking_in_versus = mapping_data.disable_when_matchmaking_in_versus
 
-			transition_not_allowed = transition_not_allowed or disable_when_matchmaking_in_versus and is_matchmaking_versus
-			transition_not_allowed = transition_not_allowed or cat_disabled
+			transition_not_allowed = transition_not_allowed or disable_not_matchmaking
 
 			local new_view = views[mapping_data.view]
 			local can_interact_flag = mapping_data.can_interact_flag
@@ -518,6 +545,10 @@ IngameUI.update = function (self, dt, t, disable_ingame_ui, end_of_level_ui)
 		self:handle_transition("end_game")
 	end
 
+	if self.hint_ui_handler then
+		self.hint_ui_handler:update(dt, t)
+	end
+
 	if is_in_inn then
 		local is_not_in_menu = self.has_left_menu and self.hud_visible
 		local has_holly_dlc = Managers.unlock:is_dlc_unlocked("holly")
@@ -560,12 +591,10 @@ IngameUI.update = function (self, dt, t, disable_ingame_ui, end_of_level_ui)
 		local versus_slot_status_ui = ingame_hud:component("VersusSlotStatusUI")
 
 		player_list_active = versus_tab_ui and versus_tab_ui:is_active() or versus_slot_status_ui and versus_slot_status_ui:is_active() or player_list_active
-		allowed_to_access_menu = not gamepad_active or not Managers.matchmaking:is_matchmaking_versus()
 
 		local game_mode = Managers.state.game_mode:game_mode()
-		local game_mode_name = game_mode and game_mode:settings().key or "none"
 
-		if game_mode_name == "versus" and not game_mode:menu_access_allowed_in_state() then
+		if game_mode.menu_access_allowed_in_state and not game_mode:menu_access_allowed_in_state() then
 			allowed_to_access_menu = false
 		end
 

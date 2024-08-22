@@ -90,7 +90,9 @@ HeroWindowOptions.create_ui_elements = function (self, params, offset)
 		window_position[3] = window_position[3] + offset[3]
 	end
 
-	if script_data["eac-untrusted"] or not DamageUtils.is_in_inn then
+	local mechanism_name = Managers.mechanism:current_mechanism_name()
+
+	if script_data["eac-untrusted"] or not DamageUtils.is_in_inn or mechanism_name == "versus" then
 		widgets_by_name.game_option_3.content.button_hotspot.disable_button = true
 		widgets_by_name.game_option_5.content.button_hotspot.disable_button = true
 	end
@@ -424,7 +426,7 @@ end
 
 HeroWindowOptions._create_portrait_frame_widget = function (self, frame_settings_name, portrait_texture, level_text)
 	local widget_definition = UIWidgets.create_portrait_frame("portrait_root", frame_settings_name, level_text, 1, nil, portrait_texture)
-	local widget = UIWidget.init(widget_definition)
+	local widget = UIWidget.init(widget_definition, self.ui_renderer)
 	local widget_content = widget.content
 
 	widget_content.frame_settings_name = frame_settings_name

@@ -263,17 +263,6 @@ AdventureMechanism.get_hub_level_key = function (self)
 	return self._debug_hub_level_key or AdventureMechanism.get_starting_level()
 end
 
-AdventureMechanism.allocate_slot = function (self, sender, profile_index)
-	local network_server = Managers.mechanism:network_server()
-	local profile_synchronizer = network_server.profile_synchronizer
-
-	if profile_synchronizer:try_reserve_profile_for_peer(sender, profile_index) then
-		return true
-	end
-
-	return false
-end
-
 AdventureMechanism.get_level_seed = function (self, level_seed, optional_system)
 	local weave_manager = Managers.weave
 
@@ -523,25 +512,6 @@ AdventureMechanism._build_side_compositions = function (self, state)
 	return side_compositions
 end
 
-AdventureMechanism.profile_available = function (self, profile_synchronizer, profile_name, career_name)
-	local profile_index = FindProfileIndex(profile_name)
-	local party = Managers.party:get_party(1)
-	local occupied_slots = party.occupied_slots
-
-	for i = 1, #occupied_slots do
-		local status = occupied_slots[i]
-		local peer_id = status.peer_id
-		local local_player_id = status.local_player_id
-		local player_profile_id, player_career_id = profile_synchronizer:profile_by_peer(peer_id, local_player_id)
-
-		if player_profile_id == profile_index then
-			return false
-		end
-	end
-
-	return true
-end
-
 AdventureMechanism.get_state = function (self)
 	return self._state
 end
@@ -571,13 +541,6 @@ AdventureMechanism.rpc_sync_adventure_data_to_peer = function (self, channel_id,
 		weave_manager:set_next_weave(next_weave_name)
 		weave_manager:set_next_objective(next_weave_objective_index)
 	end
-end
-
-AdventureMechanism.profile_available_for_peer = function (self, profile_synchronizer, peer_id, local_player_id, profile_name, career_name)
-	local profile_index = FindProfileIndex(profile_name)
-	local reserver_peer_id = profile_synchronizer:get_profile_index_reservation(profile_index)
-
-	return not reserver_peer_id or reserver_peer_id == peer_id
 end
 
 AdventureMechanism.should_play_level_introduction = function (self)
@@ -641,118 +604,12 @@ AdventureMechanism.get_starting_level = function ()
 	return keep_variation_data.hub_level or HUB_LEVEL_NAME
 end
 
-AdventureMechanism.left_mechanism_due_to_switch = function (self)
-	self:_unload_packages()
+AdventureMechanism.reserved_party_id_by_peer = function (self, peer_id)
+	return 1
 end
 
-AdventureMechanism.is_packages_loaded = function (self)
-	local additional_packages = self._additional_packages
+AdventureMechanism.try_reserve_profile_for_peer_by_mechanism = function (self, profile_synchronizer, peer_id, profile_index, career_index, force_respawning)
+	local party_id = self:reserved_party_id_by_peer(peer_id)
 
-	if additional_packages == nil then
-		return true
-	end
-
-	local package_manager = Managers.package
-
-	for name, packages in pairs(additional_packages) do
-		for i = 1, #packages do
-			if not package_manager:has_loaded(packages[i], name) then
-				return false
-			end
-		end
-	end
-
-	return true
-end
-
-AdventureMechanism.load_packages = function (self)
-	local level_key = Managers.level_transition_handler:get_current_level_key()
-	local level_settings = LevelSettings[level_key]
-
-	if level_settings.tutorial_level then
-		return
-	end
-
-	if self._additional_packages_initialized then
-		return
-	end
-
-	self:_load_live_event_packages()
-
-	self._additional_packages_initialized = true
-end
-
-local function load_special_event_packages(map, name, event_packages)
-	if event_packages and event_packages.resource_packages then
-		if not map[name] then
-			map[name] = {}
-		end
-
-		local list = map[name]
-
-		for i = 1, #event_packages.resource_packages do
-			local package_name = event_packages.resource_packages[i]
-
-			if not table.contains(list, package_name) then
-				list[#list + 1] = package_name
-			end
-		end
-	end
-end
-
-AdventureMechanism._load_live_event_packages = function (self)
-	local live_event_interface = Managers.backend:get_interface("live_events")
-	local special_events = live_event_interface and live_event_interface:get_special_events()
-
-	if special_events then
-		self._additional_packages = {}
-
-		local additional_packages = self._additional_packages
-
-		for i = 1, #special_events do
-			local event_data = special_events[i]
-			local event_name = event_data.name
-			local event_packages = live_event_packages[event_name]
-
-			load_special_event_packages(additional_packages, event_name, event_packages)
-
-			local mutators = event_data.mutators
-
-			if mutators then
-				for j = 1, #mutators do
-					local mutator = mutators[j]
-
-					event_packages = live_event_packages[mutator]
-
-					load_special_event_packages(additional_packages, mutator, event_packages)
-				end
-			end
-		end
-
-		local package_manager = Managers.package
-
-		for name, packages in pairs(self._additional_packages) do
-			for i = 1, #packages do
-				package_manager:load(packages[i], name, nil, true)
-			end
-		end
-	end
-end
-
-AdventureMechanism._unload_packages = function (self)
-	local additional_packages = self._additional_packages
-
-	if additional_packages then
-		local package_manager = Managers.package
-
-		for name, packages in pairs(additional_packages) do
-			for i = 1, #packages do
-				package_manager:unload(packages[i], name)
-			end
-		end
-
-		table.clear(additional_packages)
-	end
-
-	self._additional_packages_initialized = false
+	return profile_synchronizer:try_reserve_profile_for_peer(party_id, peer_id, profile_index, career_index)
 end

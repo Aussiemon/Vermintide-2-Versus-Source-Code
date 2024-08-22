@@ -213,6 +213,8 @@ PlayerManager.relinquish_unit_ownership = function (self, unit)
 		Managers.state.side:remove_player_unit_from_side(unit)
 
 		self._player_units_owners[unit] = nil
+
+		Managers.state.event:trigger("player_unit_relinquished", player_unit_owner, unit, player_unit_owner:unique_id())
 	end
 
 	self._unit_owners[unit] = nil
@@ -542,6 +544,10 @@ PlayerManager.num_players = function (self)
 end
 
 PlayerManager.local_player = function (self, local_player_id)
+	if DEDICATED_SERVER then
+		return nil
+	end
+
 	return self:player(Network.peer_id(), local_player_id or 1)
 end
 
@@ -583,14 +589,15 @@ function DEBUG_PLAYERS()
 	print(" ")
 end
 
-PlayerManager.rpc_set_observed_unit = function (self, sender, observer_player_go_id, unit_to_observe_id, is_level_unit)
+PlayerManager.rpc_set_observed_unit = function (self, sender, observer_local_player_id, unit_to_observe_id, is_level_unit)
 	fassert(self.is_server, "Only server should get this")
 
-	local player_manager = Managers.player
-	local observer_player = player_manager:player_from_game_object_id(observer_player_go_id)
 	local unit_to_observe = Managers.state.network:game_object_or_level_unit(unit_to_observe_id, is_level_unit)
 
 	if unit_to_observe then
+		local observer_peer_id = CHANNEL_TO_PEER_ID[sender]
+		local observer_player = Managers.player:player(observer_peer_id, observer_local_player_id)
+
 		observer_player:set_observed_unit(unit_to_observe)
 	end
 end

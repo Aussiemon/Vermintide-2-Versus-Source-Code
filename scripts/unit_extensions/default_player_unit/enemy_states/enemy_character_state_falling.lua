@@ -50,15 +50,13 @@ EnemyCharacterStateFalling.on_enter = function (self, unit, input, dt, context, 
 	CharacterStateHelper.play_animation_event_first_person(first_person_extension, "idle")
 
 	if previous_state ~= "jumping" then
-		if CharacterStateHelper.is_moving(locomotion_extension) then
-			local move_anim = "jump_idle"
+		local move_anim_3p, move_anim_1p
 
-			CharacterStateHelper.play_animation_event(unit, move_anim)
-		else
-			local move_anim = "jump_idle"
+		move_anim_3p = CharacterStateHelper.is_moving(locomotion_extension) and "jump_idle" or "jump_idle"
+		move_anim_1p = self._play_fp_anim and "to_falling" or "idle"
 
-			CharacterStateHelper.play_animation_event(unit, move_anim)
-		end
+		CharacterStateHelper.play_animation_event(unit, move_anim_3p)
+		CharacterStateHelper.play_animation_event_first_person(first_person_extension, move_anim_1p)
 	end
 
 	self.jumped = params.jumped
@@ -120,7 +118,14 @@ EnemyCharacterStateFalling.on_exit = function (self, unit, input, dt, context, t
 		ScriptUnit.extension(unit, "whereabouts_system"):set_no_landing()
 	end
 
-	CharacterStateHelper.play_animation_event(unit, anim_event)
+	if next_state and next_state ~= "falling" and Managers.state.network:game() then
+		CharacterStateHelper.play_animation_event(unit, "land_still")
+		CharacterStateHelper.play_animation_event(unit, "to_onground")
+
+		if self._play_fp_anim then
+			CharacterStateHelper.play_animation_event_first_person(self._first_person_extension, "to_onground")
+		end
+	end
 end
 
 EnemyCharacterStateFalling.common_movement = function (self, in_ghost_mode, dt, unit)
@@ -191,17 +196,20 @@ EnemyCharacterStateFalling.common_movement = function (self, in_ghost_mode, dt, 
 		self._locomotion_extension:set_wanted_velocity(velocity_jump)
 	end
 
-	local movement_speed = breed.movement_speed
-	local current_max_move_speed = movement_speed
+	local breed_multiplier = breed.movement_speed_multiplier
+	local current_max_move_speed = movement_settings_table.move_speed
 
 	if in_ghost_mode then
 		current_max_move_speed = movement_settings_table.ghost_move_speed
 	end
 
+	current_max_move_speed = current_max_move_speed * breed_multiplier
+
 	local buffed_move_speed = self._buff_extension:apply_buffs_to_value(current_max_move_speed, "movement_speed")
 	local final_move_speed = buffed_move_speed * movement_settings_table.player_speed_scale
 
 	CharacterStateHelper.move_in_air_pactsworn(self._first_person_extension, input_extension, self._locomotion_extension, final_move_speed, unit)
+	CharacterStateHelper.ghost_mode(self._ghost_mode_extension, input_extension)
 	CharacterStateHelper.look(input_extension, self._player.viewport_name, self._first_person_extension, status_extension, self._inventory_extension)
 end
 

@@ -1412,6 +1412,25 @@ StoreWindowItemPreview._delayed_item_unit_presentation = function (self, item)
 		item_previewer:register_spawn_callback(callback)
 
 		self._item_previewer = item_previewer
+	elseif slot_type == "frame" then
+		local preview_position = {
+			0,
+			0,
+			-0.25,
+		}
+		local unique_id, invert_start_rotation, display_unit_key = nil, true
+		local use_highest_mip_levels = true
+		local camera = ScriptViewport.camera(viewport)
+
+		ScriptCamera.set_local_rotation(camera, QuaternionBox(0, 0, 1, 0):unbox())
+
+		local item_previewer = LootItemUnitPreviewer:new(item, preview_position, world, viewport, unique_id, invert_start_rotation, display_unit_key, use_highest_mip_levels)
+		local callback = callback(self, "cb_unit_spawned_item_preview", item_previewer, item_key)
+
+		item_previewer:activate_auto_spin()
+		item_previewer:register_spawn_callback(callback)
+
+		self._item_previewer = item_previewer
 	elseif slot_type == "hat" then
 		local world_previewer = MenuWorldPreviewer:new(self._ingame_ui_context, UISettings.hero_hat_camera_position_by_character, "StoreWindowItemPreview")
 
@@ -1927,8 +1946,11 @@ end
 StoreWindowItemPreview._get_can_wield_display_text = function (self, can_wield)
 	local hero_text = ""
 	local career_text = ""
+	local can_wield_all = table.compare(can_wield, CanWieldAllItemTemplates)
 
-	if can_wield then
+	if can_wield_all then
+		hero_text = Localize("store_can_be_wielded_by_all")
+	elseif can_wield then
 		local added_heroes = 0
 		local added_careers = 0
 

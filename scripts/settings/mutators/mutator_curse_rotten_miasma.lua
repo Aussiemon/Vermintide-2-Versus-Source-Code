@@ -93,7 +93,6 @@ local function setup_rotten_miasma(buff_name)
 
 	local extension_init_data = {
 		buff_system = {
-			breed = "n/a",
 			initial_buff_names = {
 				buff_name,
 			},
@@ -107,10 +106,12 @@ end
 local ROTTEN_MIASMA_DEBUFF = "curse_rotten_miasma"
 
 return {
-	curse_package_name = "resource_packages/mutators/mutator_curse_rotten_miasma",
 	description = "curse_rotten_miasma_desc",
 	display_name = "curse_rotten_miasma_name",
 	icon = "deus_curse_nurgle_01",
+	packages = {
+		"resource_packages/mutators/mutator_curse_rotten_miasma",
+	},
 	server_update_function = function (context, data, dt, t)
 		if not data.rotten_miasma_safe_area then
 			local rotten_miasma_safe_area, target_to_follow = setup_rotten_miasma(ROTTEN_MIASMA_DEBUFF)

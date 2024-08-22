@@ -28,6 +28,13 @@ ChaosTrollStateStanding.update = function (self, unit, input, dt, context, t)
 		return
 	end
 
+	local input_extension = self._input_extension
+	local status_extension = self._status_extension
+	local first_person_extension = self._first_person_extension
+	local is_crouching = status_extension:is_crouching()
+	local toggle_crouch = input_extension.toggle_crouch
+
+	CharacterStateHelper.check_crouch(unit, input_extension, status_extension, toggle_crouch, first_person_extension, t)
 	self:_update_taunt_dialogue(t)
 
 	handled = self:common_movement(t)

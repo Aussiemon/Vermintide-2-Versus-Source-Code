@@ -369,7 +369,7 @@ settings.explosion_templates = {
 			local explosion_position = Unit.local_position(projectile_unit, 0)
 			local world = Managers.world:world("level_world")
 
-			explosion_template = ExplosionTemplates.homing_skull_explosion
+			explosion_template = ExplosionUtils.get_template("homing_skull_explosion")
 
 			DamageUtils.create_explosion(world, projectile_unit, explosion_position, Quaternion.identity(), explosion_template, 1, damage_source, true, false, owner_unit, false)
 
@@ -476,9 +476,7 @@ local grey_wings_valid_damage_types = {
 	heavy_slashing_smiter_uppercut = true,
 	heavy_slashing_tank = true,
 	heavy_stab_fencer = true,
-	heavy_stab_linesman = true,
 	heavy_stab_smiter = true,
-	heavy_stab_tank = true,
 	light_blunt_fencer = true,
 	light_blunt_linesman = true,
 	light_blunt_smiter = true,
@@ -489,9 +487,7 @@ local grey_wings_valid_damage_types = {
 	light_slashing_smiter = true,
 	light_slashing_tank = true,
 	light_stab_fencer = true,
-	light_stab_linesman = true,
 	light_stab_smiter = true,
-	light_stab_tank = true,
 	piercing = true,
 	projectile = true,
 	shot_carbine = true,
@@ -500,16 +496,13 @@ local grey_wings_valid_damage_types = {
 	shot_shotgun = true,
 	shot_sniper = true,
 	slashing = true,
-	slashing_buffed = true,
 	slashing_fencer = true,
 	slashing_linesman = true,
 	slashing_smiter = true,
 	slashing_smiter_uppercut = true,
 	slashing_tank = true,
 	stab_fencer = true,
-	stab_linesman = true,
 	stab_smiter = true,
-	stab_tank = true,
 	throwing_axe = true,
 }
 

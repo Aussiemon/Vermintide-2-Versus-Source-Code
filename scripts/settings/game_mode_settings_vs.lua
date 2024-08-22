@@ -5,8 +5,8 @@ GameModeSettings.versus.key = "versus"
 GameModeSettings.versus.class_name = "GameModeVersus"
 GameModeSettings.versus.display_name = "dlc1_2_map_game_mode_versus"
 GameModeSettings.versus.description_text = "game_mode_description_versus"
-GameModeSettings.versus.lose_condition_time_dead = 4
-GameModeSettings.versus.lose_condition_time = 4
+GameModeSettings.versus.lose_condition_time_dead = 7.5
+GameModeSettings.versus.lose_condition_time = 7.5
 GameModeSettings.versus.ai_specials_spawning_disabled = true
 GameModeSettings.versus.horde_spawning_disabled = false
 GameModeSettings.versus.show_horde_timer_pactsworn = true
@@ -21,6 +21,11 @@ GameModeSettings.versus.disable_rush_intervention = {
 }
 GameModeSettings.versus.use_floating_damage_numbers = true
 GameModeSettings.versus.damage_sound_param_cooldown = 3
+GameModeSettings.versus.max_health_kd = 250
+GameModeSettings.versus.min_streak_font_size = 28
+GameModeSettings.versus.max_streak_font_size = 40
+GameModeSettings.versus.round_start_pact_sworn_spawn_delay = 5
+GameModeSettings.versus.round_start_heroes_left_safe_zone_spawn_delay = 2
 GameModeSettings.versus.object_sets = {
 	versus = true,
 	versus_dark_pact = true,
@@ -46,7 +51,7 @@ GameModeSettings.versus.show_level_introduction = {
 }
 GameModeSettings.versus.player_wounds = {
 	dark_pact = 1,
-	heroes = 2,
+	heroes = 4,
 	spectators = 0,
 }
 GameModeSettings.versus.objectives = {
@@ -303,6 +308,9 @@ GameModeSettings.versus.surge_events = {
 	},
 }
 GameModeSettings.versus.move_dead_players_after_objective_completed = true
+GameModeSettings.versus.allow_double_ping = true
+GameModeSettings.versus.extended_social_wheel_time = true
+GameModeSettings.versus.should_use_gamepad_social_wheel = true
 GameModeSettings.versus.social_wheel_by_side = {
 	dark_pact = "dark_pact",
 	heroes = "versus_heroes",
@@ -313,6 +321,17 @@ GameModeSettings.versus.dark_pact_profile_order = {
 	"vs_poison_wind_globadier",
 	"vs_ratling_gunner",
 	"vs_warpfire_thrower",
+}
+GameModeSettings.versus.dark_pact_boss_profiles = {
+	"vs_chaos_troll",
+}
+GameModeSettings.versus.dark_pact_player_profile_to_ai_breed = {
+	vs_chaos_troll = "chaos_troll",
+	vs_gutter_runner = "skaven_gutter_runner",
+	vs_packmaster = "skaven_pack_master",
+	vs_poison_wind_globadier = "skaven_poison_wind_globadier",
+	vs_ratling_gunner = "skaven_gutter_runner",
+	vs_warpfire_thrower = "skaven_warpfire_thrower",
 }
 GameModeSettings.versus.party_fill_method = {
 	distribute_party_even = "distribute_party_even",
@@ -328,13 +347,13 @@ GameModeSettings.versus.dark_pact_picking_rules = {
 GameModeSettings.versus.duplicate_hero_profiles_allowed = false
 GameModeSettings.versus.duplicate_hero_careers_allowed = false
 GameModeSettings.versus.allow_hotjoining_ongoing_game = true
-GameModeSettings.versus.allowed_hotjoin_states = {
+GameModeSettings.versus.allowed_hotjoin_states = table.set({
 	"match_running_state",
 	"pre_start_round_state",
 	"party_lobby",
 	"dedicated_server_waiting_for_fully_reserved",
-}
-GameModeSettings.versus.allow_host_migration = false
+})
+GameModeSettings.versus.disable_host_migration = true
 GameModeSettings.versus.shuffle_character_picking_order = "players_first"
 GameModeSettings.versus.character_picking_settings = {
 	closing_time = 2,
@@ -343,6 +362,7 @@ GameModeSettings.versus.character_picking_settings = {
 	startup_time = 10,
 }
 GameModeSettings.versus.display_end_of_match_score_view = true
+GameModeSettings.versus.end_of_match_view_display_screen_delay = 3
 GameModeSettings.versus.display_parading_view = true
 GameModeSettings.versus.parading_times = {
 	local_player = 5,
@@ -355,8 +375,8 @@ GameModeSettings.versus.party_names_lookup_by_id = {
 	"team_hammers",
 	"team_skulls",
 }
-GameModeSettings.versus.pre_start_round_duration = 15
-GameModeSettings.versus.initial_set_pre_start_duration = 60
+GameModeSettings.versus.pre_start_round_duration = 30
+GameModeSettings.versus.initial_set_pre_start_duration = 45
 GameModeSettings.versus.side_settings = {
 	heroes = {
 		observe_sides = {
@@ -422,10 +442,19 @@ local death_time = GameModeSettings.versus.side_settings.dark_pact.spawn_times.d
 GameModeSettings.versus.dark_pact_respawn_timers = {
 	5 - death_time,
 	5 - death_time,
-	10 - death_time,
+	13 - death_time,
 	20 - death_time,
 }
+GameModeSettings.versus.dark_pact_bot_respawn_timers = {
+	[0] = 10,
+	10,
+	10,
+	10,
+	20,
+}
+GameModeSettings.versus.dark_pact_catch_up_distance = 40
 GameModeSettings.versus.dark_pact_minimum_spawn_distance = 10
+GameModeSettings.versus.boss_minimum_spawn_distance = 20
 GameModeSettings.versus.dark_pact_minimum_spawn_distance_vertical = 3.5
 GameModeSettings.versus.forced_difficulty = "versus_base"
 GameModeSettings.versus.difficulties = {}
@@ -438,7 +467,7 @@ GameModeSettings.versus.additional_game_end_reasons = {
 	"party_two_won_early",
 	"draw",
 }
-GameModeSettings.versus.disable_achievements = true
+GameModeSettings.versus.disable_achievements = false
 GameModeSettings.versus.use_level_jumps = true
 GameModeSettings.versus.hide_level_jumps = false
 GameModeSettings.versus.show_selected_jump = true
@@ -501,12 +530,21 @@ GameModeSettings.versus.game_mode_states = {
 	"post_round_state",
 }
 GameModeSettings.versus.experience = {
-	complete_all_objectives = 300,
-	complete_match = 350,
+	challenges = 250,
+	complete_match = 250,
+	first_win_of_the_day = 250,
+	hero_kills = 12.5,
 	lose_match = 0,
+	rounds_played = 100,
+	special_kills = 5,
 	win_match = 150,
 }
-GameModeSettings.versus.mission_givers = {}
+GameModeSettings.versus.mission_givers = {
+	{
+		dialogue_profile = "vs_pactsworn_mission_giver",
+		side_name = "dark_pact",
+	},
+}
 GameModeSettings.inn_vs = table.clone(GameModeSettings.versus)
 GameModeSettings.inn_vs.disable_achievements = false
 GameModeSettings.inn_vs.key = "inn_vs"

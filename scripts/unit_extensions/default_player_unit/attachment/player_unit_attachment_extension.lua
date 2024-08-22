@@ -31,12 +31,13 @@ PlayerUnitAttachmentExtension.extensions_ready = function (self, world, unit)
 	local attachment_slots = InventorySettings.attachment_slots
 	local slots_n = #attachment_slots
 	local career_name = self.career_extension:career_name()
+	local is_bot = self._player.bot_player
 
 	for i = 1, slots_n do
 		repeat
 			local slot = attachment_slots[i]
 			local slot_name = slot.name
-			local item = BackendUtils.get_loadout_item(career_name, slot_name)
+			local item = BackendUtils.get_loadout_item(career_name, slot_name, is_bot)
 
 			if item then
 				local item_data = table.clone(item.data)
@@ -276,7 +277,9 @@ PlayerUnitAttachmentExtension.update_resync_loadout = function (self)
 	local local_player_id = self._player:local_player_id()
 
 	if self.resync_loadout_needed then
-		profile_synchronizer:resync_loadout(peer_id, local_player_id)
+		local is_bot = self._player.bot_player
+
+		profile_synchronizer:resync_loadout(peer_id, local_player_id, is_bot)
 
 		self.resync_loadout_needed = false
 	end
@@ -365,7 +368,7 @@ PlayerUnitAttachmentExtension._apply_buffs = function (self, buffs_by_buffer, it
 	for buffer, buffs in pairs(buffs_by_buffer) do
 		if self._is_server or buffer == "client" or buffer == "both" then
 			for buff_name, variable_data in pairs(buffs) do
-				local buff_data = BuffTemplates[buff_name]
+				local buff_data = BuffUtils.get_buff_template(buff_name)
 
 				fassert(buff_data, "buff name %s does not exist on item %s, typo?", buff_name, item_name)
 				table.clear(params)

@@ -32,6 +32,7 @@ LevelEndViewBase.init = function (self, context)
 
 	self.context = context
 	self.game_won = game_won
+	self.challenge_progression_status = context.challenge_progression_status
 	self.game_mode_key = context.game_mode_key
 	self.player_manager = context.player_manager
 	self.input_manager = context.input_manager
@@ -86,8 +87,8 @@ LevelEndViewBase.init = function (self, context)
 		game_mode_key = self.game_mode_key,
 	}
 
-	self:create_ui_elements()
 	self:setup_camera()
+	self:create_ui_elements()
 
 	self._done_peers = {}
 	self._wants_reload = {}
@@ -303,6 +304,7 @@ LevelEndViewBase.destroy = function (self)
 	self:play_sound("play_gui_chestroom_stop")
 	self:play_sound("unmute_all_world_sounds")
 	self:destroy_world()
+	Managers.mechanism:unload_end_screen_resources()
 end
 
 LevelEndViewBase.play_sound = function (self, event)
@@ -375,7 +377,7 @@ LevelEndViewBase._get_level_up_rewards = function (self)
 
 	for reward_name, item in pairs(end_of_level_rewards) do
 		if string.find(reward_name, "level_up_reward") == 1 then
-			local data = string.split(reward_name, ";")
+			local data = string.split_deprecated(reward_name, ";")
 			local level = tonumber(data[2])
 			local index = tonumber(data[3])
 
@@ -399,7 +401,7 @@ LevelEndViewBase._get_win_track_rewards = function (self)
 
 	for reward_name, item in pairs(end_of_level_rewards) do
 		if string.find(reward_name, "win_track_reward") == 1 then
-			local data = string.split(reward_name, ";")
+			local data = string.split_deprecated(reward_name, ";")
 			local level = tonumber(data[2])
 
 			win_track_rewards.item_rewards[level] = item
@@ -427,7 +429,7 @@ LevelEndViewBase._get_event_rewards = function (self)
 	local event_rewards = {}
 
 	for reward_name, item in pairs(end_of_level_rewards) do
-		if string.find(reward_name, "event_reward") == 1 then
+		if string.find(reward_name, "event_reward") then
 			event_rewards[#event_rewards + 1] = item
 		end
 	end
@@ -674,30 +676,25 @@ LevelEndViewBase.present_additional_rewards = function (self)
 		local presentation_data = {}
 
 		for _, item in ipairs(keep_decoration_rewards) do
-			local entry = {}
-			local backend_id = item.backend_id
-			local reward_item = item_interface:get_item_from_id(backend_id)
-			local item_data = item_interface:get_item_masterlist_data(backend_id)
-			local item_type = item_data.item_type
-			local description = {}
-			local _, display_name, _ = UIUtils.get_ui_information_from_item(reward_item)
-
-			if item_type == "keep_decoration_painting" then
-				description[1] = Localize(display_name)
-				description[2] = Localize("keep_decoration_painting_recieved")
-			end
-
-			if description then
-				entry[#entry + 1] = {
+			local keep_decoration_name = item.keep_decoration_name
+			local painting_data = Paintings[keep_decoration_name]
+			local display_name = painting_data.display_name
+			local icon = painting_data.icon
+			local description = {
+				Localize(display_name),
+				Localize("end_screen_you_received"),
+			}
+			local entry = {
+				{
 					widget_type = "description",
 					value = description,
-				}
-			end
-
-			entry[#entry + 1] = {
-				widget_type = "item",
-				value = item,
+				},
+				{
+					widget_type = "icon",
+					value = icon,
+				},
 			}
+
 			presentation_data[#presentation_data + 1] = entry
 		end
 
@@ -1321,6 +1318,7 @@ LevelEndViewBase.setup_world = function (self, context)
 	local wwise_world = Managers.world:wwise_world(world)
 
 	self._world = world
+	self._level = level
 	self._top_world = top_world
 	self._world_viewport = viewport
 	self.ui_renderer = ui_renderer

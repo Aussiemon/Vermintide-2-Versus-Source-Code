@@ -87,7 +87,7 @@ PlayerProjectileHuskExtension.init = function (self, extension_init_context, uni
 
 	if impact_data.grenade and owner_buff_extension and owner_buff_extension:has_buff_perk("frag_fire_grenades") then
 		impact_data = table.shallow_copy(impact_data)
-		impact_data.aoe = ExplosionTemplates.frag_fire_grenade
+		impact_data.aoe = ExplosionUtils.get_template("frag_fire_grenade")
 	end
 
 	self.power_level = extension_init_data.power_level
@@ -791,6 +791,16 @@ PlayerProjectileHuskExtension._handle_linking = function (self, impact_data, hit
 end
 
 PlayerProjectileHuskExtension._link_projectile = function (self, hit_unit, hit_actor, linker_unit_name, hit_position, hit_direction, depth, flow_event_on_init, flow_event_on_walls)
+	local is_packsworn_player = Managers.state.side:versus_is_dark_pact(hit_unit)
+
+	if is_packsworn_player then
+		local hit_player = Managers.player:unit_owner(hit_unit)
+
+		if hit_player and hit_player.local_player and not hit_player.bot_player then
+			return
+		end
+	end
+
 	local unit_spawner = Managers.state.unit_spawner
 	local projectile_linker_system = self.projectile_linker_system
 	local random_bank = Math.random() * 2.14 - 0.5

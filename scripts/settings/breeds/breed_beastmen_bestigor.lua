@@ -31,6 +31,7 @@ local breed_data = {
 	has_inventory = true,
 	has_running_attack = true,
 	headshot_coop_stamina_fatigue_type = "headshot_special",
+	height = 1.75,
 	hit_effect_template = "HitEffectsBeastmenGor",
 	hit_mass_count = 5,
 	hit_reaction = "ai_default",
@@ -144,7 +145,7 @@ local breed_data = {
 		walk_animation_merge_options = {},
 		move_animation_merge_options = {},
 	},
-	stagger_modifier_function = function (stagger_type, duration, length, hit_zone_name, blackboard, breed, direction)
+	stagger_modifier_function = function (stagger_type, duration, length, hit_zone_name, blackboard, breed)
 		if blackboard.stagger_type == stagger_types.heavy then
 			if stagger_type == stagger_types.heavy and blackboard.heavy_stagger_immune_time then
 				stagger_type = stagger_types.none
@@ -161,8 +162,6 @@ local breed_data = {
 	end,
 	run_on_spawn = AiBreedSnippets.on_beastmen_bestigor_spawn,
 	run_on_update = AiBreedSnippets.on_beastmen_bestigor_update,
-	run_on_death = AiBreedSnippets.on_beastmen_bestigor_death,
-	run_on_despawn = AiBreedSnippets.on_beastmen_bestigor_death,
 	hitzone_multiplier_types = {
 		head = "headshot",
 	},

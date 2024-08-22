@@ -24,6 +24,7 @@ local block_breaking_fatigue_types = {
 	chaos_cleave = true,
 	chaos_spawn_combo = true,
 	complete = true,
+	ogre_shove = true,
 	shield_blocked_slam = true,
 	sv_push = true,
 	sv_shove = true,
@@ -150,6 +151,8 @@ GenericStatusExtension.extensions_ready = function (self)
 		self.first_person_extension = ScriptUnit.extension(unit, "first_person_system")
 		self.low_health_playing_id, self.low_health_source_id = self.first_person_extension:play_hud_sound_event("hud_low_health")
 	end
+
+	Managers.state.event:register(self, "on_player_joined_party", "_on_player_joined_party")
 end
 
 GenericStatusExtension.destroy = function (self)
@@ -157,6 +160,12 @@ GenericStatusExtension.destroy = function (self)
 
 	if first_person_extension then
 		first_person_extension:play_hud_sound_event("stop_hud_low_health")
+	end
+
+	local event_manager = Managers.state.event
+
+	if event_manager then
+		event_manager:unregister("on_player_joined_party", self)
 	end
 end
 
@@ -276,6 +285,12 @@ GenericStatusExtension.update = function (self, unit, input, dt, context, t)
 
 	local player = self.player
 
+	if script_data.debug_fatigue then
+		local profile = SPProfiles[player:profile_index()]
+
+		Debug.text("(%s) Fatigue: %s, Max: %s", player:name() == "anonymous" and profile and profile.display_name or player:name(), self.fatigue, PlayerUnitStatusSettings.MAX_FATIGUE)
+	end
+
 	if not player.remote then
 		local previous_max_fatigue_points = self.max_fatigue_points
 		local max_fatigue_points = self:_get_current_max_fatigue_points() or previous_max_fatigue_points
@@ -284,7 +299,9 @@ GenericStatusExtension.update = function (self, unit, input, dt, context, t)
 		degen_delay = degen_delay / self.buff_extension:apply_buffs_to_value(1, "fatigue_regen")
 
 		if previous_max_fatigue_points ~= max_fatigue_points then
-			self.fatigue = max_fatigue_points == 0 and 0 or previous_max_fatigue_points / max_fatigue_points * self.fatigue
+			local fatigue = max_fatigue_points == 0 and 0 or previous_max_fatigue_points / max_fatigue_points * self.fatigue
+
+			self:set_fatigue_points(fatigue, "force_set")
 		end
 
 		if not disable_regen_boost_on_low_fatigue and num_damages > 0 and self.fatigue >= 50 then
@@ -412,17 +429,7 @@ GenericStatusExtension.update = function (self, unit, input, dt, context, t)
 	end
 
 	for _, func in pairs(self.update_funcs) do
-		func(self, t)
-	end
-
-	if self.player.local_player then
-		local in_end_zone = self:is_in_end_zone()
-
-		if self._current_end_zone_state ~= in_end_zone then
-			Wwise.set_state("inside_waystone", in_end_zone and "true" or "false")
-
-			self._current_end_zone_state = in_end_zone
-		end
+		func(self, t, dt)
 	end
 end
 
@@ -506,8 +513,7 @@ GenericStatusExtension._get_current_max_fatigue_points = function (self)
 	local slot_data = inventory_extension:get_slot_data(slot_name)
 
 	if slot_data then
-		local item_data = slot_data.item_data
-		local item_template = slot_data.item_template or BackendUtils.get_item_template(item_data)
+		local item_template = inventory_extension:get_item_template(slot_data)
 		local max_fatigue_points = item_template.max_fatigue_points
 
 		max_fatigue_points = max_fatigue_points and math.clamp(self.buff_extension:apply_buffs_to_value(max_fatigue_points, "max_fatigue"), 1, 100)
@@ -617,7 +623,7 @@ GenericStatusExtension.blocked_attack = function (self, fatigue_type, attacking_
 			local first_person_extension = ScriptUnit.extension(unit, "first_person_system")
 			local first_person_unit = first_person_extension:get_first_person_unit()
 
-			if Managers.state.controller_features and player.local_player then
+			if player.local_player and Managers.state.controller_features then
 				Managers.state.controller_features:add_effect("rumble", {
 					rumble_effect = "block",
 				})
@@ -664,11 +670,11 @@ GenericStatusExtension.blocked_attack = function (self, fatigue_type, attacking_
 			blocking_unit = equipment.right_hand_wielded_unit_3p or equipment.left_hand_wielded_unit_3p
 
 			QuestSettings.handle_bastard_block(unit, attacking_unit, true)
-			self:add_fatigue_points(fatigue_type, attacking_unit, blocking_unit, fatigue_point_costs_multiplier, is_timed_block)
 			Unit.animation_event(unit, "parry_hit_reaction")
 		end
 
 		Managers.state.entity:system("play_go_tutorial_system"):register_block()
+		Managers.state.achievement:trigger_event("player_blocked_attack", player, attacking_unit)
 	end
 
 	if blocking_unit then
@@ -762,6 +768,14 @@ GenericStatusExtension.add_fatigue_points = function (self, fatigue_type, attack
 		return
 	end
 
+	local player = self.player
+
+	if player and player.remote then
+		Crashify.print_exception("[GenericStatusExtension]", "Tried adding fatigue points to a remote player.")
+
+		return
+	end
+
 	local amount = PlayerUnitStatusSettings.fatigue_point_costs[fatigue_type]
 	local t = Managers.time:time("game")
 	local max_fatigue = PlayerUnitStatusSettings.MAX_FATIGUE
@@ -790,15 +804,16 @@ GenericStatusExtension.add_fatigue_points = function (self, fatigue_type, attack
 		end
 	end
 
-	self.fatigue = math.clamp(self.fatigue + fatigue_cost, 0, max_fatigue)
+	local fatigue = math.clamp(self.fatigue + fatigue_cost, 0, max_fatigue)
+
+	self:set_fatigue_points(fatigue, fatigue_type)
 
 	if blocking_weapon_unit then
 		buff_extension:trigger_procs("on_block", attacking_unit, fatigue_type, blocking_weapon_unit)
 	end
 
-	if max_fatigue <= self.fatigue and block_breaking_fatigue_types[fatigue_type] then
-		buff_extension:trigger_procs("on_block_broken", attacking_unit, fatigue_type, blocking_weapon_unit)
-		self:set_block_broken(true, t)
+	if max_fatigue <= fatigue and block_breaking_fatigue_types[fatigue_type] then
+		self:set_block_broken(true, t, attacking_unit)
 	end
 
 	if fatigue_cost > 0 then
@@ -815,25 +830,47 @@ GenericStatusExtension.add_fatigue_points = function (self, fatigue_type, attack
 	if amount > PlayerUnitStatusSettings.fatigue_points_to_play_heavy_block_sfx and first_person_extension then
 		first_person_extension:play_hud_sound_event("Play_player_combat_heavy_block_sweetner", nil, false)
 	end
+end
 
-	local fatigue_points_to_trigger_vo = PlayerUnitStatusSettings.fatigue_points_to_trigger_vo
-	local fatigue = self.fatigue
+GenericStatusExtension.set_fatigue_points = function (self, fatigue, fatigue_type, skip_sync)
+	local before = self.fatigue
+	local sync_points = not skip_sync and (before < fatigue or before ~= fatigue and (before == 100 or fatigue == 0))
 
-	if fatigue_points_to_trigger_vo <= amount and max_fatigue <= fatigue then
-		local player_profile = ScriptUnit.extension(self.unit, "dialogue_system").context.player_profile
+	skip_sync = not sync_points
+	self.fatigue = fatigue
 
-		SurroundingAwareSystem.add_event(self.unit, "block_broken_by_heavy_hit", DialogueSettings.grabbed_broadcast_range, "profile_name", player_profile)
+	if self.is_server then
+		local fatigue_cost = PlayerUnitStatusSettings.fatigue_point_costs[fatigue_type]
+		local max_fatigue = PlayerUnitStatusSettings.MAX_FATIGUE
+		local fatigue_points_to_trigger_vo = PlayerUnitStatusSettings.fatigue_points_to_trigger_vo
+
+		if fatigue_points_to_trigger_vo <= fatigue_cost and max_fatigue <= fatigue then
+			local player_profile = ScriptUnit.extension(self.unit, "dialogue_system").context.player_profile
+
+			SurroundingAwareSystem.add_event(self.unit, "block_broken_by_heavy_hit", DialogueSettings.grabbed_broadcast_range, "profile_name", player_profile)
+		end
 	end
 
-	local position = POSITION_LOOKUP[self.unit]
+	if not skip_sync then
+		local unit_go_id = Managers.state.unit_storage:go_id(self.unit)
+		local fatigue_type_id = NetworkLookup.fatigue_types[fatigue_type]
+
+		if self.is_server then
+			Managers.state.network.network_transmit:send_rpc_clients("rpc_set_fatigue_points", unit_go_id, fatigue, fatigue_type_id)
+		else
+			Managers.state.network.network_transmit:send_rpc_server("rpc_set_fatigue_points", unit_go_id, fatigue, fatigue_type_id)
+		end
+	end
 end
 
 GenericStatusExtension.remove_fatigue_points = function (self, amount)
-	self.fatigue = math.max(self.fatigue - amount, 0)
+	local fatigue = math.max(self.fatigue - amount, 0)
+
+	self:set_fatigue_points(fatigue, "force_set")
 end
 
 GenericStatusExtension.remove_all_fatigue = function (self)
-	self.fatigue = 0
+	self:remove_fatigue_points(math.huge)
 end
 
 GenericStatusExtension.get_dodge_item_data = function (self)
@@ -843,8 +880,7 @@ GenericStatusExtension.get_dodge_item_data = function (self)
 	local dodge_count
 
 	if slot_data then
-		local item_data = slot_data.item_data
-		local item_template = slot_data.item_template or BackendUtils.get_item_template(item_data)
+		local item_template = inventory_extension:get_item_template(slot_data)
 
 		dodge_count = item_template.dodge_count
 	end
@@ -946,12 +982,53 @@ GenericStatusExtension.hit_react_type = function (self)
 	return self._hit_react_type or "light"
 end
 
-GenericStatusExtension.set_block_broken = function (self, block_broken, t)
+GenericStatusExtension.set_block_broken = function (self, block_broken, t, attacker_unit)
+	if self.block_broken == block_broken then
+		return
+	end
+
 	self.block_broken = block_broken
 
 	if block_broken then
 		self.block_broken_degen_delay = 2
 		self.block_broken_at_t = t
+
+		self.buff_extension:trigger_procs("on_block_broken")
+		Managers.state.achievement:trigger_event("register_block_broken", self.unit, attacker_unit)
+	end
+
+	local player = self.player
+
+	if player and not player.remote then
+		local unit_go_id = Managers.state.unit_storage:go_id(self.unit)
+		local attacker_go_id = Managers.state.unit_storage:go_id(attacker_unit) or 0
+
+		if self.is_server then
+			Managers.state.network.network_transmit:send_rpc_clients("rpc_status_change_bool", NetworkLookup.statuses.block_broken, block_broken, unit_go_id, attacker_go_id)
+		else
+			Managers.state.network.network_transmit:send_rpc_server("rpc_status_change_bool", NetworkLookup.statuses.block_broken, block_broken, unit_go_id, attacker_go_id)
+		end
+	end
+end
+
+GenericStatusExtension.set_reviving = function (self, reviving, revivee_unit)
+	if self.reviving == reviving then
+		return
+	end
+
+	self.reviving = reviving
+
+	local player = self.player
+
+	if player and not player.remote then
+		local unit_go_id = Managers.state.unit_storage:go_id(self.unit)
+		local revivee_unit_go_id = Managers.state.unit_storage:go_id(revivee_unit) or 0
+
+		if self.is_server then
+			Managers.state.network.network_transmit:send_rpc_clients("rpc_status_change_bool", NetworkLookup.statuses.reviving, reviving, unit_go_id, revivee_unit_go_id)
+		else
+			Managers.state.network.network_transmit:send_rpc_server("rpc_status_change_bool", NetworkLookup.statuses.reviving, reviving, unit_go_id, revivee_unit_go_id)
+		end
 	end
 end
 
@@ -968,21 +1045,23 @@ GenericStatusExtension.set_has_blocked = function (self, has_blocked)
 end
 
 GenericStatusExtension.set_pounced_down = function (self, pounced_down, pouncer_unit)
+	pounced_down = pounced_down and pouncer_unit ~= nil and Unit.alive(pouncer_unit)
+
+	if pounced_down == self.pounced_down then
+		return
+	end
+
 	local unit = self.unit
 	local locomotion = ScriptUnit.extension(unit, "locomotion_system")
 
-	pounced_down = pounced_down and pouncer_unit ~= nil and Unit.alive(pouncer_unit)
 	self.pounced_down = pounced_down
 
 	if pounced_down then
 		self.pouncer_unit = pouncer_unit
 
-		local foe_rotation = Unit.local_rotation(pouncer_unit, 0)
-		local foe_forward = Quaternion.forward(foe_rotation)
-		local towards_foe_rotation = Quaternion.look(-foe_forward, Vector3.up())
+		local pouncer_rot = Quaternion.flat_no_roll(Unit.local_rotation(pouncer_unit, 0))
 
-		Unit.set_local_rotation(unit, 0, towards_foe_rotation)
-		Unit.set_local_rotation(pouncer_unit, 0, towards_foe_rotation)
+		Unit.set_local_rotation(unit, 0, pouncer_rot)
 
 		if not self.is_husk then
 			locomotion:set_wanted_velocity(Vector3.zero())
@@ -1013,7 +1092,7 @@ GenericStatusExtension.set_pounced_down = function (self, pounced_down, pouncer_
 
 	if self.is_server then
 		local go_id = Managers.state.unit_storage:go_id(self.unit)
-		local enemy_go_id = Managers.state.unit_storage:go_id(pouncer_unit)
+		local enemy_go_id = Managers.state.unit_storage:go_id(pouncer_unit) or NetworkConstants.invalid_game_object_id
 
 		Managers.state.network.network_transmit:send_rpc_clients("rpc_status_change_bool", NetworkLookup.statuses.pounced_down, pounced_down, go_id, enemy_go_id)
 	end
@@ -1024,6 +1103,12 @@ GenericStatusExtension.set_pounced_down = function (self, pounced_down, pouncer_
 		buff_extension:trigger_procs("on_player_disabled", "assassin_pounced", pouncer_unit)
 		Managers.state.event:trigger("on_player_disabled", "assassin_pounced", unit, pouncer_unit)
 		Managers.state.achievement:trigger_event("register_player_disabled", unit)
+
+		if self.is_server then
+			self.update_funcs.pounced_down = GenericStatusExtension.update_pounced_down
+		end
+	else
+		self.update_funcs.pounced_down = nil
 	end
 
 	if self.is_server and pouncer_unit then
@@ -1032,7 +1117,21 @@ GenericStatusExtension.set_pounced_down = function (self, pounced_down, pouncer_
 
 		if pounced_down and pouncer_player then
 			StatisticsUtil.register_disable(pouncer_player, Managers.player:statistics_db(), breed.name)
+
+			local horde_ability_system = Managers.state.entity:system("versus_horde_ability_system")
+
+			if horde_ability_system then
+				horde_ability_system:server_ability_recharge_boost(pouncer_player.peer_id, "gutter_runner_pinned")
+			end
 		end
+	end
+end
+
+GenericStatusExtension.update_pounced_down = function (self)
+	assert(self.is_server, "[GenericStatusExtension] 'update_pounced_down' is meant to only be called on the server")
+
+	if not HEALTH_ALIVE[self.pouncer_unit] then
+		self:set_pounced_down(false, nil)
 	end
 end
 
@@ -1135,7 +1234,7 @@ GenericStatusExtension.set_knocked_down = function (self, knocked_down)
 			self._intoxication_level = -1
 		end
 
-		StatisticsUtil.register_knockdown(unit, health_extension, nil, is_server)
+		StatisticsUtil.register_knockdown(unit, health_extension, Managers.player:statistics_db(), is_server)
 
 		local is_versus = Managers.mechanism:current_mechanism_name() == "versus"
 		local recent_damages = health_extension:recent_damages()
@@ -1269,8 +1368,7 @@ GenericStatusExtension.set_blocking = function (self, blocking)
 	local slot_data = inventory_extension:get_slot_data(slot_name)
 
 	if slot_data then
-		local item_data = slot_data.item_data
-		local item_template = slot_data.item_template or BackendUtils.get_item_template(item_data)
+		local item_template = inventory_extension:get_item_template(slot_data)
 
 		self.shield_block = item_template.shield_block or false
 	end
@@ -1318,7 +1416,7 @@ GenericStatusExtension.set_wounded = function (self, wounded, reason, t)
 	end
 
 	if self.player.local_player and not Managers.state.game_mode:has_activated_mutator("instant_death") then
-		MOOD_BLACKBOARD.wounded = self.wounds == 1
+		MOOD_BLACKBOARD.wounded = self:wounded_and_on_last_wound()
 
 		if not MOOD_BLACKBOARD.wounded then
 			MOOD_BLACKBOARD.bleeding_out = wounded
@@ -1593,6 +1691,7 @@ GenericStatusExtension.set_is_ledge_hanging = function (self, is_ledge_hanging, 
 		event_data.target_name = ScriptUnit.extension(unit, "dialogue_system").context.player_profile
 
 		dialogue_input:trigger_dialogue_event("ledge_hanging", event_data)
+		Managers.state.achievement:trigger_event("register_player_disabled", unit)
 	end
 end
 
@@ -1715,6 +1814,18 @@ GenericStatusExtension.set_pack_master = function (self, grabbed_status, is_grab
 			return
 		end
 
+		local breed = ALIVE[grabber_unit] and Unit.get_data(grabber_unit, "breed")
+
+		if not previous_status and breed and breed.is_player and grabber_player and self.is_server then
+			StatisticsUtil.register_disable(grabber_player, Managers.player:statistics_db(), breed.name)
+
+			local horde_ability_system = Managers.state.entity:system("versus_horde_ability_system")
+
+			if horde_ability_system then
+				horde_ability_system:server_ability_recharge_boost(grabber_player.peer_id, "pack_master_grab")
+			end
+		end
+
 		self.release_unhook_time = nil
 
 		local foe_rotation = Unit.local_rotation(grabber_unit, 0)
@@ -1773,17 +1884,19 @@ GenericStatusExtension.set_pack_master = function (self, grabbed_status, is_grab
 			locomotion:set_wanted_velocity(Vector3.zero())
 		end
 
-		if not previous_status and grabber_player and self.is_server then
-			StatisticsUtil.register_disable(grabber_player, Managers.player:statistics_db(), breed.name)
+		local function safe_navigation_callback()
+			local breed = ALIVE[grabber_unit] and Unit.get_data(grabber_unit, "breed")
+
+			if breed and breed.is_player then
+				local new_pos = PactswornUtils.get_hoist_position(unit, grabber_unit)
+
+				locomotion:teleport_to(new_pos, nil)
+			end
 		end
 
-		local breed = Unit.get_data(grabber_unit, "breed")
+		local ai_navigation_system = Managers.state.entity:system("ai_navigation_system")
 
-		if breed and breed.is_player then
-			local new_pos = PactswornUtils.get_hoist_position(unit, grabber_unit)
-
-			locomotion:teleport_to(new_pos, nil)
-		end
+		ai_navigation_system:add_safe_navigation_callback(safe_navigation_callback)
 
 		local dir = Vector3.normalize(POSITION_LOOKUP[unit] - POSITION_LOOKUP[grabber_unit])
 
@@ -1794,6 +1907,12 @@ GenericStatusExtension.set_pack_master = function (self, grabbed_status, is_grab
 		self.pack_master_hoisted = true
 	elseif grabbed_status == "pack_master_hanging" then
 		locomotion:set_disabled(true, LocomotionUtils.update_local_animation_driven_movement_plus_mover)
+
+		local horde_ability_system = Managers.state.entity:system("versus_horde_ability_system")
+
+		if self.is_server and horde_ability_system then
+			horde_ability_system:server_ability_recharge_boost(grabber_player.peer_id, "pack_master_hoist")
+		end
 	elseif grabbed_status == "pack_master_dropping" then
 		local t = Managers.time:time("game")
 
@@ -2010,6 +2129,10 @@ GenericStatusExtension.is_wounded = function (self)
 	return self.wounds < self:get_max_wounds()
 end
 
+GenericStatusExtension.wounded_and_on_last_wound = function (self)
+	return self.wounds == 1 and self:get_max_wounds() > 1
+end
+
 GenericStatusExtension.is_permanent_heal = function (self, heal_type)
 	local buff_extension = ScriptUnit.has_extension(self.unit, "buff_system")
 
@@ -2036,6 +2159,10 @@ end
 
 GenericStatusExtension.is_revived = function (self)
 	return self.revived
+end
+
+GenericStatusExtension.is_reviving = function (self)
+	return self.reviving
 end
 
 GenericStatusExtension.is_pulled_up = function (self)
@@ -2117,7 +2244,7 @@ GenericStatusExtension.current_move_speed_multiplier = function (self)
 	return math.lerp(self.move_speed_multiplier, 1, lerp_t)
 end
 
-GenericStatusExtension.set_invisible = function (self, invisible, force_third_person, reason)
+GenericStatusExtension.set_invisible = function (self, invisible, skip_third_person, reason)
 	assert(not not reason ~= not not self.is_husk, "Setting invisibility is only allowed locally.")
 
 	if not self.is_husk then
@@ -2134,15 +2261,14 @@ GenericStatusExtension.set_invisible = function (self, invisible, force_third_pe
 
 	local unit = self.unit
 	local flow_event_name
-	local player = self.player
-	local is_third_person = force_third_person or self.is_husk or player.bot_player
+	local is_third_person = not skip_third_person
 	local local_player = Managers.player:local_player()
 	local side_manager = Managers.state.side
 	local unit_side = side_manager.side_by_unit[unit]
 	local local_player_party = local_player and Managers.party:get_party_from_player_id(local_player:network_id(), local_player:local_player_id())
 	local local_player_side = local_player_party and side_manager.side_by_party[local_player_party]
 	local is_enemies = side_manager:is_enemy_by_side(local_player_side, unit_side)
-	local fade_value = is_enemies and 1 or 0.65
+	local fade_value = is_enemies and PlayerUnitStatusSettings.invisibility.enemy_fade or PlayerUnitStatusSettings.invisibility.friendly_fade
 
 	if invisible then
 		flow_event_name = "lua_enabled_invisibility"
@@ -2155,6 +2281,10 @@ GenericStatusExtension.set_invisible = function (self, invisible, force_third_pe
 			local outline_extension = ScriptUnit.extension(self.unit, "outline_system")
 
 			self._invisible_outline_id = outline_extension:add_outline(OutlineSettings.templates.invisible)
+		end
+
+		if not DEDICATED_SERVER then
+			self.update_funcs.invisible = GenericStatusExtension.update_invisibility
 		end
 	else
 		flow_event_name = "lua_disabled_invisibility"
@@ -2169,6 +2299,10 @@ GenericStatusExtension.set_invisible = function (self, invisible, force_third_pe
 			outline_extension:remove_outline(self._invisible_outline_id)
 
 			self._invisible_outline_id = -1
+		end
+
+		if not DEDICATED_SERVER then
+			self.update_funcs.invisible = nil
 		end
 	end
 
@@ -2205,6 +2339,35 @@ GenericStatusExtension.set_invisible = function (self, invisible, force_third_pe
 			else
 				network_manager.network_transmit:send_rpc_server("rpc_status_change_bool", NetworkLookup.statuses.invisible, invisible, go_id, 0)
 			end
+		end
+	end
+end
+
+GenericStatusExtension.update_invisibility = function (self, t, dt)
+	local local_player = Managers.player:local_player()
+	local unit = self.unit
+	local side_manager = Managers.state.side
+	local unit_side = side_manager.side_by_unit[unit]
+	local local_player_party = local_player and Managers.party:get_party_from_player_id(local_player:network_id(), local_player:local_player_id())
+	local local_player_side = local_player_party and side_manager.side_by_party[local_player_party]
+	local is_enemies = side_manager:is_enemy_by_side(local_player_side, unit_side)
+
+	if is_enemies then
+		local enemy_fade = PlayerUnitStatusSettings.invisibility.enemy_fade
+		local disabled_fade_min, disabled_fade_max = PlayerUnitStatusSettings.invisibility.disabled_enemy_fade_min, PlayerUnitStatusSettings.invisibility.disabled_enemy_fade_max
+		local current_fade = self._invis_fade_value
+		local wanted_fade = enemy_fade
+
+		if self:is_disabled() then
+			local intensity = PlayerUnitStatusSettings.invisibility.intensity
+
+			wanted_fade = math.clamp((self._invis_fade_value or 1) + (math.random(0, 1) * 2 - 1) * dt * intensity, disabled_fade_min, disabled_fade_max)
+		end
+
+		if wanted_fade ~= current_fade then
+			self._invis_fade_value = wanted_fade
+
+			Managers.state.entity:system("fade_system"):set_min_fade(unit, wanted_fade)
 		end
 	end
 end
@@ -2338,6 +2501,12 @@ GenericStatusExtension.max_wounds_network_safe = function (self)
 end
 
 GenericStatusExtension.hot_join_sync = function (self, sender)
+	local is_marked_for_deletion = Managers.state.unit_spawner:is_marked_for_deletion(self.unit)
+
+	if is_marked_for_deletion then
+		return
+	end
+
 	local lookup = NetworkLookup.statuses
 	local network_manager = Managers.state.network
 	local self_game_object_id = network_manager:unit_game_object_id(self.unit)
@@ -2415,14 +2584,29 @@ GenericStatusExtension.hot_join_sync = function (self, sender)
 	RPC.rpc_status_change_bool(channel_id, lookup.in_end_zone, self.in_end_zone, self_game_object_id, 0)
 end
 
-GenericStatusExtension.set_in_end_zone = function (self, in_end_zone)
+GenericStatusExtension.set_in_end_zone = function (self, in_end_zone, end_zone_unit)
 	if self.is_server and self.in_end_zone ~= in_end_zone then
 		local go_id = Managers.state.unit_storage:go_id(self.unit)
+		local end_zone_go_id, end_zone_is_level_unit = Managers.state.network:game_object_or_level_id(end_zone_unit)
 
-		Managers.state.network.network_transmit:send_rpc_clients("rpc_status_change_bool", NetworkLookup.statuses.in_end_zone, in_end_zone, go_id, 0)
+		end_zone_go_id = end_zone_go_id or NetworkConstants.invalid_game_object_id
+
+		Managers.state.network.network_transmit:send_rpc_clients("rpc_status_change_bool", NetworkLookup.statuses.in_end_zone, in_end_zone, go_id, end_zone_go_id)
 	end
 
 	self.in_end_zone = in_end_zone
+
+	if self.player.local_player and self._current_end_zone_state ~= in_end_zone then
+		local end_zone_mutes_sound = true
+
+		if end_zone_unit then
+			end_zone_mutes_sound = not Unit.get_data(end_zone_unit, "effects_disabled")
+		end
+
+		Wwise.set_state("inside_waystone", in_end_zone and end_zone_mutes_sound and "true" or "false")
+
+		self._current_end_zone_state = in_end_zone
+	end
 end
 
 GenericStatusExtension.set_is_aiming = function (self, aiming)
@@ -2454,4 +2638,21 @@ GenericStatusExtension.get_max_wounds = function (self)
 	local buff_extension = self.buff_extension
 
 	return buff_extension:apply_buffs_to_value(base_max_wounds, "extra_wounds")
+end
+
+GenericStatusExtension._on_player_joined_party = function (self, peer_id, local_player_id, party_id, slot_id, is_bot)
+	if not self.is_server then
+		return
+	end
+
+	if self:is_invisible() then
+		local lookup = NetworkLookup.statuses
+		local network_manager = Managers.state.network
+		local self_game_object_id = network_manager:unit_game_object_id(self.unit)
+		local channel_id = PEER_ID_TO_CHANNEL[peer_id]
+
+		if self_game_object_id then
+			RPC.rpc_status_change_bool(channel_id, lookup.invisible, true, self_game_object_id, 0)
+		end
+	end
 end

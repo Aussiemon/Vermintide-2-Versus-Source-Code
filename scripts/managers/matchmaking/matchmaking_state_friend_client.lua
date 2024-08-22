@@ -3,6 +3,17 @@
 MatchmakingStateFriendClient = class(MatchmakingStateFriendClient)
 MatchmakingStateFriendClient.NAME = "MatchmakingStateFriendClient"
 
+local MatchmakingState = {
+	CheckingLatency = "CheckingLatency",
+	CollectingTicket = "CollectingTicket",
+	Default = "Default",
+	RequestingRegions = "RequestingRegions",
+	RequestingTicket = "RequestingTicket",
+}
+local TimeoutWaitingForPing = 2
+local PingCount = 3
+local TimeOutCheckingLatency = 10
+
 MatchmakingStateFriendClient.init = function (self, params)
 	self.matchmaking_manager = params.matchmaking_manager
 	self.wwise_world = params.wwise_world
@@ -15,12 +26,16 @@ MatchmakingStateFriendClient.init = function (self, params)
 end
 
 MatchmakingStateFriendClient.destroy = function (self)
-	self:_cleanup()
+	return
 end
 
 MatchmakingStateFriendClient.on_enter = function (self, state_context)
 	self._game_server_data = nil
 	self._state_context = state_context
+	self._estimated_wait_time = -1
+	self._state = MatchmakingState.Init
+	self._region_latency = {}
+	self._timeout = math.huge
 	self._is_versus = state_context.mechanism == "versus"
 
 	if self._is_versus then
@@ -67,27 +82,6 @@ MatchmakingStateFriendClient._sync_player_data = function (self)
 	self.network_transmit:send_rpc("rpc_matchmaking_sync_player_data", host, peer_id, name, profile_id, career_id, slot_data.slot_frame, slot_data.slot_melee, slot_data.slot_ranged, fake_party_id, do_full_sync)
 end
 
-MatchmakingStateFriendClient._start_lobby_search = function (self)
-	if not self._lobby_finder then
-		self._lobby_finder = ServerSearchUtils.trigger_lobby_finder_search(self._network_options, 0, {
-			filters = {
-				mechanism = {
-					comparison = "equal",
-					value = "versus",
-				},
-				matchmaking = {
-					comparison = "not_equal",
-					value = "false",
-				},
-				game_state = {
-					comparison = "equal",
-					value = "party_lobby",
-				},
-			},
-		})
-	end
-end
-
 MatchmakingStateFriendClient.on_exit = function (self)
 	local mechanism = Managers.mechanism:game_mechanism()
 	local server_id = mechanism and mechanism.get_server_id and mechanism:get_server_id()
@@ -96,14 +90,19 @@ MatchmakingStateFriendClient.on_exit = function (self)
 		print("JOINING MATCH. SERVER NAME: " .. server_id)
 	end
 
-	self:_cleanup()
-end
+	if Managers.mechanism:game_mechanism().using_dedicated_servers then
+		local _, aws_servers = Managers.mechanism:game_mechanism():using_dedicated_servers()
 
-MatchmakingStateFriendClient._cleanup = function (self)
-	if self._lobby_finder then
-		self._lobby_finder:destroy()
+		if aws_servers then
+			local network_client = Managers.mechanism:network_handler()
 
-		self._lobby_finder = nil
+			if self._session_id and network_client.fail_reason then
+				Managers.backend:get_interface("versus"):cancel_matchmaking(callback(self, "_cancel_matchmaking_cb"))
+			end
+
+			self._session_id = nil
+			self._base_url = nil
+		end
 	end
 end
 
@@ -119,54 +118,143 @@ MatchmakingStateFriendClient.update = function (self, dt, t)
 		return
 	end
 
+	local search_config = self._state_context.search_config
+
+	if self._is_versus and self.matchmaking_manager:is_quick_game() then
+		if self._state == MatchmakingState.Init then
+			self._state = MatchmakingState.RequestingRegions
+		elseif self._state == MatchmakingState.RequestingRegions then
+			self:_update_requesting_regions(dt, t)
+		elseif self._state == MatchmakingState.CheckingLatency then
+			self:_update_checking_latency(dt, t)
+		elseif self._state == MatchmakingState.RequestingTicket then
+			self:_update_requesting_ticket(dt, t)
+		end
+	end
+
 	local gamepad_active_last_frame = self._gamepad_active_last_frame
 	local gamepad_active = Managers.input:is_device_active("gamepad")
 
 	self._gamepad_active_last_frame = gamepad_active
 end
 
-MatchmakingStateFriendClient._update_lobby_finder = function (self, dt, t)
-	if self._lobby_update_timer then
-		fassert(not self._lobby_finder:is_refreshing(), "")
-
-		if t > self._lobby_update_timer then
-			self._lobby_finder:refresh()
-
-			self._lobby_update_timer = nil
-		else
-			return
-		end
-	end
-
-	self._lobby_finder:update(dt)
-
-	if self._lobby_finder:is_refreshing() then
+MatchmakingStateFriendClient._update_requesting_regions = function (self, dt, t)
+	if self._requesting_regions then
 		return
 	end
 
-	local lobbies = self._lobby_finder:lobbies()
-	local num_players_matchmaking
+	local interface = Managers.backend:get_interface("versus")
 
-	if #lobbies > 0 then
-		num_players_matchmaking = 0
-
-		for i = 1, #lobbies do
-			local lobby = lobbies[i]
-			local num_players = tonumber(lobby.num_players)
-
-			if lobby.matchmaking ~= "false" then
-				num_players_matchmaking = num_players_matchmaking + num_players
-			end
-		end
-	else
-		local lobby_data = self._lobby:get_stored_lobby_data()
-
-		num_players_matchmaking = lobby_data.num_players or 1
+	if not interface then
+		return
 	end
 
-	Managers.state.event:trigger("matchmaking_num_players_in_matchmaking", "versus", num_players_matchmaking)
+	self._requesting_regions = true
 
-	self._lobby_update_timer = t + 10
+	local cb = callback(self, "_request_regions_cb")
+
+	interface:request_regions(cb)
+
+	self._timeout = t + TimeOutCheckingLatency
+end
+
+MatchmakingStateFriendClient._request_regions_cb = function (self, result)
+	if self._ignore_results then
+		return
+	end
+
+	if not result.success then
+		return
+	end
+
+	self._regions = result.regions
+	self._base_url = result.url
+	self._state = MatchmakingState.CheckingLatency
+end
+
+MatchmakingStateFriendClient._update_checking_latency = function (self, dt, t)
+	if t >= self._timeout then
+		return
+	end
+
+	if self._requesting_latency then
+		return
+	end
+
+	local interface = Managers.backend:get_interface("versus")
+
+	if not interface then
+		return
+	end
+
+	Managers.ping:ping_multiple_times(TimeoutWaitingForPing, self._regions, PingCount, callback(self, "_ping_cb"))
+
+	self._requesting_latency = true
+end
+
+MatchmakingStateFriendClient._ping_cb = function (self, result, data)
+	if self._ignore_results then
+		return
+	end
+
+	if not result then
+		return
+	end
+
+	self._region_latency = data
+	self._state = MatchmakingState.RequestingTicket
+end
+
+MatchmakingStateFriendClient._update_requesting_ticket = function (self, dt, t)
+	local interface = Managers.backend:get_interface("versus")
+
+	if not interface then
+		return
+	end
+
+	local cb = callback(self, "_request_matchmaking_ticket_cb")
+
+	interface:request_matchmaking_ticket(self._region_latency, cb)
+
+	self._state = MatchmakingState.CollectingTicket
+end
+
+MatchmakingStateFriendClient._request_matchmaking_ticket_cb = function (self, result)
+	if not result.success then
+		if result.errorCode == 404 then
+			local text = Localize("wrong_game_version")
+
+			Managers.simple_popup:queue_popup(text, Localize("popup_needs_restart_topic"), "confirm", Localize("button_ok"))
+		end
+
+		return
+	end
+
+	self._base_url = result.url
+
+	local packed_ticket = NetworkUtils.net_pack_flexmatch_ticket(result.ticket)
+
+	self.network_transmit:send_rpc_server("rpc_matchmaking_ticket_response", packed_ticket)
+
+	self._state = MatchmakingState.Default
+end
+
+MatchmakingStateFriendClient.rpc_matchmaking_ticket_request = function (self)
+	self._state = MatchmakingState.RequestingRegions
+end
+
+MatchmakingStateFriendClient.rpc_matchmaking_queue_session_data = function (self, packed_session_id, eta)
+	local session_id = NetworkUtils.unnet_pack_flexmatch_ticket(packed_session_id)
+
+	self._session_id = session_id
+
+	Managers.backend:get_interface("versus"):set_matchmaking_session_id(session_id)
+
+	self._estimated_wait_time = eta
+end
+
+MatchmakingStateFriendClient._cancel_matchmaking_cb = function (self, result, code, headers, data)
+	self._session_id = nil
 end
 
 MatchmakingStateFriendClient.get_transition = function (self)

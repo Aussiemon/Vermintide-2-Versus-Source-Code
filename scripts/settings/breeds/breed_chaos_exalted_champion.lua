@@ -55,6 +55,7 @@ local breed_data = {
 	far_off_despawn_immunity = true,
 	has_inventory = true,
 	headshot_coop_stamina_fatigue_type = "headshot_special",
+	height = 1,
 	hit_effect_template = "HitEffectsChaosExaltedChampion",
 	hit_mass_count = 20,
 	hit_reaction = "ai_default",
@@ -76,6 +77,7 @@ local breed_data = {
 	radius = 1,
 	run_speed = 6.109090909090908,
 	server_controlled_health_bar = true,
+	show_health_bar = true,
 	slot_template = "chaos_large_elite",
 	smart_object_template = "chaos_warrior",
 	smart_targeting_height_multiplier = 3,
@@ -297,7 +299,7 @@ local breed_data = {
 		teleporters = 5,
 		temporary_wall = 1,
 	},
-	stagger_modifier_function = function (stagger_type, duration, length, hit_zone_name, blackboard, breed, direction)
+	stagger_modifier_function = function (stagger_type, duration, length, hit_zone_name, blackboard, breed)
 		local t = Managers.time:time("game")
 
 		if blackboard.stagger_immune_time and t < blackboard.stagger_immune_time then

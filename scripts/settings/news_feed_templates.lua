@@ -81,6 +81,12 @@ NewsFeedTemplates = {
 		name = "equipment",
 		title = "news_feed_equipment_title",
 		condition_func = function (params)
+			local mechanism = Managers.mechanism:current_mechanism_name()
+
+			if mechanism == "versus" then
+				return false
+			end
+
 			local rarities_to_ignore = params.rarities_to_ignore
 
 			if ItemHelper.has_new_backend_ids_by_slot_type("trinket", rarities_to_ignore) then
@@ -158,8 +164,8 @@ NewsFeedTemplates = {
 			local unlocked_talents_points = 0
 			local debug_unlock_talents = Development.parameter("debug_unlock_talents")
 
-			for _, unlock_level in pairs(TalentUnlockLevels) do
-				if unlock_level <= player_level or debug_unlock_talents then
+			for template_name, _ in pairs(TalentUnlockLevels) do
+				if ProgressionUnlocks.is_unlocked(template_name, player_level) or debug_unlock_talents then
 					unlocked_talents_points = unlocked_talents_points + 1
 				end
 			end
@@ -215,7 +221,7 @@ NewsFeedTemplates = {
 		infinite = false,
 		name = "sign_in_rewards",
 		condition_func = function (params)
-			if ItemHelper.has_new_sign_in_reward() and not script_data.dont_show_unseen_rewards then
+			if ItemHelper.has_new_sign_in_reward() then
 				return true
 			end
 		end,

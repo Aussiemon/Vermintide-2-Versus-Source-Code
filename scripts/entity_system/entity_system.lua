@@ -84,6 +84,7 @@ require("scripts/entity_system/systems/weaves/weave_item_spawner_system")
 require("scripts/entity_system/systems/weaves/weave_loadout_system")
 require("scripts/entity_system/systems/career/career_system")
 require("scripts/entity_system/systems/disrupt_ritual/disrupt_ritual_system")
+require("scripts/entity_system/systems/puzzle/puzzle_system")
 require("scripts/entity_system/systems/unit_flow_override_system/unit_flow_override_system")
 DLCUtils.require_list("systems")
 require("scripts/unit_extensions/human/ai_player_unit/ai_anim_utils")
@@ -158,6 +159,8 @@ require("scripts/unit_extensions/cutscene_camera/cutscene_camera")
 require("scripts/unit_extensions/smart_targeting/player_unit_smart_targeting_extension")
 require("scripts/unit_extensions/human/ai_player_unit/ai_shield_user_extension")
 require("scripts/unit_extensions/human/ai_player_unit/ai_shield_user_husk_extension")
+require("scripts/unit_extensions/human/ai_player_unit/bulwark_shield_extension")
+require("scripts/unit_extensions/human/ai_player_unit/bulwark_husk_shield_extension")
 require("scripts/unit_extensions/props/quest_challenge_prop_extension")
 require("scripts/unit_extensions/weaves/weave_capture_point_extension")
 require("scripts/unit_extensions/weaves/weave_target_extension")
@@ -208,6 +211,9 @@ EntitySystem._init_systems = function (self, entity_system_creation_context)
 
 	entity_system_creation_context.entity_system = self
 
+	local is_versus = Managers.mechanism:current_mechanism_name() == "versus"
+
+	print("entity_system: is_versus", is_versus)
 	self:_add_system("ai_bot_group_system", AIBotGroupSystem, entity_system_creation_context)
 	self:_add_system("target_override_system", TargetOverrideSystem, entity_system_creation_context, {
 		"TargetOverrideExtension",
@@ -237,10 +243,18 @@ EntitySystem._init_systems = function (self, entity_system_creation_context)
 	self:_add_system("ai_shield_system", ExtensionSystemBase, entity_system_creation_context, {
 		"AIShieldUserExtension",
 		"AIShieldUserHuskExtension",
+		"BulwarkShieldExtension",
+		"BulwarkHuskShieldExtension",
 	})
 	self:_add_system("ai_inventory_system", AIInventorySystem, entity_system_creation_context)
 	self:_add_system("ai_inventory_item_system", AIInventoryItemSystem, entity_system_creation_context)
 	self:_add_system("objective_socket_system", ObjectiveSocketSystem, entity_system_creation_context)
+
+	if not is_versus then
+		self:_add_system("weave_item_spawner_system", WeaveItemSpawnerSystem, entity_system_creation_context)
+		self:_add_system("weave_objective_system", WeaveObjectiveSystem, entity_system_creation_context)
+	end
+
 	self:_add_system("limited_item_track_system", LimitedItemTrackSystem, entity_system_creation_context)
 	self:_add_system("aggro_system", AggroSystem, entity_system_creation_context)
 	self:_add_system("ping_system", PingSystem, entity_system_creation_context)
@@ -254,14 +268,14 @@ EntitySystem._init_systems = function (self, entity_system_creation_context)
 	self:_add_system("projectile_system", ProjectileSystem, entity_system_creation_context)
 	self:_add_system("mutator_item_system", MutatorItemSystem, entity_system_creation_context)
 	self:_add_system("weave_loadout_system", WeaveLoadoutSystem, entity_system_creation_context)
+	self:_add_system("puzzle_system", PuzzleSystem, entity_system_creation_context)
 
-	if Managers.mechanism:current_mechanism_name() == "versus" then
+	if is_versus then
 		self:_add_system("ghost_mode_system", GhostModeSystem, entity_system_creation_context)
 		self:_add_system("versus_item_spawner_system", VersusItemSpawnerSystem, entity_system_creation_context)
 		self:_add_system("versus_objective_system", VersusObjectiveSystem, entity_system_creation_context)
+		self:_add_system("versus_horde_ability_system", VersusHordeAbilitySystem, entity_system_creation_context)
 	else
-		self:_add_system("weave_item_spawner_system", WeaveItemSpawnerSystem, entity_system_creation_context)
-		self:_add_system("weave_objective_system", WeaveObjectiveSystem, entity_system_creation_context)
 		self.entity_manager:add_ignore_extensions({
 			"VersusVolumeObjectiveExtension",
 			"VersusInteractObjectiveExtension",
@@ -269,6 +283,7 @@ EntitySystem._init_systems = function (self, entity_system_creation_context)
 			"VersusSocketObjectiveExtension",
 			"VersusTargetObjectiveExtension",
 			"VersusMissionObjectiveExtension",
+			"PlayerEquipmentWorldMarkerExtension",
 		})
 	end
 
@@ -373,7 +388,7 @@ EntitySystem._init_systems = function (self, entity_system_creation_context)
 		"GenericCameraStateMachineExtension",
 	})
 	self:_add_system("camera_system", CameraSystem, entity_system_creation_context, nil, nil, no_pre_update, has_post_update)
-	self:_add_system("sound_sector_system", SoundSectorSystem, entity_system_creation_context, nil, nil, nil, nil, dont_run_on_dedicated_server)
+	self:_add_system("sound_sector_system", SoundSectorSystem, entity_system_creation_context, nil, nil, nil, nil, nil)
 	self:_add_system("volume_system", VolumeSystem, entity_system_creation_context)
 	self:_add_system("cutscene_system", CutsceneSystem, entity_system_creation_context)
 	self:_add_system("outline_system", OutlineSystem, entity_system_creation_context, nil, nil, nil, nil, dont_run_on_dedicated_server)

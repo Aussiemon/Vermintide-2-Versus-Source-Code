@@ -3,6 +3,8 @@
 require("scripts/network/game_server/game_server_aux")
 require("scripts/network/lobby_members")
 
+local game_server_testify = script_data.testify and require("scripts/network/game_server/testify/game_server_testify")
+
 GameServer = class(GameServer)
 
 local function dprintf(string, ...)
@@ -89,6 +91,10 @@ GameServer.update = function (self, dt, t)
 	end
 
 	GameServerInternal.run_callbacks(self._game_server, self)
+
+	if script_data.testify then
+		Testify:poll_requests_through_handler(game_server_testify, self)
+	end
 
 	return self._state
 end
@@ -213,8 +219,4 @@ end
 
 GameServer.lost_connection_to_lobby = function (self)
 	return false
-end
-
-GameServer.get_aws_session = function (self)
-	return self._aws_session
 end

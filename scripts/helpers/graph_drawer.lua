@@ -31,7 +31,19 @@ GraphDrawer.graph = function (self, graph_name)
 end
 
 GraphDrawer.update = function (self, input_service, t)
-	if input_service:get("f11") then
+	local toggle = input_service:get("f11")
+
+	if self.active then
+		Debug.text("GraphDrawer active, other mouse input disabled")
+
+		local graph_drawer_input = self.input_manager:get_input_service("Debug")
+
+		if not graph_drawer_input or graph_drawer_input:is_blocked() then
+			toggle = true
+		end
+	end
+
+	if toggle then
 		if not self.active then
 			self.input_manager:capture_input({
 				"mouse",
@@ -45,10 +57,6 @@ GraphDrawer.update = function (self, input_service, t)
 		end
 
 		self.active = not self.active
-	end
-
-	if self.active then
-		Debug.text("GraphDrawer active, other mouse input disabled")
 	end
 
 	local res_x, res_y = RESOLUTION_LOOKUP.res_w, RESOLUTION_LOOKUP.res_h
@@ -511,10 +519,6 @@ Graph.draw = function (self, gui, input_service, t)
 			if p1_x_inside and p1_y_inside or p2_x_inside and p2_y_inside then
 				ScriptGUI.hud_line(gui, p1 + origin, p2 + origin, layer, line_width, line_color)
 				Gui.rect(gui, p2 + origin + Vector3(-3, -3, 100), Vector3(6, 6, 0), point_color)
-			end
-
-			if false then
-				-- Nothing
 			end
 
 			p1 = p2

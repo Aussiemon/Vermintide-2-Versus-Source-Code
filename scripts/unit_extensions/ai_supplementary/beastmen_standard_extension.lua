@@ -84,10 +84,16 @@ BeastmenStandardExtension.init = function (self, extension_init_context, unit, e
 	end
 
 	local sfx_placed = standard_template.sfx_placed
+
+	if sfx_placed then
+		WwiseUtils.trigger_unit_event(world, sfx_placed, unit, 0)
+	end
+
 	local sfx_loop = standard_template.sfx_loop
 
-	WwiseUtils.trigger_unit_event(world, sfx_placed, unit, 0)
-	WwiseUtils.trigger_unit_event(world, sfx_loop, unit, 0)
+	if sfx_loop then
+		WwiseUtils.trigger_unit_event(world, sfx_loop, unit, 0)
+	end
 end
 
 BeastmenStandardExtension.destroy = function (self)
@@ -124,12 +130,7 @@ BeastmenStandardExtension.on_death = function (self, killer_unit)
 			if astar_data.astar then
 				local astar = astar_data.astar
 
-				if not GwNavAStar.processing_finished(astar) then
-					GwNavAStar.cancel(astar)
-					GwNavAStar.destroy(astar)
-				else
-					GwNavAStar.destroy(astar)
-				end
+				GwNavAStar.destroy(astar)
 			end
 		end
 
@@ -147,7 +148,7 @@ BeastmenStandardExtension.on_death = function (self, killer_unit)
 
 	if Unit.alive(killer_unit) and killer_unit ~= self.unit then
 		local explosion_position = Unit.local_position(self.unit, 0)
-		local explosion_template = ExplosionTemplates.standard_death_explosion
+		local explosion_template = ExplosionUtils.get_template("standard_death_explosion")
 		local damage_source = "beastmen_standard_bearer"
 
 		DamageUtils.create_explosion(self.world, killer_unit or self.unit, explosion_position, Quaternion.identity(), explosion_template, 1, damage_source, self.is_server, false, self.unit, false)
@@ -164,10 +165,16 @@ BeastmenStandardExtension.on_death = function (self, killer_unit)
 	end
 
 	local sfx_loop_stop = self.standard_template.sfx_loop_stop
+
+	if sfx_loop_stop then
+		WwiseUtils.trigger_unit_event(self.world, sfx_loop_stop, self.unit, 0)
+	end
+
 	local sfx_destroyed = self.standard_template.sfx_destroyed
 
-	WwiseUtils.trigger_unit_event(self.world, sfx_loop_stop, self.unit, 0)
-	WwiseUtils.trigger_unit_event(self.world, sfx_destroyed, self.unit, 0)
+	if sfx_destroyed then
+		WwiseUtils.trigger_unit_event(self.world, sfx_destroyed, self.unit, 0)
+	end
 
 	self.world = nil
 	self.self_position_boxed = nil
@@ -276,12 +283,7 @@ BeastmenStandardExtension._update_self_destruction = function (self, unit, dt, t
 							local player_astar = astar_data.astar
 
 							if player_astar then
-								if not GwNavAStar.processing_finished(player_astar) then
-									GwNavAStar.cancel(player_astar)
-									GwNavAStar.destroy(player_astar)
-								else
-									GwNavAStar.destroy(player_astar)
-								end
+								GwNavAStar.destroy(player_astar)
 							end
 
 							astar_data.astar = nil
@@ -319,12 +321,7 @@ BeastmenStandardExtension._update_self_destruction = function (self, unit, dt, t
 			if data and data.astar then
 				local astar = data.astar
 
-				if not GwNavAStar.processing_finished(astar) then
-					GwNavAStar.cancel(astar)
-					GwNavAStar.destroy(astar)
-				else
-					GwNavAStar.destroy(astar)
-				end
+				GwNavAStar.destroy(astar)
 			end
 		end
 	end

@@ -231,9 +231,7 @@ UIRenderer.script_draw_bitmap_3d = function (gui, render_settings, material, tm,
 	end
 end
 
-UIRenderer._injected_material_sets = {
-	"materials/ui/ui_1080p_development",
-}
+UIRenderer._injected_material_sets = {}
 
 local function inject_materials(i, ...)
 	local material = UIRenderer._injected_material_sets[i]
@@ -490,7 +488,7 @@ UIRenderer.draw_widget = function (self, widget)
 					local content_change_function = pass.content_change_function
 
 					if content_change_function then
-						content_change_function(pass_content, pass_style, ui_animations, dt)
+						content_change_function(pass_content, pass_style, ui_animations, dt, self.render_settings)
 					end
 				end
 			end
@@ -646,6 +644,14 @@ UIRenderer.draw_triangle = function (self, lower_left_corner, size, ui_style, re
 		pos1 = base_pos + Vector3(0, 0, size[2])
 		pos2 = base_pos + Vector3(size[1] * 0.5, 0, 0)
 		pos3 = base_pos + Vector3(size[1], 0, size[2])
+	elseif ui_style.triangle_alignment == "left" then
+		pos1 = base_pos + Vector3(0, 0, size[2] * 0.5)
+		pos2 = base_pos + Vector3(size[1], 0, 0)
+		pos3 = base_pos + Vector3(0, 0, size[2])
+	elseif ui_style.triangle_alignment == "right" then
+		pos1 = base_pos + Vector3(0, 0, size[2])
+		pos2 = base_pos + Vector3(size[1], 0, size[2] * 0.5)
+		pos3 = base_pos + Vector3(0, 0, 0)
 	else
 		pos1 = base_pos
 		pos2 = base_pos + Vector3(size[1], 0, 0)
@@ -826,7 +832,7 @@ UIRenderer.draw_gradient_mask_texture = function (self, material, lower_left_cor
 	local gui_retained = self.gui_retained
 	local gui_position = UIScaleVectorToResolution(lower_left_corner)
 	local gui_size = UIScaleVectorToResolution(size)
-	local texture_settings = UIAtlasHelper.get_atlas_settings_by_texture_name(material)
+	local texture_settings = UIAtlasHelper.has_atlas_settings_by_texture_name(material) and UIAtlasHelper.get_atlas_settings_by_texture_name(material)
 	local gui_material = Gui.material(retained_id and gui_retained or gui, texture_settings and texture_settings.material_name or material)
 
 	Material.set_scalar(gui_material, "gradient_threshold", gradient_threshold)

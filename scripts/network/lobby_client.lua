@@ -17,6 +17,10 @@ LobbyClient.init = function (self, network_options, lobby_data, joined_lobby)
 	self.peer_id = Network.peer_id()
 	self._host_peer_id = nil
 	self._host_channel_id = nil
+
+	if HAS_STEAM then
+		self:set_steam_lobby_reconnectable(true)
+	end
 end
 
 LobbyClient.destroy = function (self)
@@ -29,10 +33,6 @@ LobbyClient.destroy = function (self)
 
 		PEER_ID_TO_CHANNEL[host] = nil
 		CHANNEL_TO_PEER_ID[channel_id] = nil
-	end
-
-	if IS_PS4 and self._host_peer_id then
-		-- Nothing
 	end
 
 	self._host_peer_id = nil
@@ -125,7 +125,7 @@ LobbyClient.update = function (self, dt)
 		end
 	end
 
-	if HAS_STEAM and self:lost_connection_to_lobby() and not self._reconnecting_to_lobby and self._try_reconnecting then
+	if HAS_STEAM and self._lobby_reconnectable_on_disconnect and self:lost_connection_to_lobby() and not self._reconnecting_to_lobby and self._try_reconnecting then
 		print("[LobbyClient] Attempting to rejoin lobby", self.stored_lobby_data.id, "Retries:", self._reconnect_times or 0)
 
 		local host = self._host_peer_id
@@ -154,6 +154,12 @@ LobbyClient.update = function (self, dt)
 		self._reconnecting_to_lobby = true
 		self._try_reconnecting = false
 	end
+end
+
+LobbyClient.set_steam_lobby_reconnectable = function (self, enabled)
+	print(enabled and "Enabled" or "Disabled", "live steam lobby reconnecting")
+
+	self._lobby_reconnectable_on_disconnect = enabled
 end
 
 LobbyClient.get_stored_lobby_data = function (self)

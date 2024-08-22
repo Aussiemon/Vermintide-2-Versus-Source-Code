@@ -117,7 +117,7 @@ BackendInterfaceLootPlayfab.loot_chest_rewards_request_cb = function (self, data
 	self._loot_requests[id] = loot
 end
 
-BackendInterfaceLootPlayfab.generate_end_of_level_loot = function (self, game_won, quick_play_bonus, difficulty, level_key, hero_name, start_experience, end_experience, loot_profile_name, deed_item_name, deed_backend_id, game_mode_key, game_time, end_of_level_rewards_arguments)
+BackendInterfaceLootPlayfab.generate_end_of_level_loot = function (self, game_won, quick_play_bonus, difficulty, level_key, hero_name, start_experience, end_experience, versus_start_experience, versus_end_experience, loot_profile_name, deed_item_name, deed_backend_id, game_mode_key, game_time, end_of_level_rewards_arguments)
 	local id = self:_new_id()
 	local remote_player_ids_and_characters = self:_get_remote_player_network_ids_and_characters()
 
@@ -133,6 +133,8 @@ BackendInterfaceLootPlayfab.generate_end_of_level_loot = function (self, game_wo
 		loot_profile_name = loot_profile_name,
 		start_experience = start_experience,
 		end_experience = end_experience,
+		vs_start_experience = versus_start_experience,
+		vs_end_experience = versus_end_experience,
 		hero_name = hero_name,
 		deed_item_name = deed_item_name,
 		deed_backend_id = deed_backend_id,
@@ -170,6 +172,10 @@ BackendInterfaceLootPlayfab.end_of_level_loot_request_cb = function (self, data,
 	local currency_granted = function_result.CurrencyGranted
 	local essence_rewards = function_result.EssenceRewards
 	local cosmetic_rewards = function_result.cosmetic_rewards
+	local weapon_skin_rewards = function_result.weapon_skin_rewards
+	local keep_decoration_rewards = function_result.keep_decoration_rewards
+	local experience_rewards = function_result.experience_rewards
+	local weekly_event_rewards = function_result.weekly_event_rewards
 	local items_revoked = function_result.ItemsRevoked
 	local consumed_deed_result = function_result.ConsumedDeedResult
 	local num_items = #items
@@ -215,6 +221,39 @@ BackendInterfaceLootPlayfab.end_of_level_loot_request_cb = function (self, data,
 		end
 	end
 
+	if weapon_skin_rewards then
+		for reward_key, item in pairs(weapon_skin_rewards) do
+			local backend_id = backend_mirror:add_item(nil, {
+				ItemId = item,
+			})
+
+			if backend_id then
+				loot_request[reward_key] = {
+					backend_id = backend_id,
+				}
+			end
+		end
+	end
+
+	if keep_decoration_rewards then
+		for reward_key, item in pairs(keep_decoration_rewards) do
+			backend_mirror:add_keep_decoration(item)
+
+			loot_request[reward_key] = {
+				type = "keep_decoration_painting",
+				keep_decoration_name = item,
+			}
+		end
+	end
+
+	if experience_rewards then
+		for reward_key, amount in pairs(experience_rewards) do
+			loot_request[reward_key] = {
+				amount = amount,
+			}
+		end
+	end
+
 	if items_revoked then
 		for i = 1, #items_revoked do
 			local item_backend_id = items_revoked[i].ItemInstanceId
@@ -236,6 +275,10 @@ BackendInterfaceLootPlayfab.end_of_level_loot_request_cb = function (self, data,
 
 	self._backend_mirror:set_read_only_data(key, cjson.encode(win_track_progress), true)
 
+	if weekly_event_rewards then
+		backend_mirror:set_read_only_data("weekly_event_rewards", cjson.encode(weekly_event_rewards), true)
+	end
+
 	if experience_pool then
 		local xp_pool_key = hero_name .. "_experience_pool"
 
@@ -256,6 +299,18 @@ BackendInterfaceLootPlayfab.end_of_level_loot_request_cb = function (self, data,
 				loot_request.essence = currency_data
 
 				backend_mirror:set_essence(currency_data.new_total)
+			elseif key == "SM" then
+				loot_request.shillings = currency_data
+
+				local peddler_interface = Managers.backend:get_interface("peddler")
+
+				peddler_interface:set_chips(key, currency_data.new_total)
+			elseif key == "VS" then
+				loot_request.versus_currency = currency_data
+
+				local peddler_interface = Managers.backend:get_interface("peddler")
+
+				peddler_interface:set_chips(key, currency_data.new_total)
 			else
 				fassert(false, string.format("currency '%s' not supported", key))
 			end
@@ -382,7 +437,7 @@ BackendInterfaceLootPlayfab.achievement_rewards_request_cb = function (self, dat
 		Managers.backend:playfab_api_error(result)
 
 		return
-	elseif function_result == "reward_claimed" then
+	elseif function_result.error_message then
 		Managers.backend:playfab_error(BACKEND_PLAYFAB_ERRORS.ERR_PLAYFAB_ACHIEVEMENT_REWARD_CLAIMED)
 
 		self._loot_requests[id] = {}

@@ -105,12 +105,12 @@ local uint_19 = Network.type_info("uint_19")
 
 fassert(uint_19.bits == 19, "uint_19 is not 19 bits.")
 
-local uint_32 = Network.type_info("uint_32")
+local int_32 = Network.type_info("int_32")
 
-fassert(uint_32.bits == 32, "uint_32 is not 32 bits.")
+fassert(int_32.bits == 32, "uint_32 is not 32 bits.")
 
 local enemy_package_loader_bitmask_array = Network.type_info("enemy_package_loader_bitmask_array")
-local num_bitmasks_bits = enemy_package_loader_bitmask_array.max_size * uint_32.bits
+local num_bitmasks_bits = enemy_package_loader_bitmask_array.max_size * int_32.bits
 local num_breeds = #NetworkLookup.breeds
 
 fassert(num_breeds <= num_bitmasks_bits, "Need to update enemy_package_loader_bitmask_array so that it has enough 32-bit elements to contain number of breeds (%i).", num_breeds)

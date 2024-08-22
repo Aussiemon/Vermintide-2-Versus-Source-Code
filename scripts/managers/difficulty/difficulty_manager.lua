@@ -126,7 +126,7 @@ end
 
 local player_below_difficulty_rank = {}
 
-DifficultyManager.players_below_difficulty_rank = function (difficulty_key, players)
+DifficultyManager.players_locked_difficulty_rank = function (difficulty_key, players)
 	table.clear(player_below_difficulty_rank)
 
 	local difficulty_settings = DifficultySettings[difficulty_key]

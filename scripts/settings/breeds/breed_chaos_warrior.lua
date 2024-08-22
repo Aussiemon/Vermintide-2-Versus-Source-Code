@@ -54,6 +54,7 @@ local breed_data = {
 	has_inventory = true,
 	has_running_attack = true,
 	headshot_coop_stamina_fatigue_type = "headshot_special",
+	height = 2.25,
 	hit_effect_template = "HitEffectsChaosWarrior",
 	hit_mass_count = 20,
 	hit_reaction = "ai_default",
@@ -153,7 +154,7 @@ local breed_data = {
 	},
 	run_on_spawn = AiBreedSnippets.on_chaos_warrior_spawn,
 	run_on_update = AiBreedSnippets.on_chaos_warrior_update,
-	stagger_modifier_function = function (stagger_type, duration, length, hit_zone_name, blackboard, breed, direction)
+	stagger_modifier_function = function (stagger_type, duration, length, hit_zone_name, blackboard, breed)
 		if blackboard.stagger_type == stagger_types.heavy or blackboard.stagger_type == stagger_types.explosion then
 			if stagger_type == stagger_types.heavy and blackboard.heavy_stagger_immune_time then
 				stagger_type = stagger_types.none

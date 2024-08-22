@@ -80,7 +80,7 @@ VersusTeamParadingViewV2.on_exit = function (self)
 		self._viewport_widget = nil
 	end
 
-	self:_play_sound("unmute_all_world_sounds")
+	self:_play_sound("vs_unmute_reset_all")
 end
 
 VersusTeamParadingViewV2._create_ui_elements = function (self, params)
@@ -285,7 +285,7 @@ VersusTeamParadingViewV2._create_team_portrait_frames = function (self, party_id
 				local level_text = is_bot and "BOT" or "-"
 				local portrait_image = career_settings.portrait_image
 				local widget_definition = UIWidgets.create_portrait_frame(scenegraph_node_name, portrait_frame_name, level_text, 1, nil, portrait_image)
-				local widget = UIWidget.init(widget_definition)
+				local widget = UIWidget.init(widget_definition, self._ui_top_renderer)
 				local widget_content = widget.content
 
 				widget_content.frame_settings_name = portrait_frame_name
@@ -387,7 +387,7 @@ end
 
 VersusTeamParadingViewV2._get_heroes_spawn_locations = function (self, party_id)
 	local spawn_point_unit_prefix = party_id == self._party_id and "character_slot_0" or "character_slot_enemy_0"
-	local unit = "units/props/generic/chaos_prop_barrel_lid_01"
+	local unit = "units/hub_elements/versus_podium_character_spawn"
 	local level_name = self:_get_viewport_level_name()
 	local unit_indices = LevelResource.unit_indices(level_name, unit)
 	local hero_locations = {}
@@ -713,7 +713,7 @@ VersusTeamParadingViewV2._set_team_names_and_careers = function (self, party_id)
 
 		content.player_name = player_name
 		content.career_name = career_name
-		style.player_name.text_color = Colors.get_color_table_with_alpha("opponent_team", 255)
+		style.player_name.text_color = Colors.get_color_table_with_alpha("opponent_team_lighter", 255)
 	end
 end
 
@@ -725,25 +725,25 @@ end
 
 VersusTeamParadingViewV2._set_team_name_widget_colors_and_text = function (self, party_id)
 	local team_name_key = Managers.state.game_mode:setting("party_names_lookup_by_id")[party_id]
+	local is_local_player_team = self._party_id == party_id
 	local ui_settings = dlc_settings.teams_ui_assets[team_name_key]
-	local team_color = self._party_id == party_id and Colors.get_color_table_with_alpha("local_player_team", 255) or Colors.get_color_table_with_alpha("opponent_team", 255)
-	local team_name = self._widgets_by_name.team_text
-
-	team_name.content.text = Localize(ui_settings.display_name)
-	team_name.style.text.text_color = team_color
-
+	local team_color = is_local_player_team and Colors.get_color_table_with_alpha("local_player_team_lighter", 255) or Colors.get_color_table_with_alpha("opponent_team_lighter", 255)
 	local top_detail = self._widgets_by_name.top_background_detail
 
-	top_detail.style.rect.color = team_color
+	top_detail.content.divider_edge_left = is_local_player_team and "divider_horizontal_hero_end_blue" or "divider_horizontal_hero_end_red"
+	top_detail.content.divider_mid = is_local_player_team and "divider_horizontal_hero_middle_blue" or "divider_horizontal_hero_middle_red"
+	top_detail.content.divider_edge_right.texture_id = is_local_player_team and "divider_horizontal_hero_end_blue" or "divider_horizontal_hero_end_red"
 
 	local team_banner = self._widgets_by_name.team_flag
 
-	team_banner.content.texture_id = ui_settings.icon
-	team_banner.offset[1] = self._party_id == party_id and 50 or 1714
+	team_banner.content.texture_id = is_local_player_team and ui_settings.local_flag_long_texture or ui_settings.opponent_flag_long_texture
+	team_banner.offset[1] = is_local_player_team and 30 or 1658
 
 	local bottom_detail_widget = self._widgets_by_name.bottom_background_detail
 
-	bottom_detail_widget.style.rect.color = team_color
+	bottom_detail_widget.content.divider_edge_left = is_local_player_team and "divider_horizontal_hero_end_blue" or "divider_horizontal_hero_end_red"
+	bottom_detail_widget.content.divider_mid = is_local_player_team and "divider_horizontal_hero_middle_blue" or "divider_horizontal_hero_middle_red"
+	bottom_detail_widget.content.divider_edge_right.texture_id = is_local_player_team and "divider_horizontal_hero_end_blue" or "divider_horizontal_hero_end_red"
 end
 
 VersusTeamParadingViewV2._play_sound = function (self, event)

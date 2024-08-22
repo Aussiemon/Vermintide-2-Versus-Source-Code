@@ -121,9 +121,9 @@ HeroWindowTalentsConsole.create_ui_elements = function (self, params, offset)
 	self._additional_widgets_by_name = {}
 
 	local input_service = Managers.input:get_service("hero_view")
-	local gui_layer = UILayer.default + 30
+	local gui_layer = UILayer.default + 300
 
-	self._menu_input_description = MenuInputDescriptionUI:new(nil, self.ui_top_renderer, input_service, 5, gui_layer, generic_input_actions.default, true)
+	self._menu_input_description = MenuInputDescriptionUI:new(nil, self.ui_top_renderer, input_service, 7, gui_layer, generic_input_actions.default, true)
 
 	self._menu_input_description:set_input_description(nil)
 	UIRenderer.clear_scenegraph_queue(self.ui_renderer)
@@ -147,9 +147,10 @@ HeroWindowTalentsConsole._initialize_talents = function (self)
 	self._selected_talents = table.clone(current_talents)
 	self._talent_interface = talent_interface
 
-	self:_update_talent_sync(true)
+	self:_update_talents(true)
 
 	self._initialized = true
+	self._talent_sync_id = self.parent.talent_sync_id
 end
 
 HeroWindowTalentsConsole._input_service = function (self)
@@ -170,6 +171,7 @@ HeroWindowTalentsConsole.update = function (self, dt, t)
 	end
 
 	self:_update_animations(dt)
+	self:_update_talent_sync()
 	self:_handle_gamepad_input(dt, t)
 	self:_handle_input(dt, t)
 	self:draw(dt, t)
@@ -179,9 +181,21 @@ HeroWindowTalentsConsole.post_update = function (self, dt, t)
 	return
 end
 
-HeroWindowTalentsConsole._update_talent_sync = function (self, initialize)
+HeroWindowTalentsConsole._update_talents = function (self, initialize)
 	self:_populate_talents_by_hero(initialize)
 	self:_populate_career_info(initialize)
+	self:_update_backend_talents(initialize)
+end
+
+HeroWindowTalentsConsole._update_backend_talents = function (self, initialize)
+	if initialize then
+		return
+	end
+
+	local talent_interface = self._talent_interface
+	local career_name = self._career_name
+
+	talent_interface:set_talents(career_name, self._selected_talents)
 end
 
 HeroWindowTalentsConsole._update_animations = function (self, dt)
@@ -309,7 +323,7 @@ end
 HeroWindowTalentsConsole._set_talent_selected = function (self, row, column)
 	local selected_talents = self._selected_talents
 
-	if not selected_talents[row] or selected_talents[row] == 0 then
+	if not selected_talents[row] or selected_talents[row] == 0 and column ~= 0 then
 		self:_play_sound("play_gui_talent_unlock")
 	else
 		self:_play_sound("play_gui_talents_selection_click")
@@ -317,8 +331,27 @@ HeroWindowTalentsConsole._set_talent_selected = function (self, row, column)
 
 	selected_talents[row] = column
 
-	self:_update_talent_sync()
+	self:_update_talents()
 	self.parent:update_talent_sync()
+
+	self._talent_sync_id = self.parent.talent_sync_id
+end
+
+HeroWindowTalentsConsole._update_talent_sync = function (self)
+	local talent_sync_id = self.parent.talent_sync_id
+
+	if talent_sync_id ~= self._talent_sync_id then
+		local career_name = self._career_name
+		local talent_interface = Managers.backend:get_interface("talents")
+		local current_talents = talent_interface:get_talents(career_name)
+
+		self._selected_talents = table.clone(current_talents)
+		self._talent_interface = talent_interface
+
+		self:_update_talents(true)
+
+		self._talent_sync_id = talent_sync_id
+	end
 end
 
 HeroWindowTalentsConsole.draw = function (self, dt, t)
@@ -348,7 +381,7 @@ HeroWindowTalentsConsole.draw = function (self, dt, t)
 
 	UIRenderer.end_pass(ui_top_renderer)
 
-	if gamepad_active then
+	if gamepad_active and not self.parent:input_blocked() then
 		self._menu_input_description:draw(ui_top_renderer, dt)
 	end
 
@@ -384,11 +417,11 @@ HeroWindowTalentsConsole._populate_talents_by_hero = function (self, initialize)
 			local selected_column = talents[i]
 			local no_talent_selected = not selected_column or selected_column == 0
 			local unlock_name = "talent_point_" .. i
-			local talent_unlock_level = TalentUnlockLevels[unlock_name]
 			local row_unlocked = ProgressionUnlocks.is_unlocked(unlock_name, self.hero_level)
 			local level_text_color = row_unlocked and Colors.get_color_table_with_alpha("green", 255) or Colors.get_color_table_with_alpha("red", 255)
+			local talent_template = ProgressionUnlocks.get_unlock(unlock_name)
 
-			content.level_text = tostring(talent_unlock_level)
+			content.level_text = tostring(talent_template.level_requirement)
 			style.level_text.text_color = level_text_color
 
 			if row_unlocked and not no_talent_selected then
@@ -601,8 +634,8 @@ HeroWindowTalentsConsole._populate_career_info = function (self, initialize)
 		255,
 		255,
 	}
-	local passive_ability_data = career_settings.passive_ability
-	local activated_ability_data = career_settings.activated_ability[1]
+	local passive_ability_data = CareerUtils.get_passive_ability_by_career(career_settings)
+	local activated_ability_data = CareerUtils.get_ability_data_by_career(career_settings, 1)
 	local passive_display_name = passive_ability_data.display_name
 	local passive_icon = passive_ability_data.icon
 	local activated_display_name = activated_ability_data.display_name

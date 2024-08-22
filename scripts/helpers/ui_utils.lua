@@ -340,7 +340,7 @@ UIUtils.enable_button = function (widget, enable, hotspot_name)
 	local content = widget.content
 	local hotspot = content[hotspot_name] or content.button_hotspot or content.hotspot
 
-	hotspot.disable_button = enable
+	hotspot.disable_button = not enable
 end
 
 UIUtils.is_button_pressed = function (widget, hotspot_name, keyboard_input)
@@ -350,6 +350,25 @@ UIUtils.is_button_pressed = function (widget, hotspot_name, keyboard_input)
 
 		if hotspot.on_release then
 			hotspot.on_release = false
+
+			return true
+		elseif hotspot.is_selected and keyboard_input then
+			hotspot.is_selected = false
+
+			return true
+		end
+	end
+
+	return false
+end
+
+UIUtils.is_right_button_pressed = function (widget, hotspot_name, keyboard_input)
+	if widget then
+		local content = widget.content
+		local hotspot = content[hotspot_name] or content.button_hotspot or content.hotspot
+
+		if hotspot.on_right_click then
+			hotspot.on_right_click = false
 
 			return true
 		elseif hotspot.is_selected and keyboard_input then
@@ -577,20 +596,24 @@ UIUtils.sort_items_rarity_descending = function (item_1, item_2)
 end
 
 UIUtils.set_widget_alpha = function (widget, alpha, optional_style_element)
+	if not widget then
+		return
+	end
+
 	local style = widget.style
 
 	if optional_style_element then
 		if style[optional_style_element].color then
 			style[optional_style_element].color[1] = alpha
-		else
+		elseif style[optional_style_element].text_color then
 			style[optional_style_element].text_color[1] = alpha
 		end
 	else
-		for _, stlye_data in pairs(style) do
-			if stlye_data.color then
-				stlye_data.color[1] = alpha
-			else
-				stlye_data.text_color[1] = alpha
+		for _, style_data in pairs(style) do
+			if style_data.color then
+				style_data.color[1] = alpha
+			elseif style_data.text_color then
+				style_data.text_color[1] = alpha
 			end
 		end
 	end

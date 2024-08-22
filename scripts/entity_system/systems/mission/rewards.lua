@@ -45,6 +45,10 @@ Rewards.award_end_of_level_rewards = function (self, game_won, hero_name, is_in_
 
 		Managers.deed:consume_deed(cb)
 	else
+		self._end_of_level_info = {
+			game_won = game_won,
+		}
+
 		local loot_profile_name = is_in_event_game_mode and "event" or "default"
 
 		self:_award_end_of_level_rewards(game_won, hero_name, loot_profile_name, game_time, end_of_level_rewards_arguments, extra_mission_results)
@@ -56,6 +60,11 @@ Rewards._award_end_of_level_rewards = function (self, game_won, hero_name, loot_
 	local hero_attributes = backend_manager:get_interface("hero_attributes")
 	local start_experience = hero_attributes:get(hero_name, "experience")
 	local start_experience_pool = hero_attributes:get(hero_name, "experience_pool")
+	local versus_interface = backend_manager:get_interface("versus")
+	local versus_start_experience = versus_interface:get_profile_data("experience")
+
+	self._versus_start_experience = versus_start_experience
+
 	local deed_item_name, deed_item_backend_id
 
 	if Managers.deed:has_deed() then
@@ -81,8 +90,9 @@ Rewards._award_end_of_level_rewards = function (self, game_won, hero_name, loot_
 	end
 
 	local level_end, end_experience = self:get_level_end()
+	local versus_level_end, versus_end_experience = self:get_versus_level_end()
 
-	self:_generate_end_of_level_loot(game_won, hero_name, start_experience, end_experience, loot_profile_name, deed_item_name, deed_item_backend_id, game_time, end_of_level_rewards_arguments)
+	self:_generate_end_of_level_loot(game_won, hero_name, start_experience, end_experience, versus_start_experience, versus_end_experience, loot_profile_name, deed_item_name, deed_item_backend_id, game_time, end_of_level_rewards_arguments)
 end
 
 Rewards._mission_results = function (self, game_won, extra_mission_results)
@@ -107,8 +117,8 @@ Rewards._mission_results = function (self, game_won, extra_mission_results)
 			local experience_settings = settings.experience
 
 			mission_results[#mission_results + 1] = {
-				text = "versus_mission_won",
-				experience = experience_settings.win_match,
+				text = "vs_match_won",
+				experience = experience_settings.win_match * self:experience_multiplier(),
 			}
 		elseif game_mode_key == "deus" then
 			local expedition_complete_reward = {
@@ -153,9 +163,11 @@ Rewards._mission_results = function (self, game_won, extra_mission_results)
 
 		table.insert(mission_results, 1, mission_failed_reward)
 	elseif game_mode_key == "versus" then
+		local settings = Managers.state.game_mode:settings()
+		local experience_settings = settings.experience
 		local mission_failed_reward = {
 			text = "mission_failed",
-			experience = 10 * self:experience_multiplier(),
+			experience = experience_settings.lose_match * self:experience_multiplier(),
 		}
 
 		table.insert(mission_results, 1, mission_failed_reward)
@@ -208,26 +220,32 @@ Rewards._mission_results = function (self, game_won, extra_mission_results)
 	if game_mode_key == "versus" then
 		local settings = Managers.state.game_mode:settings()
 		local experience_settings = settings.experience
-		local win_conditions = Managers.mechanism:game_mechanism():win_conditions()
-		local party_one_score = win_conditions:get_total_score(1)
-		local party_two_score = win_conditions:get_total_score(2)
-		local total_score_per_round = 1
-		local exp_for_all_objectives_completed = experience_settings.complete_all_objectives or 0
-		local party_one_exp = math.clamp(party_one_score / total_score_per_round, 0, 1) * exp_for_all_objectives_completed
-		local party_two_exp = math.clamp(party_two_score / total_score_per_round, 0, 1) * exp_for_all_objectives_completed
-		local total_objective_xp = math.ceil((party_one_exp + party_two_exp) / 2)
+
+		table.insert(mission_results, 1, {
+			text = "vs_match_completed",
+			experience = experience_settings.complete_match * self:experience_multiplier(),
+		})
 
 		mission_results[#mission_results + 1] = {
-			text = "versus_mission_completed",
-			experience = experience_settings.complete_match,
+			text = "vs_rounds_played",
+			experience = Managers.mechanism:game_mechanism():num_sets() * experience_settings.rounds_played * self:experience_multiplier(),
 		}
 
-		if total_objective_xp > 0 then
-			mission_results[#mission_results + 1] = {
-				text = "versus_mission_objectives_completed",
-				experience = total_objective_xp,
-			}
-		end
+		local statistics_db = Managers.venture.statistics
+		local profile_synchronizer = Managers.mechanism:profile_synchronizer()
+		local players_session_score = Managers.mechanism:get_players_session_score(statistics_db, profile_synchronizer)
+		local stats_id = Managers.player:local_player():unique_id()
+		local local_player_session_score = players_session_score[stats_id]
+		local scores = local_player_session_score and local_player_session_score.scores or {}
+		local hero_kills = scores and scores.kills_heroes or 0
+		local hero_kill_score = hero_kills * experience_settings.hero_kills
+		local special_kills = scores and scores.kills_specials or 0
+		local special_kill_score = special_kills * experience_settings.special_kills
+
+		mission_results[#mission_results + 1] = {
+			text = "vs_scoreboard_eliminations",
+			experience = (hero_kill_score + special_kill_score) * self:experience_multiplier(),
+		}
 	end
 
 	if extra_mission_results then
@@ -316,14 +334,15 @@ Rewards._add_missions_from_mission_system = function (self, mission_rewards, dif
 	end
 end
 
-Rewards._generate_end_of_level_loot = function (self, game_won, hero_name, start_experience, end_experience, loot_profile_name, deed_item_name, deed_item_backend_id, game_time, end_of_level_rewards_arguments)
+Rewards._generate_end_of_level_loot = function (self, game_won, hero_name, start_experience, end_experience, versus_start_experience, versus_end_experience, loot_profile_name, deed_item_name, deed_item_backend_id, game_time, end_of_level_rewards_arguments)
 	local difficulty_manager = Managers.state.difficulty
 	local difficulty = difficulty_manager:get_difficulty()
 	local loot_interface = Managers.backend:get_interface("loot")
 	local quickplay = self._quickplay_bonus
 
-	self._end_of_level_loot_id = loot_interface:generate_end_of_level_loot(game_won, quickplay, difficulty, self._level_key, hero_name, start_experience, end_experience, loot_profile_name, deed_item_name, deed_item_backend_id, self._game_mode_key, game_time, end_of_level_rewards_arguments)
+	self._end_of_level_loot_id = loot_interface:generate_end_of_level_loot(game_won, quickplay, difficulty, self._level_key, hero_name, start_experience, end_experience, versus_start_experience, versus_end_experience, loot_profile_name, deed_item_name, deed_item_backend_id, self._game_mode_key, game_time, end_of_level_rewards_arguments)
 	self._end_of_level_rewards_arguments = end_of_level_rewards_arguments
+	self._is_loot_handled = false
 end
 
 Rewards.cb_deed_consumed = function (self)
@@ -359,12 +378,54 @@ Rewards.rewards_generated = function (self)
 
 				self._sent_consuming_deed = true
 			end
+
+			if not self._is_loot_handled then
+				local rewards = loot_interface:get_loot(loot_id)
+
+				for k, v in pairs(rewards) do
+					if string.find(k, "experience_reward") == 1 then
+						self._mission_results[#self._mission_results + 1] = {
+							text = "bonus_experience_earned",
+							experience = v.amount,
+						}
+					end
+				end
+
+				self._is_loot_handled = true
+			end
+
+			if not self._backend_mission_results_evaluated then
+				self:_evaluate_backend_mission_results()
+			end
 		end
 
 		return loot_generated
 	end
 
 	return false
+end
+
+Rewards._evaluate_backend_mission_results = function (self)
+	local game_mode_key = self._game_mode_key
+
+	if game_mode_key == "versus" and self._end_of_level_info.game_won then
+		local settings = Managers.state.game_mode:settings()
+		local experience_settings = settings.experience
+		local versus_interface = Managers.backend:get_interface("versus")
+		local old_first_win_of_the_day_timestamp = versus_interface:get_profile_data("old_first_win_of_the_day_timestamp") or 0
+		local first_win_of_the_day_timestamp = versus_interface:get_profile_data("first_win_of_the_day_timestamp") or 0
+		local diff = first_win_of_the_day_timestamp - old_first_win_of_the_day_timestamp
+
+		if diff >= 86400000 then
+			table.insert(self._mission_results, 3, {
+				text = "vs_first_win_of_the_day",
+				experience = experience_settings.first_win_of_the_day,
+			})
+		end
+	end
+
+	self._end_of_level_info = nil
+	self._backend_mission_results_evaluated = true
 end
 
 Rewards.consuming_deed = function (self)
@@ -394,6 +455,12 @@ Rewards.get_level_start = function (self)
 	return ExperienceSettings.get_level(start_experience), start_experience, start_experience_pool
 end
 
+Rewards.get_versus_level_start = function (self)
+	local versus_start_experience = self._versus_start_experience or 0
+
+	return ExperienceSettings.get_versus_level_from_experience(versus_start_experience), versus_start_experience
+end
+
 Rewards.get_win_track_experience_start = function (self)
 	return self._start_win_track_experience
 end
@@ -410,6 +477,20 @@ Rewards.get_level_end = function (self)
 	local experience = start_experience + gained_xp
 
 	return ExperienceSettings.get_level(experience), experience
+end
+
+Rewards.get_versus_level_end = function (self)
+	local mission_results = self._mission_results
+	local gained_xp = 0
+
+	for _, mission_reward in ipairs(mission_results) do
+		gained_xp = gained_xp + (mission_reward.experience or 0)
+	end
+
+	local start_experience = self._versus_start_experience or 0
+	local experience = start_experience + gained_xp
+
+	return ExperienceSettings.get_versus_level_from_experience(experience), experience
 end
 
 Rewards.experience_multiplier = function (self)

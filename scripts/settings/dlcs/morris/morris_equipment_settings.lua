@@ -256,33 +256,13 @@ settings.projectiles = {
 		rotation_speed = 10,
 		show_warning_icon = true,
 		trajectory_template_name = "throw_trajectory",
-	},
-}
-settings.default_items = {
-	dr_deus_01 = {
-		description = "dr_deus_01_description",
-		display_name = "dr_deus_01_name",
-		inventory_icon = "icon_wpn_dw_trollhammer_t1",
-	},
-	es_deus_01 = {
-		description = "es_deus_01_description",
-		display_name = "es_deus_01_name",
-		inventory_icon = "icon_wpn_empire_spearshield_t1",
-	},
-	bw_deus_01 = {
-		description = "bw_deus_01_description",
-		display_name = "bw_deus_01_name",
-		inventory_icon = "icon_wpn_brw_magmastaff_t1",
-	},
-	we_deus_01 = {
-		description = "we_deus_01_description",
-		display_name = "we_deus_01_name",
-		inventory_icon = "icon_wpn_we_moonfire_t1",
-	},
-	wh_deus_01 = {
-		description = "wh_deus_01_description",
-		display_name = "wh_deus_01_name",
-		inventory_icon = "icon_wpn_emp_duckfoot_t1",
+		rotation_on_hit = function (unit)
+			local go_id = Managers.state.network.unit_storage:go_id(unit)
+			local _, rnd = Math.next_random(go_id)
+			local rotation = Quaternion.axis_angle(Vector3.right(), rnd * math.pi * 0.15)
+
+			return Quaternion.multiply(Quaternion.axis_angle(Vector3.up(), math.random() * math.tau), rotation)
+		end,
 	},
 }
 settings.spread_templates = {

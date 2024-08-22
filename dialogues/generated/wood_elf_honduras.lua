@@ -3847,6 +3847,13 @@ return function ()
 				"enemy_tag",
 				OP.EQ,
 				"chaos_troll",
+				CombiningOP.OR_NEXT,
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"vs_chaos_troll",
 			},
 			{
 				"user_context",
@@ -3904,6 +3911,13 @@ return function ()
 				"enemy_tag",
 				OP.EQ,
 				"chaos_troll",
+				CombiningOP.OR_NEXT,
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"vs_chaos_troll",
 			},
 			{
 				"user_context",
@@ -5853,6 +5867,56 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pwe_gameplay_pinging_ecws_a",
+		response = "pwe_gameplay_pinging_ecws_a",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"seen_enemy",
+			},
+			{
+				"query_context",
+				"is_ping",
+				OP.EQ,
+				1,
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_bulwark",
+			},
+			{
+				"query_context",
+				"source_name",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"faction_memory",
+				"time_since_ping_enemy",
+				OP.TIMEDIFF,
+				OP.GT,
+				7,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"time_since_ping_enemy",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
 		name = "pwe_gameplay_player_pounced",
 		response = "pwe_gameplay_player_pounced",
 		criterias = {
@@ -6933,6 +6997,13 @@ return function ()
 				"enemy_tag",
 				OP.EQ,
 				"chaos_troll",
+				CombiningOP.OR_NEXT,
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"vs_chaos_troll",
 			},
 			{
 				"query_context",
@@ -7015,6 +7086,63 @@ return function ()
 			{
 				"faction_memory",
 				"last_seen_ungor_archer",
+				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwe_gameplay_seeing_an_ecws_a",
+		response = "pwe_gameplay_seeing_an_ecws_a",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"seen_enemy",
+			},
+			{
+				"query_context",
+				"enemy_tag",
+				OP.EQ,
+				"chaos_bulwark",
+			},
+			{
+				"query_context",
+				"distance",
+				OP.GTEQ,
+				4,
+			},
+			{
+				"query_context",
+				"source_name",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"faction_memory",
+				"last_heard_globadier",
+				OP.TIMEDIFF,
+				OP.GT,
+				20,
+			},
+			{
+				"faction_memory",
+				"last_seen_globadier",
+				OP.TIMEDIFF,
+				OP.GT,
+				60,
+			},
+		},
+		on_done = {
+			{
+				"faction_memory",
+				"last_seen_globadier",
 				OP.TIMESET,
 			},
 		},
@@ -8846,6 +8974,36 @@ return function ()
 		},
 	})
 	define_rule({
+		name = "pwe_objective_dropping_grimoire",
+		response = "pwe_objective_dropping_grimoire",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"throwing_item",
+			},
+			{
+				"query_context",
+				"item_type",
+				OP.EQ,
+				"grimoire",
+			},
+			{
+				"query_context",
+				"source_name",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"wood_elf",
+			},
+		},
+	})
+	define_rule({
 		name = "pwe_objective_goal_achieved_escape",
 		response = "pwe_objective_goal_achieved_escape",
 		criterias = {
@@ -9018,6 +9176,36 @@ return function ()
 				"faction_memory",
 				"time_since_objective_nearing_objective_deadline_done",
 				OP.TIMESET,
+			},
+		},
+	})
+	define_rule({
+		name = "pwe_objective_picking_up_grimoire",
+		response = "pwe_objective_picking_up_grimoire",
+		criterias = {
+			{
+				"query_context",
+				"concept",
+				OP.EQ,
+				"on_pickup",
+			},
+			{
+				"query_context",
+				"pickup_name",
+				OP.EQ,
+				"wpn_grimoire_01",
+			},
+			{
+				"query_context",
+				"source_name",
+				OP.EQ,
+				"wood_elf",
+			},
+			{
+				"user_context",
+				"player_profile",
+				OP.EQ,
+				"wood_elf",
 			},
 		},
 	})
@@ -11774,11 +11962,13 @@ return function ()
 		pwe_gameplay_hearing_a_Skaven_warpfire_thrower_combat = {
 			category = "enemy_alerts_high",
 			database = "wood_elf_honduras",
-			dialogue_animations_n = 6,
-			face_animations_n = 6,
+			dialogue_animations_n = 8,
+			face_animations_n = 8,
 			randomize_indexes_n = 0,
-			sound_events_n = 6,
+			sound_events_n = 8,
 			dialogue_animations = {
+				"dialogue_shout",
+				"dialogue_shout",
 				"dialogue_shout",
 				"dialogue_shout",
 				"dialogue_shout",
@@ -11793,6 +11983,8 @@ return function ()
 				"face_fear",
 				"face_fear",
 				"face_fear",
+				"face_fear",
+				"face_fear",
 			},
 			localization_strings = {
 				"pwe_gameplay_hearing_a_Skaven_warpfire_thrower_combat_01",
@@ -11801,6 +11993,8 @@ return function ()
 				"pwe_gameplay_hearing_a_Skaven_warpfire_thrower_combat_04",
 				"pwe_gameplay_hearing_a_Skaven_warpfire_thrower_combat_05",
 				"pwe_gameplay_hearing_a_Skaven_warpfire_thrower_combat_06",
+				"pwe_gameplay_hearing_a_Skaven_warpfire_thrower_combat_07",
+				"pwe_gameplay_hearing_a_Skaven_warpfire_thrower_combat_08",
 			},
 			randomize_indexes = {},
 			sound_events = {
@@ -11810,6 +12004,8 @@ return function ()
 				"pwe_gameplay_hearing_a_Skaven_warpfire_thrower_combat_04",
 				"pwe_gameplay_hearing_a_Skaven_warpfire_thrower_combat_05",
 				"pwe_gameplay_hearing_a_Skaven_warpfire_thrower_combat_06",
+				"pwe_gameplay_hearing_a_Skaven_warpfire_thrower_combat_07",
+				"pwe_gameplay_hearing_a_Skaven_warpfire_thrower_combat_08",
 			},
 			sound_events_duration = {
 				1.2997291088104,
@@ -11818,6 +12014,8 @@ return function ()
 				1.8490417003632,
 				1.533979177475,
 				2.4010624885559,
+				2.1067707538605,
+				2.3272292613983,
 			},
 		},
 		pwe_gameplay_hearing_a_chaos_spawn = {
@@ -15188,6 +15386,45 @@ return function ()
 				2.5968332290649,
 			},
 		},
+		pwe_gameplay_pinging_ecws_a = {
+			category = "enemy_alerts",
+			database = "wood_elf_honduras",
+			dialogue_animations_n = 4,
+			face_animations_n = 4,
+			randomize_indexes_n = 0,
+			sound_events_n = 4,
+			dialogue_animations = {
+				"dialogue_shout",
+				"dialogue_shout",
+				"dialogue_shout",
+				"dialogue_shout",
+			},
+			face_animations = {
+				"face_contempt",
+				"face_contempt",
+				"face_contempt",
+				"face_contempt",
+			},
+			localization_strings = {
+				"pwe_gameplay_pinging_ecws_a_01",
+				"pwe_gameplay_pinging_ecws_a_02",
+				"pwe_gameplay_pinging_ecws_a_03",
+				"pwe_gameplay_pinging_ecws_a_04",
+			},
+			randomize_indexes = {},
+			sound_events = {
+				"pwe_gameplay_pinging_ecws_a_01",
+				"pwe_gameplay_pinging_ecws_a_02",
+				"pwe_gameplay_pinging_ecws_a_03",
+				"pwe_gameplay_pinging_ecws_a_04",
+			},
+			sound_events_duration = {
+				1.2919166088104,
+				1.7329167127609,
+				1.7604583501816,
+				1.3942083120346,
+			},
+		},
 		pwe_gameplay_player_pounced = {
 			category = "player_alerts",
 			database = "wood_elf_honduras",
@@ -16282,11 +16519,12 @@ return function ()
 		pwe_gameplay_seeing_a_stormvermin = {
 			category = "enemy_alerts",
 			database = "wood_elf_honduras",
-			dialogue_animations_n = 8,
-			face_animations_n = 8,
+			dialogue_animations_n = 9,
+			face_animations_n = 9,
 			randomize_indexes_n = 0,
-			sound_events_n = 8,
+			sound_events_n = 9,
 			dialogue_animations = {
+				"dialogue_shout",
 				"dialogue_shout",
 				"dialogue_shout",
 				"dialogue_shout",
@@ -16298,6 +16536,7 @@ return function ()
 			},
 			face_animations = {
 				"face_contempt",
+				"face_contempt",
 				"face_angry",
 				"face_angry",
 				"face_angry",
@@ -16308,6 +16547,7 @@ return function ()
 			},
 			localization_strings = {
 				"pwe_gameplay_seeing_a_stormvermin_02",
+				"pwe_gameplay_seeing_a_stormvermin_03",
 				"pwe_gameplay_seeing_a_stormvermin_08",
 				"pwe_gameplay_seeing_a_stormvermin_09",
 				"pwe_gameplay_seeing_a_stormvermin_10",
@@ -16319,6 +16559,7 @@ return function ()
 			randomize_indexes = {},
 			sound_events = {
 				"pwe_gameplay_seeing_a_stormvermin_02",
+				"pwe_gameplay_seeing_a_stormvermin_03",
 				"pwe_gameplay_seeing_a_stormvermin_08",
 				"pwe_gameplay_seeing_a_stormvermin_09",
 				"pwe_gameplay_seeing_a_stormvermin_10",
@@ -16329,13 +16570,14 @@ return function ()
 			},
 			sound_events_duration = {
 				2.6539375782013,
-				3.1020624637604,
 				1.488041639328,
+				3.1020624637604,
 				2.3120832443237,
 				2.2794582843781,
 				3.2977707386017,
 				2.7984166145325,
 				3.3620417118073,
+				1.7499791383743,
 			},
 		},
 		pwe_gameplay_seeing_a_troll = {
@@ -16454,6 +16696,45 @@ return function ()
 				2.6629166603088,
 				1.7831457853317,
 				2.317583322525,
+			},
+		},
+		pwe_gameplay_seeing_an_ecws_a = {
+			category = "enemy_alerts_high",
+			database = "wood_elf_honduras",
+			dialogue_animations_n = 4,
+			face_animations_n = 4,
+			randomize_indexes_n = 0,
+			sound_events_n = 4,
+			dialogue_animations = {
+				"dialogue_shout",
+				"dialogue_shout",
+				"dialogue_shout",
+				"dialogue_shout",
+			},
+			face_animations = {
+				"face_contempt",
+				"face_contempt",
+				"face_contempt",
+				"face_contempt",
+			},
+			localization_strings = {
+				"pwe_gameplay_seeing_an_ecws_a_01",
+				"pwe_gameplay_seeing_an_ecws_a_02",
+				"pwe_gameplay_seeing_an_ecws_a_03",
+				"pwe_gameplay_seeing_an_ecws_a_04",
+			},
+			randomize_indexes = {},
+			sound_events = {
+				"pwe_gameplay_seeing_an_ecws_a_01",
+				"pwe_gameplay_seeing_an_ecws_a_02",
+				"pwe_gameplay_seeing_an_ecws_a_03",
+				"pwe_gameplay_seeing_an_ecws_a_04",
+			},
+			sound_events_duration = {
+				3.2843749523163,
+				2.7602083683014,
+				2.3390834331513,
+				3.1320209503174,
 			},
 		},
 		pwe_gameplay_self_heal = {
@@ -18667,6 +18948,40 @@ return function ()
 				1.0745416879654,
 			},
 		},
+		pwe_objective_dropping_grimoire = {
+			category = "player_feedback",
+			database = "wood_elf_honduras",
+			dialogue_animations_n = 3,
+			face_animations_n = 3,
+			randomize_indexes_n = 0,
+			sound_events_n = 3,
+			dialogue_animations = {
+				"dialogue_talk",
+				"dialogue_talk",
+				"dialogue_talk",
+			},
+			face_animations = {
+				"face_neutral",
+				"face_neutral",
+				"face_neutral",
+			},
+			localization_strings = {
+				"pwe_objective_dropping_grimoire_01",
+				"pwe_objective_dropping_grimoire_02",
+				"pwe_objective_dropping_grimoire_03",
+			},
+			randomize_indexes = {},
+			sound_events = {
+				"pwe_objective_dropping_grimoire_01",
+				"pwe_objective_dropping_grimoire_02",
+				"pwe_objective_dropping_grimoire_03",
+			},
+			sound_events_duration = {
+				1.2158541679382,
+				3.1163332462311,
+				1.8781249523163,
+			},
+		},
 		pwe_objective_goal_achieved_escape = {
 			category = "player_feedback",
 			database = "wood_elf_honduras",
@@ -18866,6 +19181,35 @@ return function ()
 				1.5949583053589,
 				1.8584582805634,
 				1.9018958806992,
+			},
+		},
+		pwe_objective_picking_up_grimoire = {
+			category = "player_feedback",
+			database = "wood_elf_honduras",
+			dialogue_animations_n = 2,
+			face_animations_n = 2,
+			randomize_indexes_n = 0,
+			sound_events_n = 2,
+			dialogue_animations = {
+				[1] = "dialogue_talk",
+				[2] = "dialogue_talk",
+			},
+			face_animations = {
+				[1] = "face_neutral",
+				[2] = "face_neutral",
+			},
+			localization_strings = {
+				[1] = "pwe_objective_picking_up_grimoire_01",
+				[2] = "pwe_objective_picking_up_grimoire_04",
+			},
+			randomize_indexes = {},
+			sound_events = {
+				[1] = "pwe_objective_picking_up_grimoire_01",
+				[2] = "pwe_objective_picking_up_grimoire_04",
+			},
+			sound_events_duration = {
+				[1] = 3.6131041049957,
+				[2] = 5.2941250801086,
 			},
 		},
 		pwe_spotting_ferry_lady = {

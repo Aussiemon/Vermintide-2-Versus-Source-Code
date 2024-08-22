@@ -17,6 +17,7 @@ DialogueSettings.auto_load_files = {
 	"dialogues/generated/witch_hunter_generic_vo",
 	"dialogues/generated/weather_vo",
 }
+DialogueSettings.auto_load_files_mechanism = {}
 DialogueSettings.level_specific_load_files = {
 	whitebox_climb = {
 		"dialogues/generated/wood_elf_prologue",
@@ -190,6 +191,7 @@ DialogueSettings.blocked_auto_load_files = {
 }
 
 DLCUtils.append("auto_load_files", DialogueSettings.auto_load_files)
+DLCUtils.merge("auto_load_files_mechanism", DialogueSettings.auto_load_files_mechanism, true)
 
 for _, dlc in pairs(DLCSettings) do
 	local dialogue_settings = dlc.dialogue_settings
@@ -811,6 +813,7 @@ DialogueSettings.dialogue_category_config = {
 		interrupted_by = {},
 		playable_during_category = {
 			activate_ability = true,
+			casual_singing_03 = true,
 			casual_talk = true,
 			cut_scene = true,
 			cut_scene_interrupt = true,
@@ -825,6 +828,39 @@ DialogueSettings.dialogue_category_config = {
 			help_talk = true,
 			knocked_down_override = true,
 			level_talk = true,
+			level_talk_tutorial = true,
+			npc_talk = true,
+			npc_talk_interrupt_special = true,
+			player_alerts = true,
+			player_alerts_overcharge_explode = true,
+			player_alerts_overcharge_warning = true,
+			player_feedback = true,
+			seen_items = true,
+			story_talk = true,
+			story_talk_vce = true,
+		},
+	},
+	level_talk_must_play_multiple = {
+		mutually_exclusive = false,
+		interrupted_by = {},
+		playable_during_category = {
+			activate_ability = true,
+			casual_talk = true,
+			cut_scene = true,
+			cut_scene_interrupt = true,
+			cut_scene_interrupt_three = true,
+			cut_scene_interrupt_two = true,
+			default = true,
+			enemy_alerts = true,
+			enemy_alerts_high = true,
+			enemy_basic_prio = true,
+			enemy_high_prio = true,
+			guidance = true,
+			help_talk = true,
+			knocked_down_override = true,
+			level_talk = true,
+			level_talk_must_play = true,
+			level_talk_must_play_multiple = true,
 			level_talk_tutorial = true,
 			npc_talk = true,
 			npc_talk_interrupt_special = true,
@@ -892,7 +928,9 @@ DialogueSettings.dialogue_category_config = {
 	},
 	casual_singing_03 = {
 		mutually_exclusive = false,
-		interrupted_by = {},
+		interrupted_by = {
+			level_talk_must_play = true,
+		},
 		playable_during_category = {
 			casual_singing_01 = true,
 			casual_singing_02 = true,

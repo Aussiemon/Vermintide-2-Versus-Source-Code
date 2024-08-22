@@ -1923,29 +1923,13 @@ go_type_table = {
 
 			return data_table
 		end,
-		carousel_inn_door = function (unit, unit_name, unit_template, gameobject_functor_context)
-			local data_table = {
-				go_type = NetworkLookup.go_types.carousel_inn_door,
-				husk_unit = NetworkLookup.husks[unit_name],
-				rotation = Unit.local_rotation(unit, 0),
-				position = Unit.local_position(unit, 0),
-			}
-
-			return data_table
-		end,
 		buff_aoe_unit = function (unit, unit_name, unit_template, gameobject_functor_context)
 			local buff_aoe_extension = ScriptUnit.extension(unit, "buff_area_system")
 			local owner_unit = buff_aoe_extension.owner_unit
 			local source_unit = buff_aoe_extension.source_unit
 			local life_time = buff_aoe_extension.life_time
 			local radius = buff_aoe_extension.radius
-			local removal_proc_function_name = buff_aoe_extension.removal_proc_function_name
-			local removal_proc_function_id = NetworkConstants.invalid_game_object_id
-
-			if removal_proc_function_name then
-				removal_proc_function_id = NetworkLookup.proc_functions[removal_proc_function_name]
-			end
-
+			local buff_template = buff_aoe_extension.template.name
 			local owner_unit_id = NetworkConstants.invalid_game_object_id
 
 			if owner_unit then
@@ -1963,10 +1947,11 @@ go_type_table = {
 				husk_unit = NetworkLookup.husks[unit_name],
 				position = Unit.local_position(unit, 0),
 				life_time = life_time,
-				removal_proc_function_id = removal_proc_function_id,
 				radius = radius,
 				owner_unit_id = owner_unit_id,
 				source_unit_id = source_unit_id,
+				buff_template_id = NetworkLookup.buff_templates[buff_template],
+				sub_buff_id = buff_aoe_extension.sub_buff_id,
 			}
 
 			return data_table
@@ -2033,12 +2018,12 @@ go_type_table = {
 			local dialogue_extension = ScriptUnit.extension(unit, "dialogue_system")
 			local dialogue_profile = dialogue_extension.dialogue_profile
 			local side = Managers.state.side.side_by_unit[unit]
-			local side_id = side.side_id
+			local side_id = side and side.side_id
 			local data_table = {
 				go_type = NetworkLookup.go_types.dialogue_node,
 				husk_unit = NetworkLookup.husks[unit_name],
 				dialogue_profile = NetworkLookup.dialogue_profiles[dialogue_profile],
-				side_id = side_id or 0,
+				side_id = side_id and side_id > 0 and side_id or nil,
 			}
 
 			return data_table
@@ -2057,6 +2042,7 @@ go_type_table = {
 
 			fassert(profile, "No such profile with index %s", tostring(profile_id))
 
+			local aim_template = profile.aim_template or "player"
 			local career = profile.careers[career_id]
 			local sound_character = career.sound_character
 
@@ -2128,8 +2114,8 @@ go_type_table = {
 				},
 				aim_system = {
 					is_husk = true,
-					template = "player",
 					go_id = go_id,
+					template = aim_template,
 				},
 				status_system = {
 					wounds = player_wounds,
@@ -2168,6 +2154,7 @@ go_type_table = {
 				buff_system = {
 					is_husk = true,
 					initial_buff_names = initial_buff_names,
+					breed = breed,
 				},
 				statistics_system = {
 					template = "player",
@@ -2323,6 +2310,7 @@ go_type_table = {
 				},
 				buff_system = {
 					is_husk = true,
+					breed = breed,
 				},
 				statistics_system = {
 					template = "player",
@@ -4177,7 +4165,7 @@ go_type_table = {
 			local nav_mesh_effect
 
 			if explosion_template_name then
-				local template = ExplosionTemplates[explosion_template_name]
+				local template = ExplosionUtils.get_template(explosion_template_name)
 
 				if template then
 					local aoe_data = template.aoe
@@ -4264,7 +4252,7 @@ go_type_table = {
 			local nav_mesh_effect
 
 			if explosion_template_name then
-				local template = ExplosionTemplates[explosion_template_name]
+				local template = ExplosionUtils.get_template(explosion_template_name)
 
 				if template then
 					local aoe_data = template.aoe
@@ -4507,24 +4495,13 @@ go_type_table = {
 
 			return unit_template_name, extension_init_data
 		end,
-		carousel_inn_door = function (game_session, go_id, owner_id, unit, gameobject_functor_context)
-			local unit_template_name = "carousel_inn_door"
-			local extension_init_data
-
-			return unit_template_name, extension_init_data
-		end,
 		buff_aoe_unit = function (game_session, go_id, owner_id, unit, gameobject_functor_context)
 			local life_time = GameSession.game_object_field(game_session, go_id, "life_time")
-			local removal_proc_function_id = GameSession.game_object_field(game_session, go_id, "removal_proc_function_id")
 			local radius = GameSession.game_object_field(game_session, go_id, "radius")
 			local owner_unit_id = GameSession.game_object_field(game_session, go_id, "owner_unit_id")
 			local source_unit_id = GameSession.game_object_field(game_session, go_id, "source_unit_id")
-			local removal_proc_function_name
-
-			if removal_proc_function_id ~= NetworkConstants.invalid_game_object_id then
-				removal_proc_function_name = NetworkLookup.proc_functions[removal_proc_function_id]
-			end
-
+			local buff_template_id = GameSession.game_object_field(game_session, go_id, "buff_template_id")
+			local sub_buff_id = GameSession.game_object_field(game_session, go_id, "sub_buff_id")
 			local owner_unit
 
 			if owner_unit_id ~= NetworkConstants.invalid_game_object_id then
@@ -4540,10 +4517,11 @@ go_type_table = {
 			local extension_init_data = {
 				buff_area_system = {
 					life_time = life_time,
-					removal_proc_function_name = removal_proc_function_name,
 					radius = radius,
 					owner_unit = owner_unit,
 					source_unit = source_unit,
+					sub_buff_template = BuffTemplates[NetworkLookup.buff_templates[buff_template_id]].buffs[sub_buff_id],
+					sub_buff_id = sub_buff_id,
 				},
 			}
 			local unit_template_name = "buff_aoe_unit"

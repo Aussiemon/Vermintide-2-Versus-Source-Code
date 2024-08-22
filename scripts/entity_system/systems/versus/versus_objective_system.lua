@@ -94,7 +94,7 @@ end
 VersusObjectiveSystem._complete_objective = function (self, id, extension, objects_to_remove, is_sub_objective)
 	local game_mode = Managers.state.game_mode:game_mode()
 
-	if game_mode.about_to_lose then
+	if game_mode:is_about_to_end_game_early() then
 		return
 	end
 
@@ -107,6 +107,18 @@ VersusObjectiveSystem._complete_objective = function (self, id, extension, objec
 		local adventure_spawning = game_mode:adventure_spawning()
 
 		adventure_spawning:set_move_dead_players_to_next_respawn(true)
+	end
+end
+
+VersusObjectiveSystem._complete_main_objective = function (self, extension)
+	VersusObjectiveSystem.super._complete_main_objective(self, extension)
+
+	local parent_name = extension:get_parent_name()
+
+	if not parent_name or parent_name == "n/a" then
+		self._last_main_objective_completed = extension
+
+		Managers.state.event:trigger("obj_main_objective_completed", self._num_completed_main_objectives, self._current_num_completed_main_objectives, extension)
 	end
 end
 
@@ -164,7 +176,7 @@ VersusObjectiveSystem.current_objective_description = function (self)
 end
 
 VersusObjectiveSystem.current_objective_progress = function (self)
-	local objective = self:_get_current_objective()
+	local objective, objective_name, objective_data = self:_get_current_objective()
 	local progress
 
 	if objective then
@@ -173,6 +185,8 @@ VersusObjectiveSystem.current_objective_progress = function (self)
 		else
 			progress = objective:is_done() and 1 or 0
 		end
+	elseif self._current_num_sub_objectives > 0 then
+		progress = self._current_num_completed_sub_objectives / self._current_num_sub_objectives
 	end
 
 	return progress or 0
@@ -191,6 +205,21 @@ VersusObjectiveSystem.current_objective_icon = function (self)
 	objective_icon = objective_icon or "icons_placeholder"
 
 	return objective_icon
+end
+
+VersusObjectiveSystem.current_objective_type = function (self)
+	local objective, objective_name, objective_data = self:_get_current_objective()
+	local objective_type
+
+	if objective then
+		objective_type = objective:objective_type()
+	elseif objective_data then
+		objective_type = objective_data.objective_type
+	end
+
+	objective_type = objective_type or "objective_reach"
+
+	return objective_type
 end
 
 VersusObjectiveSystem.current_objectives_position = function (self)
@@ -265,7 +294,67 @@ VersusObjectiveSystem.game_object_destroyed = function (self, game_object_id)
 	local game_mode = game_mode_manager and game_mode_manager:game_mode()
 	local game_mode_state = game_mode and game_mode:game_mode_state()
 
-	if game_mode_state == "match_running_state" then
+	if game_mode_state == "pre_start_round_state" or game_mode_state == "match_running_state" then
 		VersusObjectiveSystem.super.game_object_destroyed(self, game_object_id)
+	end
+end
+
+VersusObjectiveSystem.get_current_objective_id = function (self)
+	return self._current_objective_index or 0
+end
+
+VersusObjectiveSystem._update_objective_vo = function (self)
+	local current_objectives = self._objective_lists[self._current_objective_index]
+
+	for _, objective_data in pairs(current_objectives) do
+		if objective_data.almost_done and not self._main_objective_scratch.almost_done_vo_played then
+			local almost_done = objective_data:almost_done(self._main_objectives, self._sub_objectives, self._main_objective_scratch)
+
+			if almost_done then
+				self._main_objective_scratch.almost_done_vo_played = true
+
+				local dialogue_system = Managers.state.entity:system("dialogue_system")
+
+				dialogue_system:trigger_mission_giver_event("vs_mg_heroes_objective_almost_completed")
+
+				break
+			end
+		end
+	end
+end
+
+VersusObjectiveSystem._check_trigger_complete_vo = function (self)
+	local objective_index = self._current_objective_index
+	local objectives = self._objective_lists[objective_index]
+
+	for _, objective_data in pairs(objectives) do
+		if objective_data.play_complete_vo then
+			local dialogue_system = Managers.state.entity:system("dialogue_system")
+
+			dialogue_system:trigger_mission_giver_event("vs_mg_heroes_objective_completed")
+		elseif objective_data.play_safehouse_vo then
+			local dialogue_system = Managers.state.entity:system("dialogue_system")
+
+			dialogue_system:trigger_mission_giver_event("vs_mg_heroes_reached_safe_room")
+		elseif objective_data.play_waystone_vo then
+			local dialogue_system = Managers.state.entity:system("dialogue_system")
+
+			dialogue_system:trigger_mission_giver_event("vs_mg_heroes_reached_waystone")
+		end
+	end
+end
+
+VersusObjectiveSystem._check_trigger_start_vo = function (self)
+	local objective_index = self._current_objective_index
+	local objectives = self._objective_lists[objective_index]
+
+	for _, objective_data in pairs(objectives) do
+		if objective_data.play_arrive_vo then
+			local dialogue_system = Managers.state.entity:system("dialogue_system")
+
+			dialogue_system:trigger_mission_giver_event("vs_mg_heroes_objective_reached")
+
+			break
+		end
 	end
 end

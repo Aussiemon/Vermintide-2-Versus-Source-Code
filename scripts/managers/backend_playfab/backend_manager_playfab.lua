@@ -64,9 +64,9 @@ BackendManagerPlayFab.init = function (self, signin_name, mirror_name, server_qu
 	self._current_talents_interface_override = nil
 	self._total_power_level_interface_overrides = {}
 	self._metadata = {
+		client_type = "client",
 		client_version = VersionSettings.version,
 		realm = HAS_STEAM and script_data["eac-untrusted"] and "modded" or "official",
-		client_type = DEDICATED_SERVER and "server" or "client",
 	}
 end
 
@@ -429,10 +429,6 @@ BackendManagerPlayFab._update_state = function (self)
 
 			self:_post_error(error_data)
 		end
-	end
-
-	if false then
-		-- Nothing
 	end
 end
 
@@ -1109,6 +1105,12 @@ BackendManagerPlayFab.is_pending_request = function (self)
 	return mirror and mirror:request_queue():is_pending_request() or false
 end
 
+BackendManagerPlayFab.is_mirror_ready = function (self)
+	local mirror = self._backend_mirror
+
+	return mirror and mirror:ready() and not mirror:get_current_commit_id() and not mirror:have_queued_commit()
+end
+
 local EMPTY_TABLE = {}
 
 BackendManagerPlayFab.get_level_variation_data = function (self)
@@ -1165,4 +1167,12 @@ end
 
 BackendManagerPlayFab.get_twitch_app_access_token = function (self)
 	return self._backend_mirror:get_twitch_app_access_token()
+end
+
+BackendManagerPlayFab.get_current_api_call = function (self)
+	if not self._backend_mirror then
+		return
+	end
+
+	return self._backend_mirror:current_api_call()
 end

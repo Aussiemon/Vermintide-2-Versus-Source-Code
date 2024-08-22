@@ -337,7 +337,7 @@ BackendInterfacePeddlerPlayFab._read_bundle_from_steam = function (self, steam_i
 	local bundle_string = SteamInventory.get_item_definition_property(steam_itemdefid, "bundle")
 
 	if bundle_string then
-		local bundle_contains = string.split(bundle_string, ";")
+		local bundle_contains = string.split_deprecated(bundle_string, ";")
 
 		for k, v in ipairs(bundle_contains) do
 			bundle_contains[k] = tonumber(v)

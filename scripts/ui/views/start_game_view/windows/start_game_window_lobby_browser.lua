@@ -506,7 +506,7 @@ StartGameWindowLobbyBrowser._handle_weave_data = function (self, lobby_data)
 	local weave_identifier = Localize("lb_unknown")
 
 	if weave_name ~= "false" then
-		local weave_name_data = string.split(weave_name, "_")
+		local weave_name_data = string.split_deprecated(weave_name, "_")
 
 		weave_identifier = "Weave " .. weave_name_data[2]
 

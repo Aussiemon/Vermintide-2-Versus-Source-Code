@@ -18,7 +18,6 @@ require("scripts/ui/atlas_settings/gui_frames_atlas")
 require("scripts/ui/atlas_settings/gui_menus_atlas")
 require("scripts/ui/atlas_settings/gui_country_flags_atlas")
 require("scripts/ui/atlas_settings/gui_mission_selection_atlas")
-require("scripts/ui/atlas_settings/gui_development_atlas")
 require("scripts/ui/atlas_settings/gui_lock_test_atlas")
 
 UIAtlasHelper = UIAtlasHelper or {}
@@ -67,6 +66,18 @@ local standalone_texture = {
 	controller_image_ps4 = true,
 	controller_image_xb1 = true,
 	crafting_button_fill = true,
+	dark_pact_ability_effect = true,
+	dark_pact_ability_effect_bar_top = true,
+	dark_pact_ability_effect_halo = true,
+	dark_pact_ability_effect_top = true,
+	dark_pact_ability_icon_cooldown_gradient = true,
+	dark_pact_ability_icon_gradient_mask = true,
+	dark_pact_ability_progress_bar = true,
+	dark_pact_boss_player_hp_bar = true,
+	dark_pact_boss_player_hp_bar_color_tint = true,
+	dark_pact_overcharge_bar = true,
+	dark_pact_player_hp_bar = true,
+	dark_pact_player_hp_bar_color_tint = true,
 	default = true,
 	demo_bg_01 = true,
 	demo_bg_02 = true,
@@ -136,6 +147,7 @@ local standalone_texture = {
 	loading_screen = true,
 	loading_screen_default = true,
 	loading_title_divider = true,
+	local_player_score_bar = true,
 	loot_presentation_circle_glow_common = true,
 	loot_presentation_circle_glow_common_large = true,
 	loot_presentation_circle_glow_exotic = true,
@@ -170,6 +182,7 @@ local standalone_texture = {
 	news_splash_scroll_end = true,
 	news_splash_scroll_middle = true,
 	offscreen_clear = true,
+	opponent_score_bar = true,
 	options_menu_divider_glow_01 = true,
 	options_menu_divider_glow_02 = true,
 	overcharge_bar = true,
@@ -202,10 +215,18 @@ local standalone_texture = {
 	teammate_hp_bar_2 = true,
 	teammate_hp_bar_3 = true,
 	teammate_hp_bar_4 = true,
+	teammate_hp_bar_5 = true,
+	teammate_hp_bar_6 = true,
+	teammate_hp_bar_7 = true,
+	teammate_hp_bar_8 = true,
 	teammate_hp_bar_color_tint_1 = true,
 	teammate_hp_bar_color_tint_2 = true,
 	teammate_hp_bar_color_tint_3 = true,
 	teammate_hp_bar_color_tint_4 = true,
+	teammate_hp_bar_color_tint_5 = true,
+	teammate_hp_bar_color_tint_6 = true,
+	teammate_hp_bar_color_tint_7 = true,
+	teammate_hp_bar_color_tint_8 = true,
 	teammate_hp_bar_mask = true,
 	tile_texture_01 = true,
 	twitch_ammo = true,
@@ -345,14 +366,12 @@ local ui_atlas_setting_tables = {
 	gui_frames_atlas = frames_atlas,
 	gui_level_images_atlas = level_images_atlas,
 	gui_country_flags_atlas = country_flags_atlas,
-	gui_development_atlas = development_atlas,
 	gui_lock_test_atlas = lock_test_atlas,
 }
 local masked_materials = {
 	gui_achievement_icons_atlas = "gui_achievement_icons_atlas_masked",
 	gui_chat_atlas = "gui_chat_atlas_masked",
 	gui_country_flags_atlas = "gui_country_flags_atlas_masked",
-	gui_development_atlas = "gui_development_atlas_masked",
 	gui_frames_atlas = "gui_frames_atlas_masked",
 	gui_hud_atlas = "gui_hud_atlas_masked",
 	gui_icons_atlas = "gui_icons_atlas_masked",
@@ -367,7 +386,6 @@ local masked_materials = {
 }
 local saturated_materials = {
 	gui_achievement_icons_atlas = "gui_achievement_icons_atlas_saturated",
-	gui_development_atlas = "gui_development_atlas_saturated",
 	gui_frames_atlas = "gui_frames_atlas_saturated",
 	gui_hud_atlas = "gui_hud_atlas_saturated",
 	gui_icons_atlas = "gui_icons_atlas_saturated",
@@ -380,7 +398,6 @@ local saturated_materials = {
 }
 local masked_saturated_materials = {
 	gui_achievement_icons_atlas = "gui_achievement_icons_atlas_masked_saturated",
-	gui_development_atlas = "gui_development_atlas_masked_saturated",
 	gui_hud_atlas = "gui_hud_atlas_point_sample_masked_saturated",
 	gui_icons_atlas = "gui_icons_atlas_masked_saturated",
 	gui_items_atlas = "gui_items_atlas_masked_saturated",
@@ -395,7 +412,6 @@ end
 local masked_point_sample_materials = {
 	gui_achievement_icons_atlas = "gui_achievement_icons_atlas_point_sample_masked",
 	gui_chat_atlas = "gui_chat_atlas_point_sample_masked",
-	gui_development_atlas = "gui_development_atlas_point_sample_masked",
 	gui_frames_atlas = "gui_frames_atlas_point_sample_masked",
 	gui_hud_atlas = "gui_hud_atlas_point_sample_masked",
 	gui_icons_atlas = "gui_icons_atlas_point_sample_masked",
@@ -407,7 +423,6 @@ local masked_point_sample_materials = {
 	gui_start_screen_atlas = "gui_start_screen_atlas_point_sample_masked",
 }
 local masked_saturated_point_sample_materials = {
-	gui_development_atlas = "gui_development_atlas_point_sample_masked_saturated",
 	gui_hud_atlas = "gui_hud_atlas_point_sample_masked_saturated",
 	gui_icons_atlas = "gui_icons_atlas_point_sample_masked_saturated",
 	gui_lock_test_atlas = "gui_lock_test_atlas_point_sample_masked_saturated",
@@ -422,7 +437,6 @@ local point_sample_materials = {
 	end_screen_effect_victory_2 = "end_screen_effect_victory_2_point_sample",
 	gui_achievement_icons_atlas = "gui_achievement_icons_atlas_point_sample",
 	gui_chat_atlas = "gui_chat_atlas_point_sample",
-	gui_development_atlas = "gui_development_atlas_point_sample",
 	gui_frames_atlas = "gui_frames_atlas_point_sample",
 	gui_hud_atlas = "gui_hud_atlas_point_sample",
 	gui_icons_atlas = "gui_icons_atlas_point_sample",
@@ -446,35 +460,30 @@ local point_sample_materials = {
 	vermintide_2_logo_tutorial = "vermintide_2_logo_tutorial_point_sample",
 }
 local offscreen_materials = {
-	gui_development_atlas = "gui_development_atlas_offscreen",
 	gui_frames_atlas = "gui_frames_atlas_offscreen",
 	gui_icons_atlas = "gui_icons_atlas_offscreen",
 	gui_items_atlas = "gui_items_atlas_offscreen",
 	gui_menus_atlas = "gui_menus_atlas_offscreen",
 }
 local masked_offscreen_materials = {
-	gui_development_atlas = "gui_development_atlas_masked_offscreen",
 	gui_frames_atlas = "gui_frames_atlas_masked_offscreen",
 	gui_icons_atlas = "gui_icons_atlas_masked_offscreen",
 	gui_items_atlas = "gui_items_atlas_masked_offscreen",
 	gui_menus_atlas = "gui_menus_atlas_masked_offscreen",
 }
 local masked_point_sample_offscreen_materials = {
-	gui_development_atlas = "gui_development_atlas_point_sample_masked_offscreen",
 	gui_frames_atlas = "gui_frames_atlas_point_sample_masked_offscreen",
 	gui_icons_atlas = "gui_icons_atlas_point_sample_masked_offscreen",
 	gui_items_atlas = "gui_items_atlas_point_sample_masked_offscreen",
 	gui_menus_atlas = "gui_menus_atlas_point_sample_masked_offscreen",
 }
 local point_sample_offscreen_materials = {
-	gui_development_atlas = "gui_development_atlas_point_sample_offscreen",
 	gui_frames_atlas = "gui_frames_atlas_point_sample_offscreen",
 	gui_icons_atlas = "gui_icons_atlas_point_sample_offscreen",
 	gui_items_atlas = "gui_items_atlas_point_sample_offscreen",
 	gui_menus_atlas = "gui_menus_atlas_point_sample_offscreen",
 }
 local saturated_offscreen_materials = {
-	gui_development_atlas = "gui_development_atlas_saturated_offscreen",
 	gui_icons_atlas = "gui_icons_atlas_saturated",
 	gui_items_atlas = "gui_items_atlas_saturated",
 }
@@ -593,4 +602,52 @@ UIAtlasHelper.has_texture_by_name = function (texture_name)
 	else
 		return false
 	end
+end
+
+UIAtlasHelper.add_standalone_texture_by_name = function (texture_name)
+	if standalone_texture[texture_name] or ui_atlas_settings[texture_name] then
+		return
+	else
+		standalone_texture[texture_name] = true
+	end
+end
+
+UIAtlasHelper.get_insignia_texture_settings_from_level = function (level)
+	local insignia_uv_size = {
+		0.2,
+		0.1,
+	}
+	local insignia_level = math.floor((level - 1) / 50)
+	local insignia_type = math.floor((level - 1) % 10)
+	local insignia_main_uvs = {
+		{
+			insignia_level * insignia_uv_size[1],
+			insignia_type * insignia_uv_size[2],
+		},
+		{
+			insignia_level * insignia_uv_size[1] + insignia_uv_size[1],
+			insignia_type * insignia_uv_size[2] + insignia_uv_size[2],
+		},
+	}
+	local insignia_addon_uv_size = {
+		0.25,
+		1,
+	}
+	local addon_level = math.floor((level - 1) / 10) % 5
+	local insignia_addon_uvs
+
+	if addon_level > 0 then
+		insignia_addon_uvs = {
+			{
+				(addon_level - 1) * insignia_addon_uv_size[1],
+				0,
+			},
+			{
+				(addon_level - 1) * insignia_addon_uv_size[1] + insignia_addon_uv_size[1],
+				1,
+			},
+		}
+	end
+
+	return insignia_main_uvs, insignia_addon_uvs
 end

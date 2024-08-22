@@ -3,10 +3,18 @@
 local SIZE_X, SIZE_Y = 1920, 1080
 local RETAINED_MODE_ENABLED = true
 local portrait_scale = 1
+local HP_BAR_SIZE = {
+	412,
+	18,
+}
+local HP_BAR_BG_SIZE = {
+	464,
+	80,
+}
 local HP_BAR = {
-	x = -276.5,
-	y = 35,
-	z = -8,
+	y = 18,
+	z = 8,
+	x = -(HP_BAR_SIZE[1] * 0.5),
 }
 local scenegraph_definition = {
 	root = {
@@ -129,22 +137,12 @@ local function create_static_widget()
 						return content.show_health_bar
 					end,
 				},
-				{
-					pass_type = "texture",
-					style_id = "hp_bar_bg",
-					texture_id = "hp_bar_bg",
-					retained_mode = RETAINED_MODE_ENABLED,
-					content_check_function = function (content, style)
-						return content.show_health_bar
-					end,
-				},
 			},
 		},
 		content = {
 			character_portrait = "unit_frame_portrait_default",
 			host_icon = "host_icon",
-			hp_bar_bg = "console_hp_bar_background",
-			hp_bar_frame = "console_hp_bar_frame",
+			hp_bar_frame = "health_bar_frame",
 			is_host = false,
 			player_level = "",
 			show_health_bar = true,
@@ -200,10 +198,7 @@ local function create_static_widget()
 			},
 			hp_bar_frame = {
 				scenegraph_id = "pivot",
-				size = {
-					576,
-					36,
-				},
+				size = HP_BAR_BG_SIZE,
 				color = {
 					255,
 					255,
@@ -211,27 +206,9 @@ local function create_static_widget()
 					255,
 				},
 				offset = {
-					HP_BAR.x - 11,
-					HP_BAR.y - 14,
-					HP_BAR.z + 10,
-				},
-			},
-			hp_bar_bg = {
-				scenegraph_id = "pivot",
-				size = {
-					560,
-					19,
-				},
-				color = {
-					255,
-					255,
-					255,
-					255,
-				},
-				offset = {
-					HP_BAR.x - 3,
-					HP_BAR.y - 1,
-					HP_BAR.z,
+					-(HP_BAR_BG_SIZE[1] * 0.5),
+					-1,
+					1,
 				},
 			},
 		},
@@ -269,40 +246,30 @@ local function create_respawn_countdown_widget()
 			respawn_timer = 0,
 			state = "hidden",
 			total_countdown_time = 0,
-			total_fadeout_time = 0.66,
+			total_fadeout_time = 0.33,
 		},
 		style = {
 			respawn_info_text = {
-				font_size = 32,
+				font_size = 24,
 				font_type = "hell_shark",
 				horizontal_alignment = "center",
 				vertical_alignment = "center",
-				text_color = {
-					255,
-					255,
-					168,
-					0,
-				},
+				text_color = Colors.get_color_table_with_alpha("light_gray", 255),
 				offset = {
 					0,
-					-10,
+					-48,
 					3,
 				},
 			},
 			respawn_countdown_text = {
-				font_size = 80,
-				font_type = "hell_shark",
+				font_size = 120,
+				font_type = "hell_shark_header",
 				horizontal_alignment = "center",
 				vertical_alignment = "center",
-				text_color = {
-					255,
-					255,
-					168,
-					0,
-				},
+				text_color = Colors.get_color_table_with_alpha("white", 255),
 				offset = {
 					0,
-					-72,
+					-140,
 					3,
 				},
 			},
@@ -591,13 +558,13 @@ local function create_dynamic_health_widget()
 				bar_value = 1,
 				draw_health_bar = true,
 				internal_bar_value = 0,
-				texture_id = "player_hp_bar_color_tint",
+				texture_id = "dark_pact_boss_player_hp_bar_color_tint",
 			},
 			total_health_bar = {
 				bar_value = 1,
 				draw_health_bar = true,
 				internal_bar_value = 0,
-				texture_id = "player_hp_bar",
+				texture_id = "dark_pact_boss_player_hp_bar",
 			},
 			grimoire_bar = {
 				texture_id = "hud_panel_hp_bar_bg_grimoire",
@@ -616,10 +583,7 @@ local function create_dynamic_health_widget()
 		style = {
 			total_health_bar = {
 				gradient_threshold = 1,
-				size = {
-					553,
-					18,
-				},
+				size = HP_BAR_SIZE,
 				color = {
 					255,
 					255,
@@ -627,17 +591,14 @@ local function create_dynamic_health_widget()
 					255,
 				},
 				offset = {
-					HP_BAR.x,
+					HP_BAR.x + 1,
 					HP_BAR.y,
 					HP_BAR.z + 2,
 				},
 			},
 			hp_bar = {
 				gradient_threshold = 1,
-				size = {
-					553,
-					18,
-				},
+				size = HP_BAR_SIZE,
 				color = {
 					255,
 					255,
@@ -645,7 +606,7 @@ local function create_dynamic_health_widget()
 					255,
 				},
 				offset = {
-					HP_BAR.x,
+					HP_BAR.x + 1,
 					HP_BAR.y,
 					HP_BAR.z + 3,
 				},
@@ -686,12 +647,12 @@ local function create_dynamic_health_widget()
 			},
 			hp_bar_highlight = {
 				size = {
-					553,
-					30,
+					156,
+					16,
 				},
 				offset = {
-					HP_BAR.x,
-					HP_BAR.y - 4,
+					HP_BAR.x + 1,
+					HP_BAR.y + 27 - 2,
 					HP_BAR.z + 5,
 				},
 				color = {

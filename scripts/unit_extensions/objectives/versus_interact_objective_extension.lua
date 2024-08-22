@@ -1,6 +1,6 @@
 ﻿-- chunkname: @scripts/unit_extensions/objectives/versus_interact_objective_extension.lua
 
-local versus_interact_objective_extension_testify = script_data.testify and require("scripts/unit_extensions/objectives/versus_interact_objective_extension_testify")
+local versus_interact_objective_extension_testify = script_data.testify and require("scripts/unit_extensions/objectives/testify/versus_interact_objective_extension_testify")
 
 VersusInteractObjectiveExtension = class(VersusInteractObjectiveExtension, VersusBaseObjectiveExtension)
 VersusInteractObjectiveExtension.NAME = "VersusInteractObjectiveExtension"
@@ -15,19 +15,11 @@ VersusInteractObjectiveExtension._activate = function (self, game_object_id, obj
 	self._percentage = 0
 end
 
-VersusInteractObjectiveExtension._deactivate = function (self)
-	fassert(false, "This function needs to be overwritten")
-end
-
 VersusInteractObjectiveExtension._server_update = function (self, dt, t)
-	if self._percentage < 1 and self._interactable_ext.interaction_result == self._wanted_interaction_result then
+	if self._percentage < 1 and self._interactable_extension.interaction_result == self._wanted_interaction_result then
 		self._percentage = 1
 
 		self:set_game_object_field("value", self._percentage * 100)
-	end
-
-	if script_data.testify then
-		Testify:poll_requests_through_handler(versus_interact_objective_extension_testify, self)
 	end
 end
 
@@ -41,6 +33,14 @@ VersusInteractObjectiveExtension._client_update = function (self, dt, t)
 	self._percentage = GameSession.game_object_field(game_session, self._game_object_id, "value") / 100
 end
 
+VersusInteractObjectiveExtension.update_testify = function (self, dt, t)
+	Testify:poll_requests_through_handler(versus_interact_objective_extension_testify, self)
+end
+
 VersusInteractObjectiveExtension.get_percentage_done = function (self)
 	return self._percentage
+end
+
+VersusInteractObjectiveExtension._deactivate = function (self)
+	return
 end

@@ -131,7 +131,7 @@ end
 StateDedicatedServer.update = function (self, dt, t)
 	Network.update_receive(dt, self._network_event_delegate.event_table)
 	self._machine:update(dt, t)
-	self:_update_network(dt)
+	self:_update_network(dt, t)
 
 	if script_data.debug_enabled then
 		VisualAssertLog.update(dt)
@@ -261,9 +261,9 @@ StateDedicatedServer.setup_global_managers = function (self, game_server)
 	Managers.party:network_context_created(game_server, peer_id, peer_id)
 end
 
-StateDedicatedServer._update_network = function (self, dt)
+StateDedicatedServer._update_network = function (self, dt, t)
 	if self._network_server then
-		self._network_server:update(dt)
+		self._network_server:update(dt, t)
 	end
 end
 

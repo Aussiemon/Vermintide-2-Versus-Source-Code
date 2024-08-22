@@ -48,7 +48,7 @@ local animations = {
 				local mechanism_manager = Managers.mechanism
 				local mechanism_name = mechanism_manager:current_mechanism_name()
 
-				params.draw_background = mechanism_name ~= "versus" and not mechanism_manager:is_final_round()
+				params.draw_background = mechanism_name ~= "versus"
 			end,
 			update = function (ui_scenegraph, scenegraph_definition, widgets, local_progress, params)
 				local anim_fraction = math.easeOutCubic(local_progress)

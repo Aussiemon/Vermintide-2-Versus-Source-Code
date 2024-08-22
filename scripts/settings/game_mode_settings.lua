@@ -5,9 +5,10 @@ require("foundation/scripts/util/error")
 
 GameModeSettings = GameModeSettings or {}
 GameModeSettings.base = {
-	allow_host_migration = true,
 	cap_power_level = true,
 	class_name = "GameModeBase",
+	disable_host_migration = false,
+	max_health_kd = 300,
 	use_level_progress = true,
 	use_story_lines = true,
 	visible = false,

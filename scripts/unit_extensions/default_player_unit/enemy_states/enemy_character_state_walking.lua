@@ -203,10 +203,13 @@ EnemyCharacterStateWalking.common_movement = function (self, in_ghost_mode, dt)
 	local toggle_crouch = input_extension.toggle_crouch
 	local player = Managers.player:owner(unit)
 	local move_input = CharacterStateHelper.get_movement_input(input_extension)
+	local breed = Unit.get_data(unit, "breed")
 
 	if not self.is_bot then
-		local move_acceleration_up_dt = movement_settings_table.move_acceleration_up * dt
-		local move_acceleration_down_dt = movement_settings_table.move_acceleration_down * dt
+		local breed_move_acceleration_up = breed and breed.breed_move_acceleration_up
+		local breed_move_acceleration_down = breed and breed.breed_move_acceleration_down
+		local move_acceleration_up_dt = breed_move_acceleration_up * dt or movement_settings_table.move_acceleration_up * dt
+		local move_acceleration_down_dt = breed_move_acceleration_down * dt or movement_settings_table.move_acceleration_down * dt
 
 		if is_moving then
 			current_movement_speed_scale = math.min(1, current_movement_speed_scale + move_acceleration_up_dt)
@@ -222,19 +225,14 @@ EnemyCharacterStateWalking.common_movement = function (self, in_ghost_mode, dt)
 	end
 
 	local is_walking = input_extension:get("walk")
-	local profile_index = player:profile_index()
-	local profile = SPProfiles[profile_index]
-	local breed = Unit.get_data(unit, "breed")
-	local movement_speed = breed.movement_speed
-	local current_max_move_speed = movement_speed
+	local breed_multiplier = breed.movement_speed_multiplier
+	local current_max_move_speed = movement_settings_table.move_speed
 
-	if in_ghost_mode then
+	if in_ghost_mode and not is_walking then
 		current_max_move_speed = movement_settings_table.ghost_move_speed
-
-		if is_walking then
-			current_max_move_speed = breed.movement_speed
-		end
 	end
+
+	current_max_move_speed = current_max_move_speed * breed_multiplier
 
 	local buffed_move_speed = buff_extension:apply_buffs_to_value(current_max_move_speed, "movement_speed")
 	local final_move_speed = buffed_move_speed * current_movement_speed_scale * movement_settings_table.player_speed_scale
@@ -248,8 +246,8 @@ EnemyCharacterStateWalking.common_movement = function (self, in_ghost_mode, dt)
 	end
 
 	CharacterStateHelper.move_on_ground(first_person_extension, input_extension, locomotion_extension, move_input_direction, final_move_speed, unit, strafe_speed_multiplier)
-	CharacterStateHelper.look(input_extension, self._player.viewport_name, first_person_extension, status_extension, inventory_extension)
 	CharacterStateHelper.ghost_mode(self._ghost_mode_extension, input_extension)
+	CharacterStateHelper.look(input_extension, self._player.viewport_name, first_person_extension, status_extension, inventory_extension)
 
 	local move_anim_3p, move_anim_1p = CharacterStateHelper.get_move_animation(locomotion_extension, input_extension, status_extension)
 
@@ -273,6 +271,11 @@ EnemyCharacterStateWalking.update = function (self, unit, input, dt, context, t)
 		return
 	end
 
+	local input_extension = self._input_extension
+	local inventory_extension = self._inventory_extension
+	local health_extension = self._health_extension
+
+	CharacterStateHelper.update_weapon_actions(t, unit, input_extension, inventory_extension, health_extension)
 	self:_update_taunt_dialogue(t)
 
 	local ghost_mode_extension = self._ghost_mode_extension

@@ -19,7 +19,7 @@ local function teleport_unit_to_position(unit, position)
 		return false
 	end
 
-	if is_unit_in_incapacitated_state(unit) then
+	if not DEDICATED_SERVER and is_unit_in_incapacitated_state(unit) then
 		Testify:_print("Unit %s in blocking state, teleportation cancelled", Unit.debug_name(unit))
 
 		return false
@@ -179,13 +179,7 @@ local StateInGameTestify = {
 
 			deus_run_controller:add_power_ups({
 				power_up,
-			}, local_player_id)
-
-			local bot_unit = bot.player_unit
-			local profile_index = bot:profile_index()
-			local career_index = bot:career_index()
-
-			DeusPowerUpUtils.activate_deus_power_up(power_up, buff_system, talent_interface, deus_backend, deus_run_controller, bot_unit, profile_index, career_index)
+			}, local_player_id, false)
 		end
 	end,
 	activate_player_deus_power_up = function (_, request_parameter)
@@ -199,16 +193,7 @@ local StateInGameTestify = {
 
 		deus_run_controller:add_power_ups({
 			power_up,
-		}, local_player_id)
-
-		local buff_system = Managers.state.entity:system("buff_system")
-		local talent_interface = Managers.backend:get_talents_interface()
-		local deus_backend = Managers.backend:get_interface("deus")
-		local local_player_unit = local_player.player_unit
-		local profile_index = local_player:profile_index()
-		local career_index = local_player:career_index()
-
-		DeusPowerUpUtils.activate_deus_power_up(power_up, buff_system, talent_interface, deus_backend, deus_run_controller, local_player_unit, profile_index, career_index)
+		}, local_player_id, false)
 	end,
 	reset_deus_power_ups = function ()
 		local mechanism = Managers.mechanism:game_mechanism()
@@ -317,6 +302,25 @@ local StateInGameTestify = {
 		local player_unit = Managers.player:local_player().player_unit
 
 		teleport_unit_to_position(player_unit, position:unbox() + Vector3(0, 0, 1))
+	end,
+	teleport_all_players_to_position = function (_, position)
+		local network_manager = Managers.state.network
+
+		for _, player in pairs(Managers.player:players()) do
+			if player.player_unit then
+				local locomotion = ScriptUnit.extension(player.player_unit, "locomotion_system")
+				local rot = locomotion:current_rotation()
+
+				if player.remote then
+					local unit_id = network_manager:unit_game_object_id(player.player_unit)
+					local yaw = Quaternion.yaw(rot)
+
+					network_manager.network_transmit:send_rpc_clients("rpc_teleport_unit_with_yaw_rotation", unit_id, position:unbox() + Vector3(0, 0, 1), yaw)
+				else
+					locomotion:teleport_to(position:unbox() + Vector3(0, 0, 1), rot)
+				end
+			end
+		end
 	end,
 	teleport_player_randomly_on_main_path = function ()
 		local player_unit = Managers.player:local_player().player_unit

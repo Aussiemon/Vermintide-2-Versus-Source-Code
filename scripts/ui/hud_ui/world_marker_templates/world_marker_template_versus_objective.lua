@@ -257,7 +257,9 @@ end
 
 template.on_enter = function (widget)
 	local content = widget.content
+	local objective_system = Managers.state.entity:system("versus_objective_system")
 
+	widget.content.icon = objective_system:current_objective_icon()
 	content.just_entered = true
 	content.t = 0
 end
