@@ -64,6 +64,7 @@ CareerExtension.init = function (self, extension_init_context, unit, extension_i
 			weapon_names_by_index = ability_data.weapon_names_by_index,
 			cooldown_anim_time = ability_data.cooldown_anim_time,
 			cost = ability_data.cost or 1,
+			draw_ui_in_ghost_mode = ability_data.draw_ui_in_ghost_mode or false,
 		}
 	end
 

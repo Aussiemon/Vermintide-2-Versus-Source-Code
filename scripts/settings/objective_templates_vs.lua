@@ -31,10 +31,10 @@ VersusObjectiveSettings = {
 				},
 				{
 					versus_capture_objective_01 = {
-						capture_time = 120,
+						capture_time = 150,
 						close_to_win_type = "section",
 						description = "level_objective_description_bell_02",
-						num_sections = 20,
+						num_sections = 30,
 						play_arrive_vo = true,
 						play_complete_vo = true,
 						score_per_section = 1,
@@ -198,7 +198,7 @@ VersusObjectiveSettings = {
 						sub_objectives = {
 							sub_sub_objective_container_01 = {
 								description = "level_objective_description_bell_09",
-								score_for_completion = 15,
+								score_for_completion = 20,
 								sub_objectives = {
 									versus_target_objective_bell_01 = {
 										objective_tag = ObjectiveTags.objective_tag_chains,
@@ -213,7 +213,7 @@ VersusObjectiveSettings = {
 							},
 							sub_sub_objective_container_02 = {
 								description = "level_objective_description_bell_09",
-								score_for_completion = 15,
+								score_for_completion = 20,
 								sub_objectives = {
 									versus_target_objective_bell_04 = {
 										objective_tag = ObjectiveTags.objective_tag_chains,
@@ -228,7 +228,7 @@ VersusObjectiveSettings = {
 							},
 							sub_sub_objective_container_03 = {
 								description = "level_objective_description_bell_09",
-								score_for_completion = 15,
+								score_for_completion = 20,
 								sub_objectives = {
 									versus_target_objective_bell_07 = {
 										objective_tag = ObjectiveTags.objective_tag_chains,
@@ -248,7 +248,7 @@ VersusObjectiveSettings = {
 					versus_volume_objective_08 = {
 						close_to_win_type = "main_objective",
 						description = "level_objective_description_bell_10",
-						score_for_completion = 5,
+						score_for_completion = 10,
 						volume_name = "versus_bell_reach_05",
 						volume_type = "any_alive",
 						objective_type = ObjectiveTypes.objective_reach,
@@ -283,6 +283,15 @@ VersusObjectiveSettings = {
 					},
 				},
 				{
+					versus_volume_objective_first_alley = {
+						description = "level_objective_description_military_alley",
+						score_for_completion = 10,
+						volume_name = "versus_military_reach_first_alley",
+						volume_type = "any_alive",
+						objective_type = ObjectiveTypes.objective_reach,
+					},
+				},
+				{
 					versus_volume_objective_franz = {
 						description = "level_objective_description_military_01",
 						score_for_completion = 10,
@@ -292,35 +301,20 @@ VersusObjectiveSettings = {
 					},
 				},
 				{
-					versus_mission_objective_barricade_sockets = {
+					versus_socket_objective_01 = {
+						close_to_win_on_section = 2,
+						close_to_win_type = "scripted_section",
 						description = "level_objective_description_military_02",
-						mission_name = "military_pvp_barrels",
-						score_for_completion = 0,
-						objective_type = ObjectiveTypes.objective_reach,
-					},
-				},
-				{
-					versus_socket_objective_blockade = {
-						description = "level_objective_description_military_02",
+						num_sockets = 2,
 						play_arrive_vo = true,
 						play_complete_vo = true,
+						score_per_socket = 10,
 						objective_type = ObjectiveTypes.objective_socket,
-						sub_objectives = {
-							versus_socket_objective_blockade_01 = {
-								num_sockets = 1,
-								score_per_socket = 10,
-							},
-							versus_socket_objective_blockade_02 = {
-								num_sockets = 1,
-								score_per_socket = 10,
-							},
-						},
 						almost_done = function (self, main_objectives, sub_objectives, shared_objective_data)
-							local objective_system = Managers.state.entity:system("versus_objective_system")
-							local num_total = objective_system:num_current_sub_objectives()
-							local num_completed = objective_system:num_current_completed_sub_objectives()
+							local num_sockets = self.num_sockets
+							local objective_extension = main_objectives[1]
 
-							if num_total - num_completed <= 1 then
+							if objective_extension:get_percentage_done() >= (num_sockets - 1.5) / num_sockets then
 								return true
 							end
 						end,
@@ -336,9 +330,8 @@ VersusObjectiveSettings = {
 					},
 				},
 				{
-					versus_mission_objective_001 = {
+					versus_interact_objective_military_001 = {
 						description = "level_objective_description_military_04",
-						mission_name = "military_open_portcullis",
 						play_arrive_vo = true,
 						score_for_completion = 10,
 						objective_type = ObjectiveTypes.objective_interact,
@@ -349,7 +342,6 @@ VersusObjectiveSettings = {
 						description = "level_objective_description_military_05",
 						play_arrive_vo = true,
 						play_complete_vo = true,
-						score_for_completion = 10,
 						objective_type = ObjectiveTypes.objective_survive,
 						sub_objectives = {
 							versus_mission_objective_survive_courtyard_01 = {
@@ -458,7 +450,7 @@ VersusObjectiveSettings = {
 					},
 				},
 				{
-					versus_mission_objective_003 = {
+					versus_interact_objective_military_002 = {
 						description = "level_objective_description_military_12",
 						mission_name = "military_move_along_wall",
 						play_arrive_vo = true,
@@ -467,7 +459,7 @@ VersusObjectiveSettings = {
 					},
 				},
 				{
-					versus_socket_objective_01 = {
+					versus_socket_objective_02 = {
 						description = "level_objective_description_military_13",
 						num_sockets = 1,
 						score_per_socket = 10,
@@ -475,7 +467,7 @@ VersusObjectiveSettings = {
 					},
 				},
 				{
-					versus_mission_objective_003 = {
+					versus_mission_objective_002 = {
 						description = "level_objective_description_military_14",
 						mission_name = "military_open_gate",
 						score_for_completion = 10,

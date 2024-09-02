@@ -7,7 +7,7 @@ HintTemplates.first_time_pactsworn = {
 	data = {
 		body_text = "vs_hint_ghost_mode_body",
 		class_name = "HintUIVersusHowToPlay",
-		duration = 15,
+		duration = 20,
 		foot_text = "vs_hint_ghost_mode_foot",
 		game_mode_key = "versus",
 		icon = "objective_ghost_mode",
@@ -52,7 +52,7 @@ HintTemplates.horde_ability = {
 	data = {
 		body_text = "vs_hint_horde_ability_body",
 		class_name = "HintUIVersusHowToPlay",
-		duration = 15,
+		duration = 20,
 		foot_text = "vs_hint_horde_ability_foot",
 		game_mode_key = "versus",
 		icon = "objective_horde",
@@ -85,8 +85,9 @@ HintTemplates.horde_ability = {
 						if ALIVE[player_unit] then
 							local horde_ability_extension = ScriptUnit.has_extension(player_unit, "versus_horde_ability_system")
 							local ability_charge = horde_ability_extension and horde_ability_extension:get_ability_charge(t)
+							local ability_cooldown = horde_ability_extension:cooldown()
 
-							if ability_charge and ability_charge >= 1 then
+							if ability_charge and ability_cooldown <= ability_charge then
 								return true
 							end
 						end

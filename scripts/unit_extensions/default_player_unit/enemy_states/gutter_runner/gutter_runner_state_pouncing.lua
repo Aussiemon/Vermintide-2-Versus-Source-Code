@@ -203,8 +203,9 @@ GutterRunnerStatePouncing._update_movement = function (self, unit, dt, t)
 
 		Broadphase.query(broadphase, position, radius, nearby_hero_units)
 
+		local closest_hero_distance
+
 		for _, player_unit in pairs(nearby_hero_units) do
-			local closest_hero_distance
 			local target_status_extension = ScriptUnit.extension(player_unit, "status_system")
 
 			if player_unit ~= unit and CharacterStateHelper.is_viable_stab_target(unit, player_unit, target_status_extension) then

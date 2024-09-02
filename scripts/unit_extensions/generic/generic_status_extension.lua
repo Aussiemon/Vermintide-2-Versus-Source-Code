@@ -1020,6 +1020,10 @@ GenericStatusExtension.set_reviving = function (self, reviving, revivee_unit)
 
 	local player = self.player
 
+	if not Network.game_session() then
+		return
+	end
+
 	if player and not player.remote then
 		local unit_go_id = Managers.state.unit_storage:go_id(self.unit)
 		local revivee_unit_go_id = Managers.state.unit_storage:go_id(revivee_unit) or 0
@@ -1885,6 +1889,10 @@ GenericStatusExtension.set_pack_master = function (self, grabbed_status, is_grab
 		end
 
 		local function safe_navigation_callback()
+			if not ALIVE[unit] then
+				return
+			end
+
 			local breed = ALIVE[grabber_unit] and Unit.get_data(grabber_unit, "breed")
 
 			if breed and breed.is_player then
@@ -2066,7 +2074,11 @@ GenericStatusExtension.get_disabler_unit = function (self)
 end
 
 GenericStatusExtension.is_disabled = function (self)
-	return self:is_dead() or self:is_pounced_down() or self:is_knocked_down() or self:is_grabbed_by_pack_master() or self:get_is_ledge_hanging() or self:is_hanging_from_hook() or self:is_ready_for_assisted_respawn() or self:is_grabbed_by_tentacle() or self:is_grabbed_by_chaos_spawn() or self:is_in_vortex() or self:is_grabbed_by_corruptor() or self:is_overpowered()
+	return self:is_dead() or self:is_knocked_down() or self:get_is_ledge_hanging() or self:is_hanging_from_hook() or self:is_ready_for_assisted_respawn() or self:is_grabbed_by_tentacle() or self:is_grabbed_by_chaos_spawn() or self:is_in_vortex() or self:is_grabbed_by_corruptor() or self:is_overpowered() or self:is_pounced_down() or self:is_grabbed_by_pack_master()
+end
+
+GenericStatusExtension.disabled_by_other = function (self, own_disabler_unit)
+	return self:is_dead() or self:is_knocked_down() or self:get_is_ledge_hanging() or self:is_hanging_from_hook() or self:is_ready_for_assisted_respawn() or self:is_grabbed_by_tentacle() or self:is_grabbed_by_chaos_spawn() or self:is_in_vortex() or self:is_grabbed_by_corruptor() or self:is_overpowered() or self:is_pounced_down() and self:get_pouncer_unit() ~= own_disabler_unit or self:is_grabbed_by_pack_master() and self:get_pack_master_grabber() ~= own_disabler_unit
 end
 
 GenericStatusExtension.is_disabled_non_temporarily = function (self)
@@ -2648,11 +2660,14 @@ GenericStatusExtension._on_player_joined_party = function (self, peer_id, local_
 	if self:is_invisible() then
 		local lookup = NetworkLookup.statuses
 		local network_manager = Managers.state.network
-		local self_game_object_id = network_manager:unit_game_object_id(self.unit)
-		local channel_id = PEER_ID_TO_CHANNEL[peer_id]
 
-		if self_game_object_id then
-			RPC.rpc_status_change_bool(channel_id, lookup.invisible, true, self_game_object_id, 0)
+		if network_manager:game() then
+			local self_game_object_id = network_manager:unit_game_object_id(self.unit)
+			local channel_id = PEER_ID_TO_CHANNEL[peer_id]
+
+			if self_game_object_id then
+				RPC.rpc_status_change_bool(channel_id, lookup.invisible, true, self_game_object_id, 0)
+			end
 		end
 	end
 end

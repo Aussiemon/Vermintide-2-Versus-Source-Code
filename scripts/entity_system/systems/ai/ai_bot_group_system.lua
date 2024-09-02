@@ -2889,7 +2889,9 @@ AIBotGroupSystem._chat_message = function (self, unit, ordering_player, message,
 	local mechanism = Managers.mechanism:game_mechanism()
 
 	if mechanism.get_chat_channel then
-		channel_id, message_target = mechanism:get_chat_channel(ordering_player, false)
+		local peer_id = ordering_player:network_id()
+
+		channel_id, message_target = mechanism:get_chat_channel(peer_id, false)
 	end
 
 	Managers.chat:send_chat_message(channel_id, player:local_player_id(), message_string, localize, localization_parameters, localize_parameters, nil, message_target)

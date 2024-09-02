@@ -335,10 +335,11 @@ OutlineSystem.freeze = function (self, unit, extension_name, reason)
 	fassert(extension_name == "EnemyOutlineExtension", "Only support for freezing enemy outline extensions")
 
 	if extension.outlined then
-		local c = extension.outline_color.channel
-		local channel = Color(c[1], c[2], c[3], c[4])
+		local outline_settings = extension.outline_color
+		local c = outline_settings.color
+		local color = Color(c[1], c[2], c[3], c[4])
 
-		self:outline_unit(unit, extension.flag, channel, false, extension.apply_method, extension.reapply)
+		self:outline_unit(unit, extension.flag, color, false, extension.apply_method, outline_settings)
 
 		extension.outlined = false
 	end
@@ -391,10 +392,11 @@ OutlineSystem.set_disabled = function (self, disabled)
 			local extension = unit_extension_data[unit]
 
 			if extension and extension.outlined then
-				local c = extension.outline_color.channel
-				local channel = Color(c[1], c[2], c[3], c[4])
+				local outline_settings = extension.outline_color
+				local c = outline_settings.color
+				local color = Color(c[1], c[2], c[3], c[4])
 
-				self:outline_unit(unit, extension.flag, channel, false, extension.apply_method, extension.reapply)
+				self:outline_unit(unit, extension.flag, color, false, extension.apply_method, outline_settings)
 
 				extension.outlined = false
 			end
@@ -435,11 +437,12 @@ OutlineSystem.update = function (self, context, t)
 		local extension = extensions[unit]
 
 		if extension then
+			local outline_settings = extension.outline_color
 			local method = extension.method
 			local flag_swiched = extension.prev_flag and extension.prev_flag ~= extension.flag
 
 			if flag_swiched then
-				self:outline_unit(unit, extension.prev_flag, Color(0, 0, 0, 0), false, extension.apply_method)
+				self:outline_unit(unit, extension.prev_flag, Color(0, 0, 0, 0), false, extension.apply_method, outline_settings)
 
 				extension.prev_flag = nil
 			end
@@ -451,10 +454,10 @@ OutlineSystem.update = function (self, context, t)
 			end
 
 			if extension.outlined ~= do_outline or extension.reapply then
-				local c = extension.outline_color.channel
-				local channel = Color(c[1], c[2], c[3], c[4])
+				local c = outline_settings.color
+				local color = Color(255, c[2], c[3], c[4])
 
-				self:outline_unit(unit, extension.flag, channel, do_outline, extension.apply_method)
+				self:outline_unit(unit, extension.flag, color, do_outline, extension.apply_method, outline_settings)
 
 				extension.outlined = do_outline
 			end
@@ -508,11 +511,12 @@ OutlineSystem._update_pulsing = function (self, dt, t)
 		local extension = self.unit_extension_data[unit]
 
 		if extension then
-			local c = extension.outline_color.channel
+			local outline_settings = extension.outline_color
+			local c = outline_settings.color
 			local t_val = pulse_function(t)
-			local channel = Color(c[1] * t_val, c[2] * t_val, c[3] * t_val, c[4] * t_val)
+			local color = Color(c[1] * t_val, c[2] * t_val, c[3] * t_val, c[4] * t_val)
 
-			self:outline_unit(unit, extension.flag, channel, true, extension.apply_method)
+			self:outline_unit(unit, extension.flag, color, true, extension.apply_method, outline_settings)
 
 			extension.outlined = true
 		else
@@ -521,7 +525,7 @@ OutlineSystem._update_pulsing = function (self, dt, t)
 	end
 end
 
-OutlineSystem.outline_unit = function (self, unit, flag, channel, do_outline, apply_method)
+OutlineSystem.outline_unit = function (self, unit, flag, color, do_outline, apply_method, outline_settings)
 	if Unit.has_data(unit, "outlined_meshes") then
 		local i = 0
 
@@ -537,7 +541,8 @@ OutlineSystem.outline_unit = function (self, unit, flag, channel, do_outline, ap
 				for j = 0, num_materials - 1 do
 					local material = Mesh.material(mesh, j)
 
-					Material.set_color(material, "outline_color", channel)
+					Material.set_color(material, "outline_color", color)
+					Material.set_scalar(material, "outline_pulse_multiplier", outline_settings.pulsate and outline_settings.pulse_multiplier or 0)
 				end
 			end
 
@@ -545,10 +550,12 @@ OutlineSystem.outline_unit = function (self, unit, flag, channel, do_outline, ap
 		end
 	elseif apply_method == "unit_and_childs" then
 		Unit.set_shader_pass_flag_for_meshes_in_unit_and_childs(unit, flag, do_outline)
-		Unit.set_color_for_materials_in_unit_and_childs(unit, "outline_color", channel)
+		Unit.set_color_for_materials_in_unit_and_childs(unit, "outline_color", color)
+		Unit.set_scalar_for_materials_in_unit_and_childs(unit, "outline_pulse_multiplier", outline_settings.pulsate and outline_settings.pulse_multiplier or 0)
 	elseif apply_method == "unit" then
 		Unit.set_shader_pass_flag_for_meshes(unit, flag, do_outline)
-		Unit.set_color_for_materials(unit, "outline_color", channel)
+		Unit.set_color_for_materials(unit, "outline_color", color)
+		Unit.set_scalar_for_materials(unit, "outline_pulse_multiplier", outline_settings.pulsate and outline_settings.pulse_multiplier or 0)
 	else
 		error(sprintf("Non-existant apply method %s", apply_method))
 	end

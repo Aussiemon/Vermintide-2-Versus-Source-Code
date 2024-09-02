@@ -623,6 +623,24 @@ ExplosionTemplates.conflag = {
 		},
 	},
 }
+ExplosionTemplates.conflag_vs = {
+	aoe = {
+		area_damage_template = "explosion_template_aoe",
+		attack_template = "wizard_staff_geiser",
+		create_nav_tag_volume = true,
+		damage_interval = 1,
+		dot_balefire_variant = true,
+		dot_template_name = "burning_dot_1tick_vs",
+		duration = 2,
+		nav_tag_volume_layer = "fire_grenade",
+		radius = 4,
+		nav_mesh_effect = {
+			particle_name = "fx/wpnfx_fire_grenade_impact_remains_remap",
+			particle_radius = 2,
+			particle_spacing = 0.9,
+		},
+	},
+}
 ExplosionTemplates.portal_transformer = {
 	explosion = {
 		alert_enemies = false,

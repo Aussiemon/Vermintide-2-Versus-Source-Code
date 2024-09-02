@@ -959,14 +959,19 @@ ProjectileSystem.create_light_weight_projectile = function (self, damage_source,
 
 				if link_node then
 					local firing_unit = vfx.unit_function(owner_unit)
-					local node = Unit.node(firing_unit, link_node)
 
-					particle_id = ScriptWorld.create_particles_linked(world, particle_effect_name, firing_unit, node, "destroy")
+					if firing_unit then
+						local node = Unit.node(firing_unit, link_node)
+
+						particle_id = ScriptWorld.create_particles_linked(world, particle_effect_name, firing_unit, node, "destroy")
+					end
 				else
 					particle_id = World.create_particles(world, particle_effect_name, position, rotation)
 				end
 
-				projectile.particle_settings[particle_id] = vfx
+				if particle_id then
+					projectile.particle_settings[particle_id] = vfx
+				end
 			end
 		end
 	end

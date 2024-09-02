@@ -1215,7 +1215,7 @@ local function create_loadout_equipment(scenegraph_id, offset)
 			offset = {
 				(i - 1) * (weapon_icon_size[1] + weapon_spacing),
 				0,
-				2,
+				3,
 			},
 		}
 		style[slot_name .. "_mask"] = {
@@ -1232,7 +1232,7 @@ local function create_loadout_equipment(scenegraph_id, offset)
 			offset = {
 				(i - 1) * (weapon_icon_size[1] + weapon_spacing),
 				0,
-				1,
+				2,
 			},
 		}
 		style[slot_name .. "_frame"] = {

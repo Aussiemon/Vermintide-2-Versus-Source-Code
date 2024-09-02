@@ -512,6 +512,8 @@ GameModeVersus._game_mode_state_changed = function (self, state_name, old_state_
 		if not DEDICATED_SERVER then
 			self:_disable_side_object_sets()
 		end
+
+		self:_stop_advertise_playing()
 	elseif state_name == "player_team_parading_state" then
 		local is_hot_joining = old_state_name ~= "character_selection_state"
 
@@ -527,6 +529,8 @@ GameModeVersus._game_mode_state_changed = function (self, state_name, old_state_
 		})
 
 		self._parading_timer = Managers.time:time("game") + duration
+
+		self:_stop_advertise_playing()
 	elseif state_name == "pre_start_round_state" then
 		if self._versus_party_selection_logic then
 			self._versus_party_selection_logic:destroy()
@@ -585,10 +589,12 @@ GameModeVersus._advertise_playing = function (self)
 end
 
 GameModeVersus._stop_advertise_playing = function (self)
-	local network_handler = Managers.mechanism:network_handler()
+	if not DEDICATED_SERVER then
+		local network_handler = Managers.mechanism:network_handler()
 
-	if network_handler.lobby_client and network_handler.lobby_client.stop_advertise_playing then
-		network_handler.lobby_client:stop_advertise_playing()
+		if network_handler.lobby_client and network_handler.lobby_client.stop_advertise_playing then
+			network_handler.lobby_client:stop_advertise_playing()
+		end
 	end
 end
 
@@ -1041,7 +1047,6 @@ end
 GameModeVersus.player_left_game_session = function (self, peer_id, local_player_id)
 	if table.size(self._network_server.peer_state_machines) - 1 <= 0 then
 		self:change_game_mode_state("dedicated_server_abort_game")
-		Managers.backend:get_interface("versus"):reset_fetched_data()
 	end
 end
 

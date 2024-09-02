@@ -442,8 +442,8 @@ local death_time = GameModeSettings.versus.side_settings.dark_pact.spawn_times.d
 GameModeSettings.versus.dark_pact_respawn_timers = {
 	5 - death_time,
 	5 - death_time,
-	13 - death_time,
-	20 - death_time,
+	18 - death_time,
+	25 - death_time,
 }
 GameModeSettings.versus.dark_pact_bot_respawn_timers = {
 	[0] = 10,

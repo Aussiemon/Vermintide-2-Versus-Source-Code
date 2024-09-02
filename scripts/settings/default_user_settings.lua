@@ -96,6 +96,7 @@ local default_user_settings = {
 	toggle_alternate_attack = false,
 	toggle_crouch = false,
 	toggle_pactsworn_help_ui = true,
+	toggle_pactsworn_overhead_name_ui = true,
 	toggle_stationary_dodge = false,
 	tutorials_enabled = true,
 	twitch_difficulty = 50,

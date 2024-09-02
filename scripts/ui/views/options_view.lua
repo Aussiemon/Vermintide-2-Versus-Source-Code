@@ -2356,13 +2356,16 @@ OptionsView.apply_changes = function (self, user_settings, render_settings, bot_
 	if minion_outlines and not self.in_title_screen then
 		local local_player = Managers.player:local_player()
 		local local_player_unit = local_player and local_player.player_unit
-		local commander_extension = ScriptUnit.extension(local_player_unit, "ai_commander_system")
 
-		for minion_unit in pairs(commander_extension:get_controlled_units()) do
-			local outline_extension = ScriptUnit.extension(minion_unit, "outline_system")
+		if local_player_unit then
+			local commander_extension = ScriptUnit.extension(local_player_unit, "ai_commander_system")
 
-			if outline_extension.update_override_method_minion_setting then
-				outline_extension:update_override_method_minion_setting()
+			for minion_unit in pairs(commander_extension:get_controlled_units()) do
+				local outline_extension = ScriptUnit.extension(minion_unit, "outline_system")
+
+				if outline_extension.update_override_method_minion_setting then
+					outline_extension:update_override_method_minion_setting()
+				end
 			end
 		end
 	end
@@ -10037,7 +10040,9 @@ local tobii_custom_callbacks = {
 		Tobii.set_extended_view_use_head_tracking(value)
 	end,
 	use_clean_ui = function (self, value)
-		self.ingame_ui.ingame_hud:enable_clean_ui(value)
+		if not self.in_title_screen then
+			self.ingame_ui.ingame_hud:enable_clean_ui(value)
+		end
 	end,
 }
 

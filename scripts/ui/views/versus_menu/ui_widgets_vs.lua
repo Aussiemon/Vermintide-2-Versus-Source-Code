@@ -5912,6 +5912,7 @@ UIWidgets.create_versus_gameplay_hint_widget = function (scenegraph_id, data, op
 			color = Colors.get_color_table_with_alpha("black", 165),
 		},
 		title_text = {
+			dynamic_font_size = true,
 			font_size = 40,
 			font_type = "hell_shark_header",
 			horizontal_alignment = "left",

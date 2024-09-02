@@ -26,6 +26,7 @@ VersusHordeAbilityExtension._activate = function (self, t)
 	self._horde_ability_system:activate_dark_pact_horde_ability()
 
 	self._pause_sync_until = t + CLIENT_PAUSE_SYNC_DURATION
+	self._fully_charged = false
 
 	if self._unit and POSITION_LOOKUP[self._unit] then
 		self._audio_system:play_audio_position_event("Play_versus_pactsworn_horde_ability", POSITION_LOOKUP[self._unit])
@@ -44,6 +45,12 @@ VersusHordeAbilityExtension.update = function (self, t)
 
 	if self:cooldown() > self:get_ability_charge(t) then
 		return
+	end
+
+	if not self._fully_charged then
+		self._audio_system:play_sound_local("Play_versus_pactsworn_horde_ability_ready")
+
+		self._fully_charged = true
 	end
 
 	local input_activated = self._input_extension and self._input_extension:get("versus_horde_ability")

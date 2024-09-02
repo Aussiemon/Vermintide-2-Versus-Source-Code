@@ -50,6 +50,7 @@ local components = {
 		filename = "scripts/ui/hud_ui/dark_pact_ability_ui",
 		visibility_groups = {
 			"alive",
+			"ghost_mode",
 		},
 		validation_function = is_dark_pact_or_spectator_validate_function,
 	},
@@ -670,6 +671,16 @@ local visibility_groups = {
 			local player_ready = Managers.state.game_mode:game_mode():player_ready()
 
 			return player_unit and Unit.alive(player_unit) and player_ready
+		end,
+	},
+	{
+		name = "ghost_mode",
+		validation_function = function (ingame_hud)
+			local local_player = Managers.player:local_player()
+			local ghost_mode_extension = ScriptUnit.has_extension(local_player.unit, "ghost_mode_system")
+			local in_ghost_mode = ghost_mode_extension and ghost_mode_extension:is_in_ghost_mode()
+
+			return in_ghost_mode
 		end,
 	},
 }

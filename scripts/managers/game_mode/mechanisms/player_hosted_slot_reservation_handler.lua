@@ -134,12 +134,15 @@ PlayerHostedSlotReservationHandler._update_reservations = function (self)
 
 	print("[PlayerHostedSlotReservationHandler] updating reservations. slots:", printable_value, reserved_slots)
 
-	local lobby = Managers.state.network:lobby()
-	local lobby_data = lobby.lobby_data_table
+	local network_manager = Managers.state.network
 
-	lobby_data.reserved_slots_mask = reserved_slots
+	if network_manager then
+		self._dirty_reserved_slots = nil
 
-	lobby:set_lobby_data(lobby_data)
+		self:_update_lobby_data(reserved_slots)
+	else
+		self._dirty_reserved_slots = reserved_slots
+	end
 end
 
 PlayerHostedSlotReservationHandler.remove_peer_reservations = function (self, peer_id, force_remove_peers)
@@ -147,13 +150,15 @@ PlayerHostedSlotReservationHandler.remove_peer_reservations = function (self, pe
 
 	if peers_to_remove then
 		if not force_remove_peers then
-			local lobby = Managers.state.network:lobby()
-			local lobby_members = lobby:members()
-			local members = lobby_members:get_members()
+			local leader_peer_id = peer_id
 
-			for _, member_peer_id in ipairs(members) do
-				if peer_id ~= member_peer_id then
-					peers_to_remove[member_peer_id] = nil
+			for remove_peer_id in pairs(peers_to_remove) do
+				if remove_peer_id ~= leader_peer_id then
+					if PEER_ID_TO_CHANNEL[remove_peer_id] then
+						peers_to_remove[remove_peer_id] = nil
+					else
+						printf("[PlayerHostedSlotReservationHandler] Removing peer %s since they are in a party with peer %s and we don't have a connection to them.")
+					end
 				end
 			end
 		end
@@ -166,6 +171,23 @@ PlayerHostedSlotReservationHandler.remove_peer_reservations = function (self, pe
 	end
 
 	self:_update_reservations()
+end
+
+PlayerHostedSlotReservationHandler.network_context_created = function (self, lobby, server_peer_id, own_peer_id, is_server, network_handler)
+	if self._dirty_reserved_slots then
+		self:_update_lobby_data(self._dirty_reserved_slots)
+
+		self._dirty_reserved_slots = nil
+	end
+end
+
+PlayerHostedSlotReservationHandler._update_lobby_data = function (self, reserved_slots)
+	local lobby = Managers.state.network:lobby()
+	local lobby_data = lobby.lobby_data_table
+
+	lobby_data.reserved_slots_mask = reserved_slots
+
+	lobby:set_lobby_data(lobby_data)
 end
 
 PlayerHostedSlotReservationHandler._remove_peer_reservation = function (self, peer_id)

@@ -39,6 +39,7 @@ local function print_error(data, code, text, ...)
 
 	debug_printf(error_msg)
 	debug_printf(text, ...)
+	table.dump(data, "BackendInterfaceVersusPlayFab", 5)
 end
 
 local function parse_response(data)
@@ -132,6 +133,16 @@ BackendInterfaceVersusPlayFab.request_matchmaking_regions_cb = function (self, e
 	local function_result = result.FunctionResult
 
 	external_cb(function_result)
+
+	if not function_result.success or not function_result.regions then
+		if type(result) == "table" then
+			table.dump(result, "BackendInterfaceVersusPlayFab", 5)
+		else
+			print("getMatchmakingQueueTicket result: %s", tostring(result))
+		end
+
+		Crashify.print_exception("BackendInterfaceVersusPlayFab", "Failed to get matchmaking regions")
+	end
 end
 
 BackendInterfaceVersusPlayFab.get_matchmaking_url = function (self)
@@ -160,6 +171,7 @@ BackendInterfaceVersusPlayFab._start_matchmaking_cb = function (self, external_c
 
 	if not result or code ~= 200 then
 		print_error(parsed_data, code, "Failed to start matchmaking. result: %s", tostring(result))
+		Crashify.print_exception("BackendInterfaceVersusPlayFab", "Failed to start matchmaking")
 
 		if external_cb then
 			external_cb(result, code, headers, nil)
@@ -257,6 +269,7 @@ BackendInterfaceVersusPlayFab._fetch_matchmaking_session_data_cb = function (sel
 
 	if not result or code ~= 200 then
 		print_error(parsed_data, code, "Failed to fetch matchmaking session data. result: %s", tostring(result))
+		Crashify.print_exception("BackendInterfaceVersusPlayFab", "Failed to fetch matchmaking session data")
 
 		if external_cb then
 			external_cb(result, code, headers, nil)
@@ -269,6 +282,9 @@ BackendInterfaceVersusPlayFab._fetch_matchmaking_session_data_cb = function (sel
 
 	if parsed_data.status == FlexmatchQueueStatus.Succeeded then
 		self._is_matchmaking = false
+	elseif parsed_data.status == FlexmatchQueueStatus.Failed then
+		print_error(parsed_data, code, "Matchmaking changed to unwanted status '%s'. result: %s", parsed_data.status, tostring(result))
+		Crashify.print_exception("BackendInterfaceVersusPlayFab", "Matchmaking changed to unwanted status '%s'", parsed_data.status)
 	end
 
 	if external_cb then
@@ -307,6 +323,14 @@ BackendInterfaceVersusPlayFab.request_matchmaking_ticket_cb = function (self, ex
 
 	if function_result.ticket then
 		self._base_url = function_result.url
+	else
+		if type(function_result) == "table" then
+			table.dump(function_result, "BackendInterfaceVersusPlayFab", 5)
+		else
+			print("getMatchmakingQueueTicket result: %s", tostring(function_result))
+		end
+
+		Crashify.print_exception("BackendInterfaceVersusPlayFab", "Failed to get matchmaking queue ticket")
 	end
 
 	external_cb(function_result)
@@ -329,6 +353,10 @@ BackendInterfaceVersusPlayFab.set_matchmaking_session_id = function (self, sessi
 
 	self._matchmaking_session_id = session_id
 	self._is_matchmaking = session_id ~= nil
+end
+
+BackendInterfaceVersusPlayFab.get_matchmaking_session_id = function (self)
+	return self._matchmaking_session_id
 end
 
 BackendInterfaceVersusPlayFab.is_player_in_backfilling_data = function (self, player_id)

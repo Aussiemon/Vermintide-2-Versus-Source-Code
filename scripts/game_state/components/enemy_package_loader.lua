@@ -384,7 +384,11 @@ end
 EnemyPackageLoader._start_loading_package = function (self, breed_name, callback_name)
 	local state = self._package_state[breed_name]
 
-	fassert(state == nil or state == "unloaded", "Trying to load breed package twice!")
+	if state == "loaded" then
+		self[callback_name or "cb_breed_package_loaded"](breed_name)
+
+		return
+	end
 
 	local package_name = BREED_PATH .. (self.use_optimized and OPT_LOOKUP_BREED_NAMES[breed_name] or breed_name)
 

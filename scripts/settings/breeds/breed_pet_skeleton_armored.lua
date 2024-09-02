@@ -36,6 +36,7 @@ local breed_data = {
 	detection_radius = 18,
 	die_on_vortex_land = false,
 	disable_crowd_dispersion = true,
+	disable_projectile_friendly_fire = true,
 	during_horde_detection_radius = 15,
 	enter_walk_distance = 0.25,
 	exchange_order = 4,

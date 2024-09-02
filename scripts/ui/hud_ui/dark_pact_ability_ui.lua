@@ -19,8 +19,9 @@ DarkPactAbilityUI.init = function (self, parent, ingame_ui_context)
 		snap_pixel_positions = true,
 	}
 
-	local world = ingame_ui_context.world_manager:world("level_world")
+	local world = Managers.world:world("level_world")
 
+	self._world = world
 	self._wwise_world = Managers.world:wwise_world(world)
 	self._is_in_inn = ingame_ui_context.is_in_inn
 
@@ -100,7 +101,11 @@ DarkPactAbilityUI._update_abilities = function (self, dt, t)
 		return
 	end
 
-	self:_handle_career_abilities(dt, t, career_name, career_extension, horde_ability_extension, ui_renderer)
+	local player, unit = self:_get_player_unit()
+	local ghost_mode_extension = ScriptUnit.has_extension(unit, "ghost_mode_system")
+	local is_in_ghost_mode = ghost_mode_extension and ghost_mode_extension:is_in_ghost_mode()
+
+	self:_handle_career_abilities(dt, t, career_name, career_extension, horde_ability_extension, ui_renderer, is_in_ghost_mode)
 end
 
 DarkPactAbilityUI.destroy = function (self)
@@ -149,14 +154,6 @@ end
 
 DarkPactAbilityUI.update = function (self, dt, t)
 	if not self._is_visible then
-		return
-	end
-
-	local player, player_unit = self:_get_player_unit()
-	local ghost_mode_extension = ScriptUnit.has_extension(player_unit, "ghost_mode_system")
-	local is_in_ghost_mode = ghost_mode_extension and ghost_mode_extension:is_in_ghost_mode()
-
-	if is_in_ghost_mode then
 		return
 	end
 
@@ -444,7 +441,7 @@ DarkPactAbilityUI.event_on_dark_pact_ammo_changed = function (self, unit, curren
 	end
 end
 
-DarkPactAbilityUI._handle_career_abilities = function (self, dt, t, career_name, career_extension, horde_ability_extension, ui_renderer)
+DarkPactAbilityUI._handle_career_abilities = function (self, dt, t, career_name, career_extension, horde_ability_extension, ui_renderer, is_in_ghost_mode)
 	local player, player_unit = self:_get_player_unit()
 	local profile_index = player:profile_index()
 	local career_index = player:career_index()
@@ -495,14 +492,16 @@ DarkPactAbilityUI._handle_career_abilities = function (self, dt, t, career_name,
 			end
 
 			self._ability_hud_widgets_by_name[#self._ability_hud_widgets_by_name + 1] = widgets
-
-			local left_detail = self._widgets_by_name.abilities_detail_left
-			local right_detail = self._widgets_by_name.abilities_detail_right
-
-			left_detail.offset[1] = base_offset - 88 + 20
-			right_detail.offset[1] = base_offset + 80 * ability_amount - 20
 		end
 	end
+
+	local left_detail = self._widgets_by_name.abilities_detail_left
+	local right_detail = self._widgets_by_name.abilities_detail_right
+
+	left_detail.offset[1] = base_offset - 88 + 20
+	right_detail.offset[1] = base_offset + 80 * ability_amount - 20
+	left_detail.content.visible = not is_in_ghost_mode
+	right_detail.content.visible = not is_in_ghost_mode
 
 	for i = 1, #ability_templates do
 		local ability_ui_data = ability_templates[i]
@@ -514,11 +513,14 @@ DarkPactAbilityUI._handle_career_abilities = function (self, dt, t, career_name,
 
 			if update_function then
 				if ability_ui_data.ability_name then
-					local _, ability_id = career_extension:ability_by_name(ability_ui_data.ability_name)
+					local ability, ability_id = career_extension:ability_by_name(ability_ui_data.ability_name)
+					local should_draw_in_ghost_mode = is_in_ghost_mode and ability.draw_ui_in_ghost_mode
 
-					update_function(dt, t, ui_renderer, career_extension, ability_id, widget, is_dead, player_unit, horde_ability_extension)
+					if should_draw_in_ghost_mode or not is_in_ghost_mode then
+						update_function(dt, t, ui_renderer, career_extension, ability_id, widget, is_dead, player_unit, horde_ability_extension)
+					end
 				end
-			elseif not is_dead then
+			elseif not is_dead and not is_in_ghost_mode then
 				UIRenderer.draw_widget(ui_renderer, widget)
 			end
 		end

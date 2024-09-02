@@ -398,14 +398,15 @@ PingSystem._handle_chat = function (self, ping_type, social_wheel_event_id, send
 
 	if event_text then
 		local localize, localize_parameters = true, true
+		local sended_peer_id = sender_player:network_id()
 		local channel_id, message_target = 1
 		local mechanism = Managers.mechanism:game_mechanism()
 
 		if mechanism.get_chat_channel then
-			channel_id, message_target = mechanism:get_chat_channel(sender_player, false)
+			channel_id, message_target = mechanism:get_chat_channel(sended_peer_id, false)
 		end
 
-		Managers.chat:send_chat_message(channel_id, sender_player:local_player_id(), event_text, localize, localization_parameters, localize_parameters, nil, message_target, nil, nil, sender_player.peer_id)
+		Managers.chat:send_chat_message(channel_id, sender_player:local_player_id(), event_text, localize, localization_parameters, localize_parameters, nil, message_target, nil, nil, sended_peer_id)
 	end
 
 	if valid_social_wheel_id then
@@ -883,6 +884,11 @@ end
 PingSystem.rpc_ping_world_position = function (self, channel_id, pinger_unit_id, position, ping_type, social_wheel_event_id, is_double_press)
 	local pinger_unit = self._unit_storage:unit(pinger_unit_id)
 	local sender_player = Managers.player:unit_owner(pinger_unit)
+
+	if not sender_player then
+		return
+	end
+
 	local sender_unique_id = sender_player:unique_id()
 
 	if self.is_server then

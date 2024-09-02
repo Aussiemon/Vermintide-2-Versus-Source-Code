@@ -890,8 +890,7 @@ BuffSystem.rpc_add_buff_synced = function (self, channel_id, target_unit_id, tem
 			remote_sync_id = invalid_buff_sync_id
 		end
 
-		local local_sync_id = remote_sync_id ~= invalid_buff_sync_id and buff_extension:generate_sync_id() or invalid_buff_sync_id
-		local server_sync_id = self.is_server and local_sync_id or remote_sync_id
+		local server_sync_id = self.is_server and buff_extension:generate_sync_id() or remote_sync_id
 		local sync_type = BuffSyncTypeLookup[sync_type_id]
 		local owner_peer_id = CHANNEL_TO_PEER_ID[channel_id]
 
@@ -945,8 +944,7 @@ BuffSystem.rpc_add_buff_synced_params = function (self, channel_id, target_unit_
 		local template_name = NetworkLookup.buff_templates[template_name_id]
 		local params = self:_unpack_buff_params(unpacked_buff_params, param_ids, param_vals, target_unit)
 		local id = buff_extension:add_buff(template_name, params)
-		local local_sync_id = remote_sync_id ~= invalid_buff_sync_id and buff_extension:generate_sync_id() or invalid_buff_sync_id
-		local server_sync_id = self.is_server and local_sync_id or remote_sync_id
+		local server_sync_id = self.is_server and buff_extension:generate_sync_id() or remote_sync_id
 		local sync_type = BuffSyncTypeLookup[sync_type_id]
 		local owner_peer_id = CHANNEL_TO_PEER_ID[channel_id]
 

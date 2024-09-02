@@ -325,7 +325,9 @@ if has_steam and not disable_voip or DEDICATED_SERVER then
 
 	Voip._update_push_to_talk = function (self, force_update)
 		local input_service = Managers.input:get_service("chat_input")
-		local push_to_talk_active = self._push_to_talk and not not input_service:get("voip_push_to_talk")
+		local push_to_talk_active = self._push_to_talk and not not input_service and not not input_service:get("voip_push_to_talk")
+
+		push_to_talk_active = push_to_talk_active and not Managers.chat:chat_is_focused()
 
 		if push_to_talk_active ~= self._push_to_talk_active or force_update then
 			self._push_to_talk_active = push_to_talk_active

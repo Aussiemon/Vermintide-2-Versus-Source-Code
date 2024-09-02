@@ -220,6 +220,10 @@ MatchmakingStateFriendClient._update_requesting_ticket = function (self, dt, t)
 end
 
 MatchmakingStateFriendClient._request_matchmaking_ticket_cb = function (self, result)
+	if not Network.game_session() then
+		return
+	end
+
 	if not result.success then
 		if result.errorCode == 404 then
 			local text = Localize("wrong_game_version")

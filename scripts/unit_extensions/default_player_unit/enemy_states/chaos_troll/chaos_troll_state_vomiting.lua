@@ -233,6 +233,8 @@ ChaosTrollStateVomiting.on_exit = function (self, unit, input, dt, context, t, n
 	local status_extension = self._status_extension
 
 	status_extension.is_vomiting = false
+
+	self:destroy_indicator_unit()
 end
 
 local TRAJECTORY_INTERVAL = 0.3

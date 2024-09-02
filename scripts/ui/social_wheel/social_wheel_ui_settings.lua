@@ -349,6 +349,7 @@ local function clone_wheel_settings(settings, unique_name_postfix)
 end
 
 local unarmed_emotes_gamepad = clone_wheel_settings(unarmed_emotes, "_gp")
+local unarmed_emotes_gamepad_versus = clone_wheel_settings(unarmed_emotes, "_gp_versus")
 
 SocialWheelSettings = {
 	general = {
@@ -710,7 +711,7 @@ SocialWheelSettings = {
 				ping_type = PingTypes.VO_ONLY,
 			},
 		},
-		{},
+		unarmed_emotes_gamepad_versus,
 		has_pages = true,
 		individual_bg = false,
 		wedge_adjustment = 0.85,
@@ -816,7 +817,6 @@ SocialWheelSettings = {
 				ping_type = PingTypes.VO_ONLY,
 			},
 		},
-		{},
 		has_pages = true,
 		individual_bg = false,
 		wedge_adjustment = 0.85,

@@ -237,6 +237,10 @@ VersusMechanism.network_context_created = function (self, lobby, server_peer_id,
 			self._shared_state = nil
 		end
 	end
+
+	if self._slot_reservation_handler and self._slot_reservation_handler.network_context_created then
+		self._slot_reservation_handler:network_context_created(lobby, server_peer_id, own_peer_id, is_server, network_handler)
+	end
 end
 
 VersusMechanism.network_context_destroyed = function (self)
@@ -1045,7 +1049,7 @@ function register_chat_channel_for_party(channel_id, party_id)
 	Managers.chat:register_channel(channel_id, member_func)
 end
 
-VersusMechanism.get_chat_channel = function (self, player, alt_chat_input)
+VersusMechanism.get_chat_channel = function (self, peer_id, alt_chat_input)
 	if not self._message_targets_initiated then
 		return
 	end
@@ -1054,21 +1058,7 @@ VersusMechanism.get_chat_channel = function (self, player, alt_chat_input)
 		return 1, CHAT_MESSAGE_TARGETS.all.message_target
 	end
 
-	local party_id
-
-	if not player and not Managers.party:get_local_player_party() then
-		return
-	end
-
-	if player then
-		local status = Managers.party:get_status_from_unique_id(player:unique_id())
-
-		party_id = status.party_id
-	else
-		local party = Managers.party:get_local_player_party()
-
-		party_id = party.party_id
-	end
+	local party_id = Managers.mechanism:reserved_party_id_by_peer(peer_id)
 
 	if party_id == 1 then
 		return 2, CHAT_MESSAGE_TARGETS.team.message_target

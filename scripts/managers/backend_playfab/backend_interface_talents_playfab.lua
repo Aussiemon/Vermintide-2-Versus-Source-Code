@@ -99,9 +99,9 @@ BackendInterfaceTalentsPlayfab._refresh_default_loadouts_talents = function (sel
 		if settings.playfab_name then
 			local career_loadouts = backend_mirror:get_default_loadouts(career_name)
 
-			if career_loadouts then
-				talents[career_name] = talents[career_name] or {}
+			talents[career_name] = talents[career_name] or {}
 
+			if career_loadouts then
 				local career_loadouts_talents = talents[career_name]
 
 				for i = 1, #career_loadouts do

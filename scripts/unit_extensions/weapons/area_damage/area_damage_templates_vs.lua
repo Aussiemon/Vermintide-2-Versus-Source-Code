@@ -72,7 +72,7 @@ settings.area_damage_templates = {
 				local ramping_area_damage = custom_data_table.ramping_area_damage
 
 				if not ramping_area_damage[hit_unit] then
-					ramping_area_damage[hit_unit] = 0.015
+					ramping_area_damage[hit_unit] = 0.25
 				else
 					ramping_area_damage[hit_unit] = ramping_area_damage[hit_unit] * 2.5
 				end

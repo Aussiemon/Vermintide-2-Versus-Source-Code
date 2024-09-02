@@ -92,8 +92,11 @@ VersusRoundEndScreenUI._create_ui_elements = function (self, definitions)
 		local world_manager = self._ingame_ui_context.world_manager
 		local world = world_manager:world("level_world")
 		local level = LevelHelper:current_level(world)
+		local animation_system = Managers.state.entity:system("animation_system")
 
-		Level.trigger_event(level, event_name)
+		animation_system:add_safe_animation_callback(function ()
+			Level.trigger_event(level, event_name)
+		end)
 	end
 end
 

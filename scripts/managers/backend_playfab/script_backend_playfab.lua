@@ -46,6 +46,7 @@ ScriptBackendPlayFab.update_signin = function (self)
 				SteamTicket = ticket,
 				InfoRequestParameters = {
 					GetTitleData = true,
+					GetUserAccountInfo = true,
 					GetUserData = true,
 					GetUserReadOnlyData = true,
 				},

@@ -242,7 +242,6 @@ LevelEndViewVersus.create_ui_elements = function (self)
 	self._ui_animations = {}
 	self._portrait_widgets = {}
 
-	self:_create_flag()
 	UIRenderer.clear_scenegraph_queue(self.ui_renderer)
 end
 

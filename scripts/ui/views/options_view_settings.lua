@@ -2166,6 +2166,20 @@ local versus_settings_definition = {
 			},
 		},
 	},
+	{
+		setting_name = "toggle_pactsworn_overhead_name_ui",
+		widget_type = "stepper",
+		options = {
+			{
+				value = true,
+				text = Localize("menu_settings_on"),
+			},
+			{
+				value = false,
+				text = Localize("menu_settings_off"),
+			},
+		},
+	},
 }
 
 generate_settings(versus_settings_definition)

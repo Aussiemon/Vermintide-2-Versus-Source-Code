@@ -55,6 +55,7 @@ CharacterSelectionStateVersusLoadouts.on_enter = function (self, params)
 	self.local_player = Managers.player:local_player()
 	self._stats_id = self.local_player:stats_id()
 	self.use_user_skins = true
+	self.use_loadout_items = true
 
 	local profile_index, career_index = self._profile_synchronizer:profile_by_peer(self.peer_id, self._local_player_id)
 	local hero_name = params.hero_name
@@ -858,6 +859,19 @@ CharacterSelectionStateVersusLoadouts._handle_item_loadout_selection = function 
 		self:_set_loadout_item(item, self._current_weapon_slot_name)
 		item_grid:update_items_status()
 
+		local career_index = self._selected_career_index
+		local profile_index = FindProfileIndex(self._hero_name)
+		local profile = SPProfiles[profile_index]
+		local careers = profile.careers
+		local career_settings = careers[career_index]
+		local preview_wield_slot = career_settings.preview_wield_slot
+
+		preview_wield_slot = preview_wield_slot or "melee"
+
+		local slot_names = InventorySettings.slot_names_by_type[preview_wield_slot]
+		local slot_name = slot_names[1]
+
+		self._spawn_hero = slot_name == self._current_weapon_slot_name
 		self._items_dirty = true
 	end
 end

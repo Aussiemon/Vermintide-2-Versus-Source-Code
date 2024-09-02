@@ -108,7 +108,13 @@ end
 SideManager.versus_is_hero = function (self, unit)
 	local side = self.side_by_unit[unit]
 
-	return side and side:name() == "heroes"
+	if not side or side:name() ~= "heroes" then
+		return
+	end
+
+	local owner_player = Managers.player:owner(unit)
+
+	return not not owner_player
 end
 
 SideManager.versus_is_dark_pact = function (self, unit)

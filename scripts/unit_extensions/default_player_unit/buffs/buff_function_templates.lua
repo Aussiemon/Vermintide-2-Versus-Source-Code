@@ -719,10 +719,12 @@ BuffFunctionTemplates.functions = {
 			DamageUtils.add_damage_network(unit, attacker_unit, damage, "torso", damage_type, nil, Vector3(1, 0, 0), damage_source)
 		end
 
-		local fatigue_type = buff_template.fatigue_type
-		local status_extension = ScriptUnit.has_extension(unit, "status_system")
+		local owner_player = Managers.player:owner(unit)
 
-		if status_extension then
+		if owner_player and not owner_player.remote then
+			local fatigue_type = buff_template.fatigue_type
+			local status_extension = ScriptUnit.extension(unit, "status_system")
+
 			status_extension:add_fatigue_points(fatigue_type)
 		end
 
@@ -759,10 +761,12 @@ BuffFunctionTemplates.functions = {
 		local buff_template = buff.template
 
 		if next_tick < t then
-			local fatigue_type = buff_template.fatigue_type
-			local status_extension = ScriptUnit.has_extension(unit, "status_system")
+			local owner_player = Managers.player:owner(unit)
 
-			if status_extension then
+			if owner_player and not owner_player.remote then
+				local fatigue_type = buff_template.fatigue_type
+				local status_extension = ScriptUnit.extension(unit, "status_system")
+
 				status_extension:add_fatigue_points(fatigue_type)
 			end
 
@@ -829,10 +833,12 @@ BuffFunctionTemplates.functions = {
 			DamageUtils.add_damage_network(unit, attacker_unit, damage, "torso", damage_type, nil, Vector3(1, 0, 0), damage_source)
 		end
 
-		local fatigue_type = buff_template.fatigue_type
-		local status_extension = ScriptUnit.has_extension(unit, "status_system")
+		local owner_player = Managers.player:owner(unit)
 
-		if status_extension then
+		if owner_player and not owner_player.remote then
+			local fatigue_type = buff_template.fatigue_type
+			local status_extension = ScriptUnit.extension(unit, "status_system")
+
 			status_extension:add_fatigue_points(fatigue_type)
 		end
 
@@ -893,10 +899,12 @@ BuffFunctionTemplates.functions = {
 			DamageUtils.add_damage_network(unit, attacker_unit, damage, "torso", damage_type, nil, Vector3(1, 0, 0), damage_source)
 		end
 
-		local fatigue_type = buff_template.fatigue_type
-		local status_extension = ScriptUnit.has_extension(unit, "status_system")
+		local owner_player = Managers.player:owner(unit)
 
-		if status_extension then
+		if owner_player and not owner_player.remote then
+			local fatigue_type = buff_template.fatigue_type
+			local status_extension = ScriptUnit.extension(unit, "status_system")
+
 			status_extension:add_fatigue_points(fatigue_type)
 		end
 
@@ -1051,10 +1059,12 @@ BuffFunctionTemplates.functions = {
 			DamageUtils.add_damage_network(unit, attacker_unit, damage, "torso", damage_type, nil, Vector3(1, 0, 0), damage_source)
 		end
 
-		local fatigue_type = buff_template.fatigue_type
-		local status_extension = ScriptUnit.has_extension(unit, "status_system")
+		local owner_player = Managers.player:owner(unit)
 
-		if status_extension then
+		if owner_player and not owner_player.remote then
+			local fatigue_type = buff_template.fatigue_type
+			local status_extension = ScriptUnit.extension(unit, "status_system")
+
 			status_extension:add_fatigue_points(fatigue_type)
 		end
 
@@ -1147,10 +1157,12 @@ BuffFunctionTemplates.functions = {
 			DamageUtils.add_damage_network(unit, attacker_unit, damage, "torso", damage_type, nil, Vector3(1, 0, 0), damage_source)
 		end
 
-		local fatigue_type = buff_template.fatigue_type
-		local status_extension = ScriptUnit.has_extension(unit, "status_system")
+		local owner_player = Managers.player:owner(unit)
 
-		if status_extension then
+		if owner_player and not owner_player.remote then
+			local fatigue_type = buff_template.fatigue_type
+			local status_extension = ScriptUnit.extension(unit, "status_system")
+
 			status_extension:add_fatigue_points(fatigue_type)
 		end
 
@@ -1222,10 +1234,12 @@ BuffFunctionTemplates.functions = {
 			DamageUtils.add_damage_network(unit, attacker_unit, damage, "torso", damage_type, nil, Vector3(1, 0, 0), damage_source)
 		end
 
-		local fatigue_type = buff_template.fatigue_type
-		local status_extension = ScriptUnit.has_extension(unit, "status_system")
+		local owner_player = Managers.player:owner(unit)
 
-		if status_extension then
+		if owner_player and not owner_player.remote then
+			local fatigue_type = buff_template.fatigue_type
+			local status_extension = ScriptUnit.extension(unit, "status_system")
+
 			status_extension:add_fatigue_points(fatigue_type)
 		end
 

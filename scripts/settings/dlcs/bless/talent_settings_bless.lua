@@ -552,7 +552,7 @@ local talents = {
 		buffs = {},
 	},
 	{
-		buffer = "server",
+		buffer = "both",
 		description = "victor_priest_4_3_desc_new",
 		icon = "victor_priest_4_3",
 		name = "victor_priest_4_3",

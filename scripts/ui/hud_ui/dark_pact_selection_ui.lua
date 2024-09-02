@@ -250,6 +250,10 @@ DarkPactSelectionUI.update = function (self, dt, t, player)
 		return
 	end
 
+	if not Managers.state.network or not Managers.state.network:game() then
+		return
+	end
+
 	local gamepad_active = Managers.input:is_device_active("gamepad")
 
 	if self._gamepad_active ~= gamepad_active then

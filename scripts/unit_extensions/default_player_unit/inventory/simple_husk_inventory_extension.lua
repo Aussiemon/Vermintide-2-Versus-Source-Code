@@ -158,6 +158,11 @@ end
 SimpleHuskInventoryExtension.drop_equipped_weapons = function (self, reason)
 	local equipment = self._equipment
 	local wielded = equipment.wielded
+
+	if not wielded then
+		return
+	end
+
 	local template_name = wielded.template
 	local linking_template = AttachmentNodeLinking[template_name]
 	local left_hand_unit_name = wielded.left_hand_unit

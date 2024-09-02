@@ -579,8 +579,13 @@ SocialWheelUI.update_closed = function (self, dt, t, input_service)
 		local game_t = Managers.time:time("game")
 
 		if current_context and game_t > current_context.min_t then
-			self:_open_menu(dt, t, input_service)
-			self:_set_pulsing(current_context, true)
+			local success = self:_open_menu(dt, t, input_service)
+
+			if success then
+				self:_set_pulsing(current_context, true)
+			else
+				self:_set_current_context(nil)
+			end
 		elseif current_context then
 			self:_update_pointer(input_service, false, t)
 		else
@@ -628,14 +633,9 @@ end
 SocialWheelUI._open_menu = function (self, dt, t, input_service, increment_page)
 	self._block_next_input = false
 
-	local animation_times = ANIMATION_TIMES.OPEN
-	local animations = self._animations
-
-	self._animations.update_alpha = UIAnimation.init(UIAnimation.function_by_time, self._render_settings, "alpha_multiplier", 0, 1, animation_times.ALPHA, math.easeOutCubic)
-	self._active_context = self._current_context
-
-	local active_context = self._active_context
-	local social_wheel_unit = active_context.unit or active_context.ping_context_unit
+	local success = true
+	local current_context = self._current_context
+	local social_wheel_unit = current_context.unit or current_context.ping_context_unit
 
 	if not Unit.alive(social_wheel_unit) then
 		social_wheel_unit = nil
@@ -670,7 +670,7 @@ SocialWheelUI._open_menu = function (self, dt, t, input_service, increment_page)
 		local selected_category = data[1]
 		local condition_function = data[2]
 
-		if condition_function(active_context, self._player, social_wheel_unit) then
+		if condition_function(current_context, self._player, social_wheel_unit) then
 			category = selected_category
 
 			break
@@ -690,11 +690,11 @@ SocialWheelUI._open_menu = function (self, dt, t, input_service, increment_page)
 
 			category_page = category_page % num_pages + 1
 
-			if active_context.show_emotes and category_page < 2 then
+			if current_context.show_emotes and category_page < 2 then
 				category_page = 2
 			end
 		else
-			category_page = active_context.show_emotes and 2 or 1
+			category_page = current_context.show_emotes and 2 or 1
 		end
 
 		selected_category_widgets.current_page = category_page
@@ -703,7 +703,18 @@ SocialWheelUI._open_menu = function (self, dt, t, input_service, increment_page)
 		self._current_selection_widgets = selected_category_widgets
 	end
 
-	if active_context.show_emotes and selected_category_widgets.num_pages and selected_category_widgets.num_pages <= 2 then
+	if not self._current_selection_widgets then
+		success = false
+
+		return success
+	end
+
+	self._active_context = current_context
+
+	local active_context = self._active_context
+	local min_required_pages = active_context.show_emotes and 2 or 1
+
+	if selected_category_widgets.num_pages and min_required_pages >= selected_category_widgets.num_pages then
 		self._page_input_widget.content.visible = false
 		self._block_next_input = true
 	end
@@ -715,6 +726,11 @@ SocialWheelUI._open_menu = function (self, dt, t, input_service, increment_page)
 	fassert(settings, "No settings for category %q.", category)
 
 	self._current_selection_widget_settings = settings
+
+	local animation_times = ANIMATION_TIMES.OPEN
+	local animations = self._animations
+
+	animations.update_alpha = UIAnimation.init(UIAnimation.function_by_time, self._render_settings, "alpha_multiplier", 0, 1, animation_times.ALPHA, math.easeOutCubic)
 
 	local selection_widgets = self._current_selection_widgets
 	local num_selection_widgets = #selection_widgets
@@ -780,6 +796,8 @@ SocialWheelUI._open_menu = function (self, dt, t, input_service, increment_page)
 
 		self:_play_sound(event)
 	end
+
+	return success
 end
 
 SocialWheelUI.update_open = function (self, dt, t, input_service)
@@ -1117,10 +1135,10 @@ SocialWheelUI._close_menu = function (self, dt, t, input_service, page_only)
 
 			if target_unit and (self._world_markers_enabled or ping_type == PingTypes.PLAYER_PICK_UP) then
 				social_message_sent = self:_ping_unit_attempt(target_unit, ping_type, social_wheel_event_id)
-			elseif active_context.position and self._world_markers_enabled then
-				social_message_sent = self:_ping_world_position_attempt(active_context.position, ping_type, social_wheel_event_id)
 			elseif ping_type == PingTypes.LOCAL_ONLY then
 				social_message_sent = self:_local_ping_attempt(social_wheel_event_id, target_unit)
+			elseif active_context.position and self._world_markers_enabled then
+				social_message_sent = self:_ping_world_position_attempt(active_context.position, ping_type, social_wheel_event_id)
 			else
 				social_message_sent = self:_social_message_attempt(social_wheel_event_id, target_unit)
 			end

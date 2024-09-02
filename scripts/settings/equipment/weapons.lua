@@ -201,6 +201,7 @@ DotTypeLookup = DotTypeLookup or {
 	beam_burning_dot = "burning_dot",
 	burning_dot = "burning_dot",
 	burning_dot_1tick = "burning_dot",
+	burning_dot_1tick_vs = "burning_dot",
 	burning_dot_3tick = "burning_dot",
 	burning_dot_fire_grenade = "burning_dot",
 	burning_dot_unchained_push = "burning_dot",

@@ -14,7 +14,7 @@ template.position_offset = {
 	0,
 	2,
 }
-template.max_distance = nil
+template.max_distance = 50
 template.screen_clamp = true
 template.only_when_clamped = false
 template.draw_behind = true
@@ -123,7 +123,7 @@ template.create_widget_definition = function (scenegraph_id)
 				},
 			},
 			ally_name = {
-				font_size = 24,
+				font_size = 18,
 				font_type = "hell_shark",
 				horizontal_alignment = "center",
 				localize = false,
@@ -138,7 +138,12 @@ template.create_widget_definition = function (scenegraph_id)
 					200,
 					30,
 				},
-				text_color = Colors.get_color_table_with_alpha("white", 255),
+				shadow_offset = {
+					-1,
+					1,
+					0,
+				},
+				text_color = Colors.get_color_table_with_alpha("local_player_team", 255),
 				offset = {
 					-100,
 					60,
@@ -184,6 +189,7 @@ end
 template.update_function = function (ui_renderer, widget, marker, settings, dt, t)
 	local content = widget.content
 	local style = widget.style
+	local allow_name = Application.user_setting("toggle_pactsworn_overhead_name_ui")
 
 	if content.just_entered then
 		content.just_entered = false
@@ -191,7 +197,7 @@ template.update_function = function (ui_renderer, widget, marker, settings, dt, 
 
 		local player_name_text_width = UIUtils.get_text_width(ui_renderer, style.ally_name, content.ally_name)
 
-		style.checkmark.offset[1] = -(player_name_text_width / 2) - 30 - 10
+		style.checkmark.offset[1] = allow_name and -(player_name_text_width / 2) - 30 - 10 or 0
 	end
 
 	local am = math.clamp(0.5 + (1 - content.forward_dot_dir) * 499.99999999999955, 0, 1)
@@ -207,13 +213,29 @@ template.update_function = function (ui_renderer, widget, marker, settings, dt, 
 
 	style.ally_name.offset[2] = ally_name_offset_y
 
+	local ally_name = allow_name and content.player_name or ""
+	local ally_name_length = UTF8Utils.string_length(ally_name)
+
+	if ally_name_length > 18 then
+		ally_name = string.sub(ally_name, 1, 18) .. "..."
+	end
+
 	if content.respawn_timer and not content.countdown_over then
 		local respawn_delta = content.respawn_timer - Managers.time:time("game")
 		local countdown_over = respawn_delta <= 0
 
-		content.ally_name = countdown_over and content.player_name or string.format("{#size(20);color(255,168,0)}%d{#reset()}  %s", math.abs(respawn_delta), content.player_name)
+		ally_name = countdown_over and ally_name or string.format("{#size(20);color(255,255,255)}%d{#reset()}  %s", math.abs(respawn_delta), ally_name)
 		content.countdown_over = countdown_over
 	end
+
+	if content.allow_name ~= allow_name then
+		local player_name_text_width = UIUtils.get_text_width(ui_renderer, style.ally_name, ally_name)
+
+		style.checkmark.offset[1] = allow_name and -(player_name_text_width / 2) - 30 - 10 or 0
+		content.allow_name = allow_name
+	end
+
+	content.ally_name = ally_name
 
 	return true
 end

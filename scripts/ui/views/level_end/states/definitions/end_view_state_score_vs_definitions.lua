@@ -631,9 +631,15 @@ local animation_definitions = {
 			start_progress = 0,
 			init = function (ui_scenegraph, scenegraph_definition, widgets, params)
 				params.render_settings.alpha_multiplier = 0
+				ui_scenegraph.panel.local_position[2] = scenegraph_definition.panel.position[2] + 200
+				ui_scenegraph.continue_button.local_position[2] = scenegraph_definition.continue_button.position[2] - 200
 			end,
 			update = function (ui_scenegraph, scenegraph_definition, widgets, progress, params)
-				params.render_settings.alpha_multiplier = math.easeOutCubic(progress)
+				local eased_progress = math.easeOutCubic(progress)
+
+				params.render_settings.alpha_multiplier = eased_progress
+				ui_scenegraph.panel.local_position[2] = math.lerp(scenegraph_definition.panel.position[2] + 200, scenegraph_definition.panel.position[2], eased_progress)
+				ui_scenegraph.continue_button.local_position[2] = math.lerp(scenegraph_definition.continue_button.position[2] - 200, scenegraph_definition.continue_button.position[2], eased_progress)
 			end,
 			on_complete = function (ui_scenegraph, scenegraph_definition, widgets, params)
 				return

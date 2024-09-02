@@ -44,6 +44,13 @@ VersusHordeAbilitySystem.init = function (self, entity_system_creation_context, 
 end
 
 VersusHordeAbilitySystem.destroy = function (self)
+	if self.is_server then
+		self._event_manager:unregister("new_player_unit", self)
+		self._event_manager:unregister("gm_event_round_started", self)
+		self._event_manager:unregister("on_player_joined_party", self)
+		self._event_manager:unregister("on_player_left_party", self)
+	end
+
 	self:unregister_rpcs()
 end
 
@@ -251,7 +258,10 @@ VersusHordeAbilitySystem._server_batch_sync_client_horde_units = function (self,
 			end
 
 			table.clear(units_to_sync)
-			self.network_transmit:send_rpc("rpc_client_outline_own_horde_units", peer_id, sync_array)
+
+			if PEER_ID_TO_CHANNEL[peer_id] then
+				self.network_transmit:send_rpc("rpc_client_outline_own_horde_units", peer_id, sync_array)
+			end
 		end
 	end
 end
@@ -300,6 +310,7 @@ VersusHordeAbilitySystem._recharge_modifier = function (self)
 	local party_id = self._dark_pact_party_id
 	local other_party_id = math.index_wrapper(party_id + 1, #self._num_players_by_party)
 	local team_size_difference = self._num_players_by_party[other_party_id] - self._num_players_by_party[party_id]
+	local team_size_modifier = settings.team_size_difference_recharge_modifier[team_size_difference]
 	local recharge_modifier = settings.team_size_difference_recharge_modifier[team_size_difference]
 
 	return recharge_modifier or 1

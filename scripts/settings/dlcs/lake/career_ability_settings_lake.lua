@@ -13,6 +13,7 @@ ActivatedAbilitySettings.es_4 = {
 		mechanism_overrides = {
 			versus = {
 				cooldown = 40,
+				weapon_name = "markus_questingknight_career_skill_weapon_vs",
 			},
 		},
 	},

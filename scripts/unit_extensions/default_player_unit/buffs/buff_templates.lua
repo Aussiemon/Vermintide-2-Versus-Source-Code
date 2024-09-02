@@ -4256,6 +4256,7 @@ BuffTemplates = {
 				refresh_durations = true,
 				perks = {
 					buff_perks.invulnerable,
+					buff_perks.no_ranged_knockback,
 				},
 			},
 		},
@@ -5336,6 +5337,23 @@ BuffTemplates = {
 				time_between_dot_damages = 1.5,
 				update_func = "apply_dot_damage",
 				update_start_delay = 1.5,
+				perks = {
+					buff_perks.burning,
+				},
+			},
+		},
+	},
+	burning_dot_1tick_vs = {
+		buffs = {
+			{
+				apply_buff_func = "start_dot_damage",
+				damage_profile = "burning_dot",
+				damage_type = "burninating",
+				duration = 4,
+				name = "burning_dot_1tick_vs",
+				time_between_dot_damages = 0.75,
+				update_func = "apply_dot_damage",
+				update_start_delay = 0.75,
 				perks = {
 					buff_perks.burning,
 				},

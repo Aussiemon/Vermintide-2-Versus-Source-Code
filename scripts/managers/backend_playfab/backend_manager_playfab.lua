@@ -708,6 +708,8 @@ BackendManagerPlayFab._reason_localize_key = function (self, reason, error_code)
 		elseif reason == BACKEND_PLAYFAB_ERRORS.ERR_PLAYFAB_ERROR then
 			if error_code == BACKEND_PLAYFAB_ERRORS.ERR_PLAYFAB_THIRD_PARTY_PROBLEM then
 				return ERROR_CODES[error_code]
+			elseif error_code == BACKEND_PLAYFAB_ERRORS.ERR_PLAYFAB_ACCOUNT_BANNED then
+				return ERROR_CODES[error_code]
 			end
 
 			return "backend_err_playfab"

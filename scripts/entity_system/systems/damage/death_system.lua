@@ -221,13 +221,10 @@ DeathSystem.kill_unit = function (self, unit, killing_blow)
 		extension.death_has_started = true
 	end
 
-	local blackboard = BLACKBOARDS[unit]
-	local inventory_extension = ScriptUnit.has_extension(unit, "inventory_system")
+	if breed and breed.is_player and breed.keep_weapon_on_death == false then
+		local inventory_extension = ScriptUnit.has_extension(unit, "inventory_system")
 
-	if inventory_extension and blackboard then
-		local breed = blackboard.breed
-
-		if breed and breed.is_player and breed.keep_weapon_on_death == false then
+		if inventory_extension then
 			inventory_extension:drop_equipped_weapons("death")
 		end
 	end

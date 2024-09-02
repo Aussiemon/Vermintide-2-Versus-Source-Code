@@ -200,12 +200,12 @@ vs_warpfire_thrower.shoot_warpfire_close_attack_dot = 0.9
 vs_warpfire_thrower.shoot_warpfire_minimum_forced_cooldown = 0.6
 vs_warpfire_thrower.warpfire_vfx = "chr_warp_fire_flamethrower_01_1p_versus"
 vs_warpfire_thrower.shoot_warpfire_long_attack_damage = {
-	3,
-	3,
-	3,
-	3,
-	3,
-	3,
+	2,
+	2,
+	2,
+	2,
+	2,
+	2,
 }
 vs_warpfire_thrower.armor_category = 1
 vs_gutter_runner.max_stagger_duration = 0.4

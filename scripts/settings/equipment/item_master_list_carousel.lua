@@ -1072,7 +1072,7 @@ ItemMasterList.vs_bw_skullstaff_beam = {
 	rarity = "plentiful",
 	right_hand_unit = "units/weapons/player/wpn_brw_beam_staff_01/wpn_brw_beam_staff_01",
 	slot_type = "ranged",
-	template = "staff_blast_beam_template_1",
+	template = "staff_blast_beam_template_1_vs",
 	trait_table_name = "ranged_heat",
 	can_wield = {
 		"bw_scholar",
@@ -1096,7 +1096,7 @@ ItemMasterList.vs_bw_skullstaff_geiser = {
 	rarity = "plentiful",
 	right_hand_unit = "units/weapons/player/wpn_brw_staff_03/wpn_brw_staff_03",
 	slot_type = "ranged",
-	template = "staff_fireball_geiser_template_1",
+	template = "staff_fireball_geiser_template_1_vs",
 	trait_table_name = "ranged_heat",
 	can_wield = {
 		"bw_scholar",
@@ -1120,7 +1120,7 @@ ItemMasterList.vs_bw_skullstaff_spear = {
 	rarity = "plentiful",
 	right_hand_unit = "units/weapons/player/wpn_brw_spear_staff_01/wpn_brw_spear_staff_01",
 	slot_type = "ranged",
-	template = "staff_spark_spear_template_1",
+	template = "staff_spark_spear_template_1_vs",
 	trait_table_name = "ranged_heat",
 	can_wield = {
 		"bw_scholar",
@@ -1144,7 +1144,7 @@ ItemMasterList.vs_bw_skullstaff_flamethrower = {
 	rarity = "plentiful",
 	right_hand_unit = "units/weapons/player/wpn_brw_flame_staff_01/wpn_brw_flame_staff_01",
 	slot_type = "ranged",
-	template = "staff_flamethrower_template",
+	template = "staff_flamethrower_template_vs",
 	trait_table_name = "ranged_heat",
 	can_wield = {
 		"bw_scholar",
@@ -1511,7 +1511,7 @@ ItemMasterList.vs_dr_drakegun = {
 	rarity = "plentiful",
 	right_hand_unit = "units/weapons/player/wpn_dw_iron_drake_02/wpn_dw_iron_drake_02",
 	slot_type = "ranged",
-	template = "drakegun_template_1",
+	template = "drakegun_template_1_vs",
 	trait_table_name = "ranged_heat",
 	can_wield = {
 		"dr_ironbreaker",
@@ -1582,7 +1582,7 @@ ItemMasterList.vs_dr_1h_throwing_axes = {
 	rarity = "plentiful",
 	right_hand_unit = "units/weapons/player/wpn_invisible_weapon",
 	slot_type = "ranged",
-	template = "one_handed_throwing_axes_template",
+	template = "one_handed_throwing_axes_template_vs",
 	trait_table_name = "ranged_ammo",
 	can_wield = {
 		"dr_slayer",
@@ -1673,7 +1673,7 @@ ItemMasterList.vs_dr_steam_pistol = {
 	rarity = "plentiful",
 	right_hand_unit = "units/weapons/player/wpn_dw_steam_pistol_01_t1/wpn_dw_steam_pistol_01_t1",
 	slot_type = "ranged",
-	template = "heavy_steam_pistol_template_1",
+	template = "heavy_steam_pistol_template_1_vs",
 	trait_table_name = "ranged_ammo",
 	can_wield = {
 		"dr_engineer",
@@ -2054,6 +2054,49 @@ ItemMasterList.vs_wh_hammer_shield = {
 	can_wield = {
 		"wh_priest",
 	},
+	mechanisms = {
+		"versus",
+	},
+}
+ItemMasterList.markus_questingknight_career_skill_weapon_vs = {
+	is_local = true,
+	rarity = "plentiful",
+	right_hand_unit = "units/weapons/player/wpn_emp_gk_sword_ability/wpn_emp_gk_sword_ability",
+	slot_type = "melee",
+	template = "markus_questingknight_career_skill_weapon_vs",
+	can_wield = {},
+	mechanisms = {
+		"versus",
+	},
+}
+ItemMasterList.bardin_engineer_career_skill_weapon_vs = {
+	is_local = true,
+	item_type = "bardin_engineer_career_skill_weapon",
+	rarity = "plentiful",
+	right_hand_unit = "units/weapons/player/wpn_dw_rotary_gun_01_t1/wpn_dw_rotary_gun_01_t1",
+	template = "bardin_engineer_career_skill_weapon_vs",
+	can_wield = {},
+	mechanisms = {
+		"versus",
+	},
+}
+ItemMasterList.bardin_engineer_career_skill_weapon_heavy_vs = {
+	is_local = true,
+	item_type = "bardin_engineer_career_skill_weapon_heavy",
+	rarity = "plentiful",
+	right_hand_unit = "units/weapons/player/wpn_dw_rotary_gun_01_t2/wpn_dw_rotary_gun_01_t2",
+	template = "bardin_engineer_career_skill_weapon_special_vs",
+	can_wield = {},
+	mechanisms = {
+		"versus",
+	},
+}
+ItemMasterList.victor_bountyhunter_career_skill_weapon_vs = {
+	is_local = true,
+	left_hand_unit = "units/weapons/player/wpn_emp_shotgun/wpn_emp_shotgun",
+	rarity = "plentiful",
+	template = "victor_bountyhunter_career_skill_weapon_vs",
+	can_wield = {},
 	mechanisms = {
 		"versus",
 	},

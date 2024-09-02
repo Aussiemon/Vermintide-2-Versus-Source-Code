@@ -745,6 +745,10 @@ end
 VersusPartySelectionLogic.sync_hovered_item = function (self, peer_id, local_player_id, profile_index, career_index)
 	self:_sync_hovered_item(peer_id, local_player_id, profile_index, career_index)
 
+	if not Network.game_session() then
+		return
+	end
+
 	if self._is_server then
 		self._network_transmit:send_rpc_clients("rpc_pre_game_sync_hovered_item", peer_id, local_player_id, profile_index, career_index)
 	else

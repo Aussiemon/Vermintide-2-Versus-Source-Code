@@ -2337,7 +2337,22 @@ StateLoading.setup_lobby_host = function (self, wait_for_joined_callback, platfo
 	local level_transition_handler = Managers.level_transition_handler
 
 	if not level_transition_handler:has_next_level() then
-		local level_key = "carousel_hub"
+		local args = {
+			Application.argv(),
+		}
+		local use_default_level = false
+
+		for i = 1, #args do
+			local arg = args[i]
+
+			if arg == "-benchmark-mode" then
+				use_default_level = true
+
+				break
+			end
+		end
+
+		local level_key = use_default_level and Managers.mechanism:default_level_key() or "carousel_hub"
 		local level_settings = rawget(LevelSettings, level_key)
 		local conflict_settings = level_settings and level_settings.conflict_settings
 

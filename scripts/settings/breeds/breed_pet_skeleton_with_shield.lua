@@ -20,6 +20,7 @@ local breed_data = {
 	default_inventory_template = "undead_npc_skeleton_with_shield",
 	detection_radius = 18,
 	die_on_vortex_land = false,
+	disable_projectile_friendly_fire = true,
 	during_horde_detection_radius = 15,
 	enter_walk_distance = 0.25,
 	exchange_order = 4,

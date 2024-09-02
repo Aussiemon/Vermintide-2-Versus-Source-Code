@@ -1850,22 +1850,18 @@ CharacterStateHelper.is_enemy_character = function (unit)
 end
 
 CharacterStateHelper.is_viable_stab_target = function (unit, target_unit, target_status_extension)
-	local is_assisted_respawning = CharacterStateHelper.is_waiting_for_assisted_respawn(target_status_extension)
-	local is_knocked_down = target_status_extension:is_knocked_down()
-	local is_pounced_down = target_status_extension:is_pounced_down() and target_status_extension:get_pouncer_unit() ~= unit
-	local is_grabbed_by_chaos_spawn = target_status_extension:is_grabbed_by_chaos_spawn()
-	local is_hanging = target_status_extension.pack_master_status == "pack_master_hanging"
-	local is_using_transport = target_status_extension.using_transport
-	local ledge_hanging = target_status_extension.is_ledge_hanging
-	local is_grabbed_by_corruptor = target_status_extension:is_grabbed_by_corruptor()
-	local is_grabbed_by_packmaster = target_status_extension:is_grabbed_by_pack_master()
-	local is_dark_pact_ally = CharacterStateHelper.is_enemy_character(target_unit)
-
-	if not is_knocked_down and not is_assisted_respawning and not is_pounced_down and not is_hanging and not is_using_transport and not ledge_hanging and not is_grabbed_by_chaos_spawn and not is_grabbed_by_corruptor and not is_grabbed_by_packmaster and not is_dark_pact_ally then
-		return true
+	if target_status_extension:disabled_by_other(unit) then
+		return false
 	end
 
-	return false
+	local is_using_transport = target_status_extension:is_using_transport()
+	local is_dark_pact_ally = CharacterStateHelper.is_enemy_character(target_unit)
+
+	if is_using_transport or is_dark_pact_ally then
+		return false
+	end
+
+	return true
 end
 
 CharacterStateHelper.ghost_mode = function (ghost_mode_extension, input_extension)

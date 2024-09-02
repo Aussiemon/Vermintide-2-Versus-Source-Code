@@ -1051,8 +1051,12 @@ ActionSweep._do_overlap = function (self, dt, t, unit, owner_unit, current_actio
 						first_person_extension:play_hud_sound_event("Play_hud_matchmaking_countdown")
 					end
 
-					if current_action.knockback_data and not hit_unit_is_ai then
-						self:_push_target(owner_unit, hit_unit, current_action.knockback_data, blocking, hit_unit_is_hero)
+					if current_action.knockback_data then
+						local hit_unit_status_extension = ScriptUnit.has_extension(hit_unit, "status_system")
+
+						if hit_unit_status_extension and not hit_unit_status_extension:is_knocked_down() then
+							self:_push_target(owner_unit, hit_unit, current_action.knockback_data, blocking, hit_unit_is_hero)
+						end
 					end
 
 					if abort_attack then

@@ -119,11 +119,15 @@ EnemyCharacterStateFalling.on_exit = function (self, unit, input, dt, context, t
 	end
 
 	if next_state and next_state ~= "falling" and Managers.state.network:game() then
-		CharacterStateHelper.play_animation_event(unit, "land_still")
-		CharacterStateHelper.play_animation_event(unit, "to_onground")
+		if next_state == "dead" then
+			CharacterStateHelper.play_animation_event(unit, "ragdoll")
+		else
+			CharacterStateHelper.play_animation_event(unit, "land_still")
+			CharacterStateHelper.play_animation_event(unit, "to_onground")
 
-		if self._play_fp_anim then
-			CharacterStateHelper.play_animation_event_first_person(self._first_person_extension, "to_onground")
+			if self._play_fp_anim then
+				CharacterStateHelper.play_animation_event_first_person(self._first_person_extension, "to_onground")
+			end
 		end
 	end
 end
